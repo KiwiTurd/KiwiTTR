@@ -6,6 +6,7 @@ import type { Player } from "../../types/player";
 
 import { getEvents } from "../../services/eventService";
 import { getPlayers } from "../../services/playerService";
+import { recordMatch } from "../../services/matchService";
 
 import SetScoreInput from "./SetScoreInput";
 
@@ -26,9 +27,13 @@ export default function MatchForm() {
   ]);
 
   useEffect(() => {
+    loadData();
+  }, []);
+
+  function loadData() {
     setPlayers(getPlayers());
     setEvents(getEvents());
-  }, []);
+  }
 
   function updateSet(
     index: number,
@@ -63,10 +68,10 @@ export default function MatchForm() {
       const max = Math.max(set.player1Score, set.player2Score);
       const min = Math.min(set.player1Score, set.player2Score);
 
-      // Ignore empty or incomplete sets
+      // Ignore incomplete sets
       if (max < 11) return;
 
-      // Must win by at least 2 points
+      // Must win by 2
       if (max - min < 2) return;
 
       if (set.player1Score > set.player2Score) {
@@ -96,6 +101,59 @@ export default function MatchForm() {
     };
   }, [sets, player1Id, player2Id, players]);
 
+  function handleRecordMatch() {
+    if (!eventId) {
+      alert("Please select an event.");
+      return;
+    }
+
+    if (!player1Id || !player2Id) {
+      alert("Please select both players.");
+      return;
+    }
+
+    if (player1Id === player2Id) {
+      alert("A player cannot play themselves.");
+      return;
+    }
+
+    if (summary.player1Sets === summary.player2Sets) {
+      alert("The match is tied.");
+      return;
+    }
+
+    try {
+      recordMatch(
+        eventId,
+        player1Id,
+        player2Id,
+        sets
+      );
+
+      alert("Match recorded successfully!");
+
+      setEventId("");
+      setPlayer1Id("");
+      setPlayer2Id("");
+
+      setSets([
+        {
+          player1Score: 11,
+          player2Score: 8,
+        },
+      ]);
+
+      loadData();
+
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Unable to record match.");
+      }
+    }
+  }
+
   return (
     <div className="bg-white rounded-xl shadow p-8 space-y-6">
 
@@ -112,7 +170,10 @@ export default function MatchForm() {
           <option value="">Select Event</option>
 
           {events.map((event) => (
-            <option key={event.id} value={event.id}>
+            <option
+              key={event.id}
+              value={event.id}
+            >
               {event.name}
             </option>
           ))}
@@ -132,8 +193,11 @@ export default function MatchForm() {
           <option value="">Select Player</option>
 
           {players.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.firstName} {player.lastName}
+            <option
+              key={player.id}
+              value={player.id}
+            >
+              {player.firstName} {player.lastName} ({player.rating})
             </option>
           ))}
         </select>
@@ -152,8 +216,11 @@ export default function MatchForm() {
           <option value="">Select Player</option>
 
           {players.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.firstName} {player.lastName}
+            <option
+              key={player.id}
+              value={player.id}
+            >
+              {player.firstName} {player.lastName} ({player.rating})
             </option>
           ))}
         </select>
@@ -178,7 +245,7 @@ export default function MatchForm() {
 
       <button
         onClick={addSet}
-        className="bg-slate-200 px-4 py-2 rounded-lg hover:bg-slate-300"
+        className="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-lg transition"
       >
         + Add Set
       </button>
@@ -189,21 +256,29 @@ export default function MatchForm() {
           Live Match Summary
         </h2>
 
-        <p>
-          Score: {summary.player1Sets} - {summary.player2Sets}
-        </p>
+        <div className="space-y-2">
 
-        <p className="mt-2">
-          Winner:
-          <span className="font-bold ml-2">
-            {summary.winner || "-"}
-          </span>
-        </p>
+          <p>
+            Score:{" "}
+            <strong>
+              {summary.player1Sets} - {summary.player2Sets}
+            </strong>
+          </p>
+
+          <p>
+            Winner:{" "}
+            <strong>
+              {summary.winner || "-"}
+            </strong>
+          </p>
+
+        </div>
 
       </div>
 
       <button
-        className="w-full bg-blue-900 text-white py-3 rounded-lg hover:bg-blue-800"
+        onClick={handleRecordMatch}
+        className="w-full bg-blue-900 hover:bg-blue-800 text-white py-3 rounded-lg transition"
       >
         Record Match
       </button>

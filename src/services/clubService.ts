@@ -10,8 +10,17 @@ export function getClubs(): Club[] {
   return JSON.parse(data);
 }
 
+export function getClub(id: string): Club | undefined {
+  return getClubs().find(
+    (club) => club.id === id
+  );
+}
+
 export function saveClubs(clubs: Club[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(clubs));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(clubs)
+  );
 }
 
 export function addClub(club: Club) {
@@ -22,8 +31,18 @@ export function addClub(club: Club) {
   saveClubs(clubs);
 }
 
+export function updateClub(club: Club) {
+  const clubs = getClubs().map((c) =>
+    c.id === club.id ? club : c
+  );
+
+  saveClubs(clubs);
+}
+
 export function deleteClub(id: string) {
-  const clubs = getClubs().filter(c => c.id !== id);
+  const clubs = getClubs().filter(
+    (c) => c.id !== id
+  );
 
   saveClubs(clubs);
 }

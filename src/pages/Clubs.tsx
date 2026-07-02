@@ -1,25 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
 import type { Club } from "../types/club";
+
 import { addClub, getClubs } from "../services/clubService";
+import { getPlayers } from "../services/playerService";
 
 export default function Clubs() {
-
   const [clubs, setClubs] = useState<Club[]>([]);
-  const [clubName, setClubName] = useState("");
+
+  const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
 
   useEffect(() => {
     setClubs(getClubs());
   }, []);
 
-  function handleAddClub() {
+  const players = useMemo(() => getPlayers(), []);
 
-    if (!clubName.trim()) return;
+  function handleAddClub() {
+    if (!name.trim()) return;
 
     const club: Club = {
       id: crypto.randomUUID(),
-      name: clubName,
+
+      name,
       shortName,
+
+      address,
+      phone,
+      email,
+      website,
+
       createdAt: new Date().toISOString(),
     };
 
@@ -27,32 +43,72 @@ export default function Clubs() {
 
     setClubs(getClubs());
 
-    setClubName("");
+    setName("");
     setShortName("");
+    setAddress("");
+    setPhone("");
+    setEmail("");
+    setWebsite("");
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto space-y-8">
 
-      <h1 className="text-4xl font-bold mb-8">
-        Clubs
-      </h1>
+      <div>
 
-      <div className="bg-white rounded-xl shadow p-6 mb-8">
+        <h1 className="text-5xl font-bold">
+          Clubs
+        </h1>
 
-        <div className="grid grid-cols-2 gap-4">
+        <p className="text-slate-500 mt-2">
+          Manage table tennis clubs
+        </p>
+
+      </div>
+
+      <div className="bg-white rounded-xl shadow p-6">
+
+        <div className="grid md:grid-cols-2 gap-4">
 
           <input
             placeholder="Club Name"
-            value={clubName}
-            onChange={(e)=>setClubName(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="border rounded-lg p-3"
           />
 
           <input
-            placeholder="Short Name (e.g. HAM)"
+            placeholder="Short Name"
             value={shortName}
-            onChange={(e)=>setShortName(e.target.value)}
+            onChange={(e) => setShortName(e.target.value)}
+            className="border rounded-lg p-3"
+          />
+
+          <input
+            placeholder="Address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="border rounded-lg p-3"
+          />
+
+          <input
+            placeholder="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="border rounded-lg p-3"
+          />
+
+          <input
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="border rounded-lg p-3"
+          />
+
+          <input
+            placeholder="Website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
             className="border rounded-lg p-3"
           />
 
@@ -60,55 +116,92 @@ export default function Clubs() {
 
         <button
           onClick={handleAddClub}
-          className="mt-4 bg-blue-900 text-white px-6 py-3 rounded-lg"
+          className="mt-6 bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg transition"
         >
           Add Club
         </button>
 
       </div>
 
-      <div className="bg-white rounded-xl shadow">
+      {clubs.length === 0 ? (
 
-        <table className="w-full">
+        <div className="bg-white rounded-xl shadow p-10 text-center text-slate-500">
+          No clubs yet.
+        </div>
 
-          <thead className="bg-slate-100">
+      ) : (
 
-            <tr>
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-              <th className="text-left p-4">Club</th>
+          {clubs.map((club) => {
 
-              <th className="text-left">Short Name</th>
+            const clubPlayers = players.filter(
+              (p) => p.clubId === club.id && p.isActive
+            );
 
-            </tr>
+            const highestRated =
+              clubPlayers.length === 0
+                ? "-"
+                : Math.max(...clubPlayers.map((p) => p.rating));
 
-          </thead>
+            return (
 
-          <tbody>
-
-            {clubs.map((club)=>(
-              <tr
+              <Link
                 key={club.id}
-                className="border-t"
+                to={`/clubs/${club.id}`}
+                className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 block"
               >
 
-                <td className="p-4">
+                <h2 className="text-2xl font-bold">
                   {club.name}
-                </td>
+                </h2>
 
-                <td>
+                <p className="text-slate-500 mt-1">
                   {club.shortName}
-                </td>
+                </p>
 
-              </tr>
-            ))}
+                <div className="grid grid-cols-2 gap-4 mt-6">
 
-          </tbody>
+                  <div>
 
-        </table>
+                    <p className="text-sm text-slate-500">
+                      Players
+                    </p>
 
-      </div>
+                    <p className="text-3xl font-bold">
+                      {clubPlayers.length}
+                    </p>
+
+                  </div>
+
+                  <div>
+
+                    <p className="text-sm text-slate-500">
+                      Top Rating
+                    </p>
+
+                    <p className="text-3xl font-bold">
+                      {highestRated}
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <p className="text-blue-700 font-semibold mt-6">
+                  Open →
+                </p>
+
+              </Link>
+
+            );
+
+          })}
+
+        </div>
+
+      )}
 
     </div>
   );
-
 }
