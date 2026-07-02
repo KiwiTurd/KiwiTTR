@@ -1,9 +1,31 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { getTopRatedPlayers } from "../../services/statisticsService";
+import type { Player } from "../../types/player";
+
+import { getPlayers } from "../../services/supabase/playerService";
 
 export default function TopRatedPlayersCard() {
-  const players = getTopRatedPlayers();
+  const [players, setPlayers] = useState<Player[]>([]);
+
+  useEffect(() => {
+    void loadPlayers();
+  }, []);
+
+  async function loadPlayers() {
+    try {
+      const data = await getPlayers();
+
+      setPlayers(
+        data
+          .filter((player) => player.isActive)
+          .sort((a, b) => b.rating - a.rating)
+          .slice(0, 5)
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   const medals = ["🥇", "🥈", "🥉"];
 
@@ -16,47 +38,43 @@ export default function TopRatedPlayersCard() {
 
       <div className="space-y-3">
 
-        {players.length === 0 && (
+        {players.length === 0 ? (
+
           <p className="text-slate-500">
             No players yet.
           </p>
+
+        ) : (
+
+          players.map((player, index) => (
+
+            <Link
+              key={player.id}
+              to={`/players/${player.id}`}
+              className="flex justify-between items-center rounded-lg px-3 py-3 hover:bg-slate-50 transition"
+            >
+
+              <div className="flex items-center gap-3">
+
+                <span className="w-7 text-xl">
+                  {index < 3 ? medals[index] : index + 1}
+                </span>
+
+                <span className="font-medium">
+                  {player.firstName} {player.lastName}
+                </span>
+
+              </div>
+
+              <span className="font-bold text-lg">
+                {player.rating}
+              </span>
+
+            </Link>
+
+          ))
+
         )}
-
-        {players.map((player, index) => (
-
-          <Link
-            key={player.id}
-            to={`/players/${player.id}`}
-            className="flex justify-between items-center rounded-lg px-3 py-3 hover:bg-slate-50 transition"
-          >
-
-            <div className="flex items-center gap-3">
-
-              <span className="w-7 text-xl">
-
-                {index < 3
-                  ? medals[index]
-                  : index + 1}
-
-              </span>
-
-              <span className="font-medium">
-
-                {player.firstName} {player.lastName}
-
-              </span>
-
-            </div>
-
-            <span className="font-bold text-lg">
-
-              {player.rating}
-
-            </span>
-
-          </Link>
-
-        ))}
 
       </div>
 

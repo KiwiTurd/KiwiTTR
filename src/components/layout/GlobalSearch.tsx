@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getPlayers } from "../../services/playerService";
-import { getClubs } from "../../services/clubService";
-import { getEvents } from "../../services/eventService";
+import { getPlayers } from "../../services/supabase/playerService";
+import { getClubs } from "../../services/supabase/clubService";
+import { getEvents } from "../../services/supabase/eventService";
 
 export default function GlobalSearch() {
   const navigate = useNavigate();

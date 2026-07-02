@@ -1,15 +1,61 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { getEvents } from "../services/eventService";
-import { getMatches } from "../services/matchService";
-import { getPlayer } from "../services/playerService";
+import type { Event } from "../types/event";
+import type { Match } from "../types/match";
+import type { Player } from "../types/player";
+
+import { getEvents } from "../services/supabase/eventService";
+import { getMatches } from "../services/supabase/matchService";
+import { getPlayers } from "../services/supabase/playerService";
 
 export default function EventProfile() {
   const { id } = useParams();
 
-  const event = getEvents().find(
-    (e) => e.id === id
-  );
+  const [event, setEvent] = useState<Event | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void loadData();
+  }, [id]);
+
+  async function loadData() {
+    if (!id) return;
+
+    try {
+      const [events, matchData, playerData] =
+        await Promise.all([
+          getEvents(),
+          getMatches(),
+          getPlayers(),
+        ]);
+
+      setEvent(events.find((e) => e.id === id) ?? null);
+
+      setMatches(
+        matchData.filter((m) => m.eventId === id)
+      );
+
+      setPlayers(playerData);
+
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold">
+          Loading...
+        </h1>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -29,10 +75,6 @@ export default function EventProfile() {
       </div>
     );
   }
-
-  const matches = getMatches().filter(
-    (m) => m.eventId === event.id
-  );
 
   const standings = new Map<
     string,
@@ -59,13 +101,13 @@ export default function EventProfile() {
     }
 
     standings.get(match.winnerId)!.wins++;
-
     standings.get(match.loserId)!.losses++;
 
   });
 
-  const ranking = [...standings.entries()]
-    .sort((a, b) => b[1].wins - a[1].wins);
+  const ranking = [...standings.entries()].sort(
+    (a, b) => b[1].wins - a[1].wins
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -80,15 +122,11 @@ export default function EventProfile() {
       <div className="bg-white rounded-xl shadow p-8">
 
         <h1 className="text-5xl font-bold">
-
           🏓 {event.name}
-
         </h1>
 
         <p className="text-slate-500 mt-3">
-
           {new Date(event.date).toLocaleDateString()}
-
         </p>
 
       </div>
@@ -102,9 +140,7 @@ export default function EventProfile() {
           </p>
 
           <h2 className="text-5xl font-bold mt-2">
-
             {standings.size}
-
           </h2>
 
         </div>
@@ -116,9 +152,7 @@ export default function EventProfile() {
           </p>
 
           <h2 className="text-5xl font-bold mt-2">
-
             {matches.length}
-
           </h2>
 
         </div>
@@ -128,17 +162,13 @@ export default function EventProfile() {
       <div className="bg-white rounded-xl shadow p-8">
 
         <h2 className="text-2xl font-bold mb-6">
-
           Standings
-
         </h2>
 
         {ranking.length === 0 ? (
 
           <p className="text-slate-500">
-
             No matches yet.
-
           </p>
 
         ) : (
@@ -149,21 +179,10 @@ export default function EventProfile() {
 
               <tr className="border-b">
 
-                <th className="text-left pb-3">
-                  Rank
-                </th>
-
-                <th className="text-left pb-3">
-                  Player
-                </th>
-
-                <th className="text-center pb-3">
-                  W
-                </th>
-
-                <th className="text-center pb-3">
-                  L
-                </th>
+                <th className="text-left pb-3">Rank</th>
+                <th className="text-left pb-3">Player</th>
+                <th className="text-center pb-3">W</th>
+                <th className="text-center pb-3">L</th>
 
               </tr>
 
@@ -173,18 +192,18 @@ export default function EventProfile() {
 
               {ranking.map(([playerId, stats], index) => {
 
-                const player = getPlayer(playerId);
+                const player = players.find(
+                  (p) => p.id === playerId
+                );
 
                 return (
 
                   <tr
                     key={playerId}
                     className="border-b"
-
                   >
 
                     <td className="py-3">
-
                       {index === 0
                         ? "🥇"
                         : index === 1
@@ -192,27 +211,20 @@ export default function EventProfile() {
                         : index === 2
                         ? "🥉"
                         : index + 1}
-
                     </td>
 
                     <td>
-
                       {player
                         ? `${player.firstName} ${player.lastName}`
                         : "Unknown"}
-
                     </td>
 
                     <td className="text-center">
-
                       {stats.wins}
-
                     </td>
 
                     <td className="text-center">
-
                       {stats.losses}
-
                     </td>
 
                   </tr>

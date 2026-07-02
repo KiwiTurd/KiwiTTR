@@ -5,7 +5,7 @@ import type { Club } from "../types/club";
 import {
   getClub,
   updateClub,
-} from "../services/clubService";
+} from "../services/supabase/clubService";
 
 export default function useClub(
   id: string | undefined

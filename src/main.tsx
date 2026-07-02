@@ -6,8 +6,15 @@ import "./index.css";
 
 import { router } from "./router";
 
+import { AuthProvider } from "./context/AuthContext";
+import { ProfileProvider } from "./context/ProfileContext";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <ProfileProvider>
+        <RouterProvider router={router} />
+      </ProfileProvider>
+    </AuthProvider>
   </StrictMode>
 );

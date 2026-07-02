@@ -1,0 +1,71 @@
+export default function Admin() {
+  return (
+    <div className="max-w-7xl mx-auto space-y-8">
+
+      <div>
+
+        <h1 className="text-4xl font-bold">
+          Admin Console
+        </h1>
+
+        <p className="text-slate-500 mt-2">
+          Manage KiwiTTR
+        </p>
+
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-6">
+
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="font-bold text-lg">
+            Users
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+            Manage accounts and roles.
+          </p>
+
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="font-bold text-lg">
+            Clubs
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+            Manage clubs.
+          </p>
+
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="font-bold text-lg">
+            Players
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+            Manage player records.
+          </p>
+
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="font-bold text-lg">
+            Events
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+            Manage tournaments and events.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

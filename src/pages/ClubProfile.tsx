@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { Club } from "../types/club";
-
-import { getClub, updateClub } from "../services/clubService";
+import type { Player } from "../types/player";
 
 import {
-  getClubAverageRating,
-  getClubMatchCount,
-  getClubPlayerCount,
-  getClubRankings,
-  getClubTopPlayer,
-} from "../services/statisticsService";
+  getClub,
+  updateClub,
+} from "../services/supabase/clubService";
+
+import {
+  getPlayers,
+} from "../services/supabase/playerService";
 
 import PageHeader from "../components/ui/PageHeader";
 import StatCard from "../components/ui/StatCard";
@@ -23,10 +23,73 @@ import EditClubModal from "../components/clubs/EditClubModal";
 export default function ClubProfile() {
   const { id } = useParams();
 
-  const [editing, setEditing] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [club, setClub] = useState<Club | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
 
-  const club = id ? getClub(id) : undefined;
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    void loadData();
+  }, [id]);
+
+  async function loadData() {
+    if (!id) return;
+
+    try {
+      const [clubData, playerData] = await Promise.all([
+        getClub(id),
+        getPlayers(),
+      ]);
+
+      setClub(clubData);
+      setPlayers(playerData);
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to load club.");
+    }
+  }
+
+  async function handleSave(updatedClub: Club) {
+    try {
+      await updateClub(updatedClub);
+
+      setEditing(false);
+
+      await loadData();
+
+    } catch (error) {
+      console.error(error);
+      alert("Unable to save club.");
+    }
+  }
+
+  const rankings = useMemo(() => {
+    if (!club) return [];
+
+    return players
+      .filter(
+        (player) =>
+          player.clubId === club.id &&
+          player.isActive
+      )
+      .sort((a, b) => b.rating - a.rating);
+
+  }, [players, club]);
+
+  const averageRating = useMemo(() => {
+    if (rankings.length === 0) return "-";
+
+    return Math.round(
+      rankings.reduce(
+        (sum, player) => sum + player.rating,
+        0
+      ) / rankings.length
+    );
+
+  }, [rankings]);
+
+  const topPlayer = rankings[0];
 
   if (!club) {
     return (
@@ -47,20 +110,8 @@ export default function ClubProfile() {
     );
   }
 
-  const rankings = getClubRankings(club.id);
-  const topPlayer = getClubTopPlayer(club.id);
-
-  function handleSave(updatedClub: Club) {
-    updateClub(updatedClub);
-
-    setRefreshKey((k) => k + 1);
-  }
-
   return (
-    <div
-      key={refreshKey}
-      className="max-w-7xl mx-auto space-y-8"
-    >
+    <div className="max-w-7xl mx-auto space-y-8">
 
       <Link
         to="/clubs"
@@ -134,16 +185,16 @@ export default function ClubProfile() {
 
       </Card>
 
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
 
         <StatCard
           title="Players"
-          value={getClubPlayerCount(club.id)}
+          value={rankings.length}
         />
 
         <StatCard
           title="Average Rating"
-          value={getClubAverageRating(club.id)}
+          value={averageRating}
         />
 
         <StatCard
@@ -155,17 +206,12 @@ export default function ClubProfile() {
           }
         />
 
-        <StatCard
-          title="Matches"
-          value={getClubMatchCount(club.id)}
-        />
-
       </div>
 
       <Card className="p-8">
 
         <h2 className="text-2xl font-bold mb-6">
-          Current Club Rankings
+          Club Rankings
         </h2>
 
         {rankings.length === 0 ? (

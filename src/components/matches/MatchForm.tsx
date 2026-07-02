@@ -4,9 +4,9 @@ import type { Event } from "../../types/event";
 import type { MatchSet } from "../../types/match";
 import type { Player } from "../../types/player";
 
-import { getEvents } from "../../services/eventService";
-import { getPlayers } from "../../services/playerService";
-import { recordMatch } from "../../services/matchService";
+import { getEvents } from "../../services/supabase/eventService";
+import { getPlayers } from "../../services/supabase/playerService";
+import { recordMatch } from "../../services/recordMatch";
 
 import SetScoreInput from "./SetScoreInput";
 
@@ -15,7 +15,6 @@ export default function MatchForm() {
   const [events, setEvents] = useState<Event[]>([]);
 
   const [eventId, setEventId] = useState("");
-
   const [player1Id, setPlayer1Id] = useState("");
   const [player2Id, setPlayer2Id] = useState("");
 
@@ -27,12 +26,21 @@ export default function MatchForm() {
   ]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
-  function loadData() {
-    setPlayers(getPlayers());
-    setEvents(getEvents());
+  async function loadData() {
+    try {
+      const [playerData, eventData] = await Promise.all([
+        getPlayers(),
+        getEvents(),
+      ]);
+
+      setPlayers(playerData);
+      setEvents(eventData);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   function updateSet(
@@ -68,10 +76,7 @@ export default function MatchForm() {
       const max = Math.max(set.player1Score, set.player2Score);
       const min = Math.min(set.player1Score, set.player2Score);
 
-      // Ignore incomplete sets
       if (max < 11) return;
-
-      // Must win by 2
       if (max - min < 2) return;
 
       if (set.player1Score > set.player2Score) {
@@ -101,7 +106,7 @@ export default function MatchForm() {
     };
   }, [sets, player1Id, player2Id, players]);
 
-  function handleRecordMatch() {
+  async function handleRecordMatch() {
     if (!eventId) {
       alert("Please select an event.");
       return;
@@ -123,7 +128,7 @@ export default function MatchForm() {
     }
 
     try {
-      recordMatch(
+      await recordMatch(
         eventId,
         player1Id,
         player2Id,
@@ -143,9 +148,11 @@ export default function MatchForm() {
         },
       ]);
 
-      loadData();
+      await loadData();
 
     } catch (error) {
+      console.error(error);
+
       if (error instanceof Error) {
         alert(error.message);
       } else {
@@ -170,10 +177,7 @@ export default function MatchForm() {
           <option value="">Select Event</option>
 
           {events.map((event) => (
-            <option
-              key={event.id}
-              value={event.id}
-            >
+            <option key={event.id} value={event.id}>
               {event.name}
             </option>
           ))}
@@ -193,10 +197,7 @@ export default function MatchForm() {
           <option value="">Select Player</option>
 
           {players.map((player) => (
-            <option
-              key={player.id}
-              value={player.id}
-            >
+            <option key={player.id} value={player.id}>
               {player.firstName} {player.lastName} ({player.rating})
             </option>
           ))}
@@ -216,10 +217,7 @@ export default function MatchForm() {
           <option value="">Select Player</option>
 
           {players.map((player) => (
-            <option
-              key={player.id}
-              value={player.id}
-            >
+            <option key={player.id} value={player.id}>
               {player.firstName} {player.lastName} ({player.rating})
             </option>
           ))}
@@ -251,29 +249,17 @@ export default function MatchForm() {
       </button>
 
       <div className="bg-slate-100 rounded-lg p-5">
-
         <h2 className="text-xl font-bold mb-3">
           Live Match Summary
         </h2>
 
-        <div className="space-y-2">
+        <p>
+          Score: <strong>{summary.player1Sets} - {summary.player2Sets}</strong>
+        </p>
 
-          <p>
-            Score:{" "}
-            <strong>
-              {summary.player1Sets} - {summary.player2Sets}
-            </strong>
-          </p>
-
-          <p>
-            Winner:{" "}
-            <strong>
-              {summary.winner || "-"}
-            </strong>
-          </p>
-
-        </div>
-
+        <p>
+          Winner: <strong>{summary.winner || "-"}</strong>
+        </p>
       </div>
 
       <button

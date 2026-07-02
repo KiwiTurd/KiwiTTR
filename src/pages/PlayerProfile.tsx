@@ -1,27 +1,69 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { getPlayer } from "../services/playerService";
-import { getClubs } from "../services/clubService";
-import { getMatches } from "../services/matchService";
-import { getEvents } from "../services/eventService";
+import type { Player } from "../types/player";
+import type { Club } from "../types/club";
 
-import {
-  getClubRank,
-  getNationalRank,
-  getWinPercentage,
-} from "../services/statisticsService";
-
-import RecentMatchCard from "../components/player/RecentMatchCard";
-import RatingGraph from "../components/player/RatingGraph";
+import { getPlayer } from "../services/supabase/playerService";
+import { getClubs } from "../services/supabase/clubService";
 
 export default function PlayerProfile() {
   const { id } = useParams();
 
-  const player = id ? getPlayer(id) : undefined;
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [club, setClub] = useState<Club | null>(null);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void loadData();
+  }, [id]);
+
+  async function loadData() {
+    if (!id) return;
+
+    try {
+      setLoading(true);
+
+      const playerData = await getPlayer(id);
+
+      if (!playerData) {
+        setPlayer(null);
+        setLoading(false);
+        return;
+      }
+
+      setPlayer(playerData);
+
+      const clubs = await getClubs();
+
+      const playerClub =
+        clubs.find((c) => c.id === playerData.clubId) ?? null;
+
+      setClub(playerClub);
+
+    } catch (error) {
+      console.error(error);
+      alert("Unable to load player.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold">
+          Loading...
+        </h1>
+      </div>
+    );
+  }
 
   if (!player) {
     return (
       <div className="max-w-6xl mx-auto">
+
         <h1 className="text-4xl font-bold mb-4">
           Player Not Found
         </h1>
@@ -32,28 +74,18 @@ export default function PlayerProfile() {
         >
           ← Back to Rankings
         </Link>
+
       </div>
     );
   }
 
-  const clubs = getClubs();
-  const events = getEvents();
-
-  const club = clubs.find(
-    (c) => c.id === player.clubId
-  );
-
-  const matches = getMatches()
-    .filter(
-      (m) =>
-        m.player1Id === player.id ||
-        m.player2Id === player.id
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.playedAt).getTime() -
-        new Date(a.playedAt).getTime()
-    );
+  const winPercentage =
+    player.matchesPlayed === 0
+      ? 0
+      : (
+          (player.wins / player.matchesPlayed) *
+          100
+        ).toFixed(1);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -77,9 +109,10 @@ export default function PlayerProfile() {
 
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-4 gap-4">
 
         <div className="bg-white rounded-xl shadow p-6 text-center">
+
           <p className="text-slate-500">
             Rating
           </p>
@@ -87,36 +120,43 @@ export default function PlayerProfile() {
           <p className="text-4xl font-bold mt-2">
             {player.rating}
           </p>
+
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 text-center">
+
           <p className="text-slate-500">
-            NZ Rank
+            Highest Rating
           </p>
 
           <p className="text-4xl font-bold mt-2">
-            #{getNationalRank(player.id)}
+            {player.highestRating}
           </p>
+
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 text-center">
+
           <p className="text-slate-500">
-            Club Rank
+            Matches
           </p>
 
           <p className="text-4xl font-bold mt-2">
-            #{getClubRank(player.id)}
+            {player.matchesPlayed}
           </p>
+
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 text-center">
+
           <p className="text-slate-500">
             Win %
           </p>
 
           <p className="text-4xl font-bold mt-2">
-            {getWinPercentage(player.id)}%
+            {winPercentage}%
           </p>
+
         </div>
 
       </div>
@@ -129,16 +169,6 @@ export default function PlayerProfile() {
 
         <div className="grid md:grid-cols-2 gap-y-4">
 
-          <p>Highest Rating</p>
-          <p className="font-semibold">
-            {player.highestRating}
-          </p>
-
-          <p>Matches Played</p>
-          <p className="font-semibold">
-            {player.matchesPlayed}
-          </p>
-
           <p>Wins</p>
           <p className="font-semibold">
             {player.wins}
@@ -149,64 +179,42 @@ export default function PlayerProfile() {
             {player.losses}
           </p>
 
+          <p>Provisional Matches Remaining</p>
+          <p className="font-semibold">
+            {player.provisionalMatchesRemaining}
+          </p>
+
+          <p>Status</p>
+          <p className="font-semibold">
+            {player.isActive ? "Active" : "Inactive"}
+          </p>
+
+          <p>Created</p>
+          <p className="font-semibold">
+            {new Date(player.createdAt).toLocaleDateString()}
+          </p>
+
         </div>
 
       </div>
 
-      <RatingGraph playerId={player.id} />
-
       <div className="bg-white rounded-xl shadow p-8">
 
-        <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold mb-4">
+          Coming Soon
+        </h2>
 
-          <h2 className="text-2xl font-bold">
-            Recent Matches
-          </h2>
+        <ul className="list-disc ml-6 space-y-2 text-slate-600">
 
-          <span className="text-slate-500">
-            {matches.length} Matches
-          </span>
+          <li>📈 Rating History</li>
+          <li>🏓 Recent Matches</li>
+          <li>🥇 National Ranking</li>
+          <li>🏆 Club Ranking</li>
+          <li>🤝 Head-to-Head Records</li>
+          <li>📅 Upcoming Events</li>
+          <li>🔥 Win/Loss Streaks</li>
 
-        </div>
-
-        {matches.length === 0 ? (
-
-          <p className="text-slate-500">
-            No matches recorded.
-          </p>
-
-        ) : (
-
-          <div className="space-y-4">
-
-            {matches.map((match) => {
-
-              const opponentId =
-                match.player1Id === player.id
-                  ? match.player2Id
-                  : match.player1Id;
-
-              const opponent = getPlayer(opponentId);
-
-              const event = events.find(
-                (e) => e.id === match.eventId
-              );
-
-              return (
-                <RecentMatchCard
-                  key={match.id}
-                  match={match}
-                  player={player}
-                  opponent={opponent}
-                  event={event}
-                />
-              );
-
-            })}
-
-          </div>
-
-        )}
+        </ul>
 
       </div>
 

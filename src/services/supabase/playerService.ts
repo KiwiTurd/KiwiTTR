@@ -29,8 +29,7 @@ function fromRow(row: PlayerRow): Player {
     wins: row.wins,
     losses: row.losses,
     matchesPlayed: row.matches_played,
-    provisionalMatchesRemaining:
-      row.provisional_matches_remaining,
+    provisionalMatchesRemaining: row.provisional_matches_remaining,
     ratingReliability: Number(row.rating_reliability),
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -48,8 +47,7 @@ function toRow(player: Player) {
     wins: player.wins,
     losses: player.losses,
     matches_played: player.matchesPlayed,
-    provisional_matches_remaining:
-      player.provisionalMatchesRemaining,
+    provisional_matches_remaining: player.provisionalMatchesRemaining,
     rating_reliability: player.ratingReliability,
     is_active: player.isActive,
     created_at: player.createdAt,
@@ -64,36 +62,46 @@ export async function getPlayers(): Promise<Player[]> {
 
   if (error) {
     console.error(error);
-    return [];
+    throw error;
   }
 
   return (data as PlayerRow[]).map(fromRow);
 }
 
-export async function getPlayer(
-  id: string
-): Promise<Player | null> {
+export async function getPlayer(id: string): Promise<Player | null> {
   const { data, error } = await supabase
     .from("players")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(error);
-    return null;
+    throw error;
   }
 
-  return fromRow(data as PlayerRow);
+  return data ? fromRow(data as PlayerRow) : null;
 }
 
 export async function addPlayer(player: Player) {
-  const { error } = await supabase
+  const row = toRow(player);
+
+  console.log("Sending player to Supabase:", row);
+
+  const { data, error } = await supabase
     .from("players")
-    .insert(toRow(player));
+    .insert(row)
+    .select();
+
+  console.log("Response:", data);
 
   if (error) {
-    console.error(error);
+    console.error("Supabase insert error:", error);
+
+    alert(
+      `${error.message}\n\n${error.details ?? ""}\n\n${error.hint ?? ""}`
+    );
+
     throw error;
   }
 }
@@ -104,10 +112,7 @@ export async function updatePlayer(player: Player) {
     .update(toRow(player))
     .eq("id", player.id);
 
-  if (error) {
-    console.error(error);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 export async function deletePlayer(id: string) {
@@ -116,8 +121,5 @@ export async function deletePlayer(id: string) {
     .delete()
     .eq("id", id);
 
-  if (error) {
-    console.error(error);
-    throw error;
-  }
+  if (error) throw error;
 }

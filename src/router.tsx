@@ -13,8 +13,16 @@ import Events from "./pages/Events";
 import EventProfile from "./pages/EventProfile";
 import Simulator from "./pages/Simulator";
 import Settings from "./pages/Settings";
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 export const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <Login />,
+  },
   {
     path: "/",
     element: <AppLayout />,
@@ -24,20 +32,44 @@ export const router = createBrowserRouter([
         element: <Dashboard />,
       },
       {
+        path: "admin",
+        element: (
+          <ProtectedRoute>
+            <Admin />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "clubs",
-        element: <Clubs />,
+        element: (
+          <ProtectedRoute>
+            <Clubs />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "clubs/:id",
-        element: <ClubProfile />,
+        element: (
+          <ProtectedRoute>
+            <ClubProfile />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "players",
-        element: <Players />,
+        element: (
+          <ProtectedRoute>
+            <Players />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "players/:id",
-        element: <PlayerProfile />,
+        element: (
+          <ProtectedRoute>
+            <PlayerProfile />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "rankings",
@@ -45,15 +77,27 @@ export const router = createBrowserRouter([
       },
       {
         path: "matches",
-        element: <Matches />,
+        element: (
+          <ProtectedRoute>
+            <Matches />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "events",
-        element: <Events />,
+        element: (
+          <ProtectedRoute>
+            <Events />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "events/:id",
-        element: <EventProfile />,
+        element: (
+          <ProtectedRoute>
+            <EventProfile />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "simulator",
@@ -61,7 +105,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "settings",
-        element: <Settings />,
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

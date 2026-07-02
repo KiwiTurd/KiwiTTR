@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
+
 import type { Player } from "../types/player";
 import type { Club } from "../types/club";
 
 import {
   addPlayer,
   getPlayers,
-} from "../services/playerService";
+} from "../services/supabase/playerService";
 
-import { getClubs } from "../services/clubService";
+import {
+  getClubs,
+} from "../services/supabase/clubService";
 
 export default function Players() {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -17,53 +20,81 @@ export default function Players() {
   const [lastName, setLastName] = useState("");
   const [clubId, setClubId] = useState("");
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
-  function loadData() {
-    setPlayers(getPlayers());
-    setClubs(getClubs());
+  async function loadData() {
+    try {
+      setLoading(true);
+
+      const [playerData, clubData] = await Promise.all([
+        getPlayers(),
+        getClubs(),
+      ]);
+
+      setPlayers(playerData);
+      setClubs(clubData);
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to load players.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleAddPlayer() {
+  async function handleAddPlayer() {
     if (!firstName.trim() || !lastName.trim() || !clubId) {
       alert("Please complete all fields.");
       return;
     }
 
-    const startingRating = 1500;
+    setSaving(true);
 
-    const newPlayer: Player = {
-      id: crypto.randomUUID(),
+    try {
+      const startingRating = 1500;
 
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
+      const newPlayer: Player = {
+        id: crypto.randomUUID(),
 
-      clubId,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
 
-      rating: startingRating,
-      highestRating: startingRating,
+        clubId,
 
-      wins: 0,
-      losses: 0,
-      matchesPlayed: 0,
+        rating: startingRating,
+        highestRating: startingRating,
 
-      provisionalMatchesRemaining: 10,
-      ratingReliability: 0,
+        wins: 0,
+        losses: 0,
+        matchesPlayed: 0,
 
-      isActive: true,
+        provisionalMatchesRemaining: 10,
+        ratingReliability: 0,
 
-      createdAt: new Date().toISOString(),
-    };
+        isActive: true,
 
-    addPlayer(newPlayer);
+        createdAt: new Date().toISOString(),
+      };
 
-    loadData();
+      await addPlayer(newPlayer);
 
-    setFirstName("");
-    setLastName("");
-    setClubId("");
+      await loadData();
+
+      setFirstName("");
+      setLastName("");
+      setClubId("");
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to add player.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -96,7 +127,9 @@ export default function Players() {
             onChange={(e) => setClubId(e.target.value)}
             className="border rounded-lg p-3"
           >
-            <option value="">Select Club</option>
+            <option value="">
+              Select Club
+            </option>
 
             {clubs.map((club) => (
               <option
@@ -113,9 +146,10 @@ export default function Players() {
 
         <button
           onClick={handleAddPlayer}
-          className="mt-4 bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg transition"
+          disabled={saving}
+          className="mt-4 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
         >
-          Add Player
+          {saving ? "Adding..." : "Add Player"}
         </button>
 
       </div>
@@ -127,82 +161,131 @@ export default function Players() {
           <thead className="bg-slate-100">
 
             <tr>
-              <th className="text-left p-4">Player</th>
-              <th className="text-left">Club</th>
-              <th className="text-left">Rating</th>
-              <th className="text-left">Highest</th>
-              <th className="text-left">W</th>
-              <th className="text-left">L</th>
-              <th className="text-left">Status</th>
+
+              <th className="text-left p-4">
+                Player
+              </th>
+
+              <th className="text-left">
+                Club
+              </th>
+
+              <th className="text-left">
+                Rating
+              </th>
+
+              <th className="text-left">
+                Highest
+              </th>
+
+              <th className="text-left">
+                W
+              </th>
+
+              <th className="text-left">
+                L
+              </th>
+
+              <th className="text-left">
+                Status
+              </th>
+
             </tr>
 
           </thead>
 
           <tbody>
 
-            {players.length === 0 && (
+            {loading ? (
+
               <tr>
+
+                <td
+                  colSpan={7}
+                  className="text-center py-10 text-slate-500"
+                >
+                  Loading players...
+                </td>
+
+              </tr>
+
+            ) : players.length === 0 ? (
+
+              <tr>
+
                 <td
                   colSpan={7}
                   className="text-center py-10 text-slate-500"
                 >
                   No players yet.
                 </td>
+
               </tr>
+
+            ) : (
+
+              players.map((player) => {
+
+                const club = clubs.find(
+                  (c) => c.id === player.clubId
+                );
+
+                return (
+
+                  <tr
+                    key={player.id}
+                    className="border-t hover:bg-slate-50"
+                  >
+
+                    <td className="p-4 font-medium">
+                      {player.firstName} {player.lastName}
+                    </td>
+
+                    <td>
+                      {club?.name ?? "-"}
+                    </td>
+
+                    <td>
+                      {player.rating}
+                    </td>
+
+                    <td>
+                      {player.highestRating}
+                    </td>
+
+                    <td>
+                      {player.wins}
+                    </td>
+
+                    <td>
+                      {player.losses}
+                    </td>
+
+                    <td>
+
+                      {player.isActive ? (
+
+                        <span className="text-green-600 font-medium">
+                          Active
+                        </span>
+
+                      ) : (
+
+                        <span className="text-red-600 font-medium">
+                          Inactive
+                        </span>
+
+                      )}
+
+                    </td>
+
+                  </tr>
+
+                );
+
+              })
+
             )}
-
-            {players.map((player) => {
-
-              const club = clubs.find(
-                (c) => c.id === player.clubId
-              );
-
-              return (
-                <tr
-                  key={player.id}
-                  className="border-t hover:bg-slate-50"
-                >
-
-                  <td className="p-4 font-medium">
-                    {player.firstName} {player.lastName}
-                  </td>
-
-                  <td>
-                    {club?.name ?? "-"}
-                  </td>
-
-                  <td>
-                    {player.rating}
-                  </td>
-
-                  <td>
-                    {player.highestRating}
-                  </td>
-
-                  <td>
-                    {player.wins}
-                  </td>
-
-                  <td>
-                    {player.losses}
-                  </td>
-
-                  <td>
-                    {player.isActive ? (
-                      <span className="text-green-600 font-medium">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="text-red-600 font-medium">
-                        Inactive
-                      </span>
-                    )}
-                  </td>
-
-                </tr>
-              );
-
-            })}
 
           </tbody>
 

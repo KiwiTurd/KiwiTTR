@@ -4,36 +4,54 @@ import { Link } from "react-router-dom";
 import type { Player } from "../types/player";
 import type { Club } from "../types/club";
 
-import { getPlayers } from "../services/playerService";
-import { getClubs } from "../services/clubService";
+import { getPlayers } from "../services/supabase/playerService";
+import { getClubs } from "../services/supabase/clubService";
 
 export default function Rankings() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
 
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [clubFilter, setClubFilter] = useState("");
 
   useEffect(() => {
-    setPlayers(getPlayers());
-    setClubs(getClubs());
+    void loadData();
   }, []);
+
+  async function loadData() {
+    try {
+      setLoading(true);
+
+      const [playerData, clubData] = await Promise.all([
+        getPlayers(),
+        getClubs(),
+      ]);
+
+      setPlayers(playerData);
+      setClubs(clubData);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to load rankings.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const rankings = useMemo(() => {
     return players
       .filter((player) => player.isActive)
-      .filter((player) => {
-        if (!clubFilter) return true;
-        return player.clubId === clubFilter;
-      })
-      .filter((player) => {
-        const name =
-          `${player.firstName} ${player.lastName}`.toLowerCase();
-
-        return name.includes(search.toLowerCase());
-      })
+      .filter((player) =>
+        !clubFilter ? true : player.clubId === clubFilter
+      )
+      .filter((player) =>
+        `${player.firstName} ${player.lastName}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      )
       .sort((a, b) => b.rating - a.rating);
-  }, [players, search, clubFilter]);
+  }, [players, clubFilter, search]);
 
   function getClubName(clubId: string) {
     return clubs.find((c) => c.id === clubId)?.name ?? "-";
@@ -98,6 +116,7 @@ export default function Rankings() {
                 {club.name}
               </option>
             ))}
+
           </select>
 
         </div>
@@ -146,77 +165,96 @@ export default function Rankings() {
 
           <tbody>
 
-            {rankings.length === 0 && (
+            {loading ? (
+
               <tr>
+
+                <td
+                  colSpan={7}
+                  className="text-center py-10 text-slate-500"
+                >
+                  Loading rankings...
+                </td>
+
+              </tr>
+
+            ) : rankings.length === 0 ? (
+
+              <tr>
+
                 <td
                   colSpan={7}
                   className="text-center py-10 text-slate-500"
                 >
                   No players found.
                 </td>
+
               </tr>
+
+            ) : (
+
+              rankings.map((player, index) => {
+
+                const matches =
+                  player.wins + player.losses;
+
+                const winPercentage =
+                  matches === 0
+                    ? "-"
+                    : `${(
+                        (player.wins / matches) *
+                        100
+                      ).toFixed(1)}%`;
+
+                return (
+
+                  <tr
+                    key={player.id}
+                    className="border-t hover:bg-slate-50 transition"
+                  >
+
+                    <td className="p-4 font-bold text-lg">
+                      {getRankDisplay(index + 1)}
+                    </td>
+
+                    <td className="font-medium">
+
+                      <Link
+                        to={`/players/${player.id}`}
+                        className="text-blue-700 hover:text-blue-900 hover:underline"
+                      >
+                        {player.firstName} {player.lastName}
+                      </Link>
+
+                    </td>
+
+                    <td>
+                      {getClubName(player.clubId)}
+                    </td>
+
+                    <td className="text-center font-bold">
+                      {player.rating}
+                    </td>
+
+                    <td className="text-center">
+                      {player.wins}
+                    </td>
+
+                    <td className="text-center">
+                      {player.losses}
+                    </td>
+
+                    <td className="text-center">
+                      {winPercentage}
+                    </td>
+
+                  </tr>
+
+                );
+
+              })
+
             )}
-
-            {rankings.map((player, index) => {
-
-              const matches =
-                player.wins + player.losses;
-
-              const winPercentage =
-                matches === 0
-                  ? "-"
-                  : `${(
-                      (player.wins / matches) *
-                      100
-                    ).toFixed(1)}%`;
-
-              return (
-
-                <tr
-                  key={player.id}
-                  className="border-t hover:bg-slate-50 transition"
-                >
-
-                  <td className="p-4 font-bold text-lg">
-                    {getRankDisplay(index + 1)}
-                  </td>
-
-                  <td className="font-medium">
-
-                    <Link
-                      to={`/players/${player.id}`}
-                      className="text-blue-700 hover:text-blue-900 hover:underline"
-                    >
-                      {player.firstName} {player.lastName}
-                    </Link>
-
-                  </td>
-
-                  <td>
-                    {getClubName(player.clubId)}
-                  </td>
-
-                  <td className="text-center font-bold">
-                    {player.rating}
-                  </td>
-
-                  <td className="text-center">
-                    {player.wins}
-                  </td>
-
-                  <td className="text-center">
-                    {player.losses}
-                  </td>
-
-                  <td className="text-center">
-                    {winPercentage}
-                  </td>
-
-                </tr>
-
-              );
-
-            })}
 
           </tbody>
 

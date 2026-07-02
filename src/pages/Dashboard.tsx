@@ -1,49 +1,43 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
-import { getPlayer } from "../services/playerService";
+import type { Player } from "../types/player";
+import type { Club } from "../types/club";
 
-import {
-  getLatestMatch,
-  getActivePlayerCount,
-  getClubCount,
-} from "../services/statisticsService";
+import { getPlayers } from "../services/supabase/playerService";
+import { getClubs } from "../services/supabase/clubService";
 
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
 
 export default function Dashboard() {
-  const latestMatch = getLatestMatch();
+  const { session, loading } = useAuth();
 
-  const winner = latestMatch
-    ? getPlayer(latestMatch.winnerId)
-    : undefined;
-
-  const loser = latestMatch
-    ? getPlayer(latestMatch.loserId)
-    : undefined;
-
-  const [connectionStatus, setConnectionStatus] = useState("Testing...");
-  const [connectionError, setConnectionError] = useState("");
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
 
   useEffect(() => {
-    async function testConnection() {
-      const { error } = await supabase
-        .from("players")
-        .select("*")
-        .limit(1);
-
-      if (error) {
-        setConnectionStatus("❌ Failed");
-        setConnectionError(error.message);
-      } else {
-        setConnectionStatus("✅ Connected");
-      }
-    }
-
-    testConnection();
+    void loadData();
   }, []);
+
+  async function loadData() {
+    try {
+      const [playerData, clubData] = await Promise.all([
+        getPlayers(),
+        getClubs(),
+      ]);
+
+      setPlayers(playerData);
+      setClubs(clubData);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  const activePlayers = players.filter(
+    (player) => player.isActive
+  ).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -71,7 +65,7 @@ export default function Dashboard() {
             </p>
 
             <h2 className="text-5xl font-bold mt-2">
-              {getActivePlayerCount()}
+              {activePlayers}
             </h2>
 
           </div>
@@ -83,7 +77,7 @@ export default function Dashboard() {
             </p>
 
             <h2 className="text-5xl font-bold mt-2">
-              {getClubCount()}
+              {clubs.length}
             </h2>
 
           </div>
@@ -91,17 +85,35 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl shadow p-6">
 
             <p className="text-slate-500">
-              Supabase
+              Authentication
             </p>
 
-            <h2 className="text-xl font-bold mt-2">
-              {connectionStatus}
-            </h2>
+            {loading ? (
 
-            {connectionError && (
-              <p className="text-sm text-red-600 mt-3 break-all">
-                {connectionError}
+              <p className="font-semibold mt-2">
+                Checking...
               </p>
+
+            ) : session ? (
+
+              <div className="space-y-2 mt-2">
+
+                <p className="text-green-600 font-bold">
+                  ✅ Logged In
+                </p>
+
+                <p className="text-sm break-all">
+                  {session.user.email}
+                </p>
+
+              </div>
+
+            ) : (
+
+              <p className="text-red-600 font-bold mt-2">
+                ❌ Not Logged In
+              </p>
+
             )}
 
           </div>
@@ -122,35 +134,9 @@ export default function Dashboard() {
           Latest Match
         </h2>
 
-        {latestMatch && winner && loser ? (
-
-          <div>
-
-            <p className="text-xl font-semibold">
-              {winner.firstName} {winner.lastName}
-            </p>
-
-            <p className="text-slate-500">
-              defeated
-            </p>
-
-            <p className="text-xl font-semibold">
-              {loser.firstName} {loser.lastName}
-            </p>
-
-            <p className="mt-4 text-green-600 font-bold text-lg">
-              +{latestMatch.winnerRatingChange}
-            </p>
-
-          </div>
-
-        ) : (
-
-          <p className="text-slate-500">
-            No matches yet.
-          </p>
-
-        )}
+        <p className="text-slate-500">
+          Coming soon with the new Match Engine.
+        </p>
 
       </div>
 

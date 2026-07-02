@@ -2,12 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { Club } from "../types/club";
+import type { Player } from "../types/player";
 
-import { addClub, getClubs } from "../services/clubService";
-import { getPlayers } from "../services/playerService";
+import {
+  addClub,
+  getClubs,
+} from "../services/supabase/clubService";
+
+import { getPlayers } from "../services/supabase/playerService";
 
 export default function Clubs() {
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
 
   const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
@@ -16,40 +22,88 @@ export default function Clubs() {
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
 
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
-    setClubs(getClubs());
+    void loadData();
   }, []);
 
-  const players = useMemo(() => getPlayers(), []);
+  async function loadData() {
+    try {
+      const [clubData, playerData] = await Promise.all([
+        getClubs(),
+        getPlayers(),
+      ]);
 
-  function handleAddClub() {
-    if (!name.trim()) return;
-
-    const club: Club = {
-      id: crypto.randomUUID(),
-
-      name,
-      shortName,
-
-      address,
-      phone,
-      email,
-      website,
-
-      createdAt: new Date().toISOString(),
-    };
-
-    addClub(club);
-
-    setClubs(getClubs());
-
-    setName("");
-    setShortName("");
-    setAddress("");
-    setPhone("");
-    setEmail("");
-    setWebsite("");
+      setClubs(clubData);
+      setPlayers(playerData);
+    } catch (error) {
+      console.error(error);
+      alert("Unable to load clubs.");
+    }
   }
+
+  async function handleAddClub() {
+    if (!name.trim()) {
+      alert("Club name is required.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const club: Club = {
+        id: crypto.randomUUID(),
+
+        name: name.trim(),
+        shortName: shortName.trim(),
+
+        address: address.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        website: website.trim(),
+
+        createdAt: new Date().toISOString(),
+      };
+
+      await addClub(club);
+
+      await loadData();
+
+      setName("");
+      setShortName("");
+      setAddress("");
+      setPhone("");
+      setEmail("");
+      setWebsite("");
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to add club.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const clubCards = useMemo(() => {
+    return clubs.map((club) => {
+
+      const clubPlayers = players.filter(
+        (p) => p.clubId === club.id && p.isActive
+      );
+
+      const highestRated =
+        clubPlayers.length === 0
+          ? "-"
+          : Math.max(...clubPlayers.map((p) => p.rating));
+
+      return {
+        club,
+        playerCount: clubPlayers.length,
+        highestRated,
+      };
+    });
+  }, [clubs, players]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -116,14 +170,15 @@ export default function Clubs() {
 
         <button
           onClick={handleAddClub}
-          className="mt-6 bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg transition"
+          disabled={saving}
+          className="mt-6 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
         >
-          Add Club
+          {saving ? "Adding..." : "Add Club"}
         </button>
 
       </div>
 
-      {clubs.length === 0 ? (
+      {clubCards.length === 0 ? (
 
         <div className="bg-white rounded-xl shadow p-10 text-center text-slate-500">
           No clubs yet.
@@ -133,70 +188,57 @@ export default function Clubs() {
 
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-          {clubs.map((club) => {
+          {clubCards.map(({ club, playerCount, highestRated }) => (
 
-            const clubPlayers = players.filter(
-              (p) => p.clubId === club.id && p.isActive
-            );
+            <Link
+              key={club.id}
+              to={`/clubs/${club.id}`}
+              className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 block"
+            >
 
-            const highestRated =
-              clubPlayers.length === 0
-                ? "-"
-                : Math.max(...clubPlayers.map((p) => p.rating));
+              <h2 className="text-2xl font-bold">
+                {club.name}
+              </h2>
 
-            return (
+              <p className="text-slate-500 mt-1">
+                {club.shortName}
+              </p>
 
-              <Link
-                key={club.id}
-                to={`/clubs/${club.id}`}
-                className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 block"
-              >
+              <div className="grid grid-cols-2 gap-4 mt-6">
 
-                <h2 className="text-2xl font-bold">
-                  {club.name}
-                </h2>
+                <div>
 
-                <p className="text-slate-500 mt-1">
-                  {club.shortName}
-                </p>
+                  <p className="text-sm text-slate-500">
+                    Players
+                  </p>
 
-                <div className="grid grid-cols-2 gap-4 mt-6">
-
-                  <div>
-
-                    <p className="text-sm text-slate-500">
-                      Players
-                    </p>
-
-                    <p className="text-3xl font-bold">
-                      {clubPlayers.length}
-                    </p>
-
-                  </div>
-
-                  <div>
-
-                    <p className="text-sm text-slate-500">
-                      Top Rating
-                    </p>
-
-                    <p className="text-3xl font-bold">
-                      {highestRated}
-                    </p>
-
-                  </div>
+                  <p className="text-3xl font-bold">
+                    {playerCount}
+                  </p>
 
                 </div>
 
-                <p className="text-blue-700 font-semibold mt-6">
-                  Open →
-                </p>
+                <div>
 
-              </Link>
+                  <p className="text-sm text-slate-500">
+                    Top Rating
+                  </p>
 
-            );
+                  <p className="text-3xl font-bold">
+                    {highestRated}
+                  </p>
 
-          })}
+                </div>
+
+              </div>
+
+              <p className="text-blue-700 font-semibold mt-6">
+                Open →
+              </p>
+
+            </Link>
+
+          ))}
 
         </div>
 
