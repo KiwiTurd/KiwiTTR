@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import type { Player } from "../types/player";
 import type { Club } from "../types/club";
 
-import { addPlayer, getPlayers } from "../services/playerService";
+import {
+  addPlayer,
+  getPlayers,
+} from "../services/playerService";
+
 import { getClubs } from "../services/clubService";
 
 export default function Players() {
@@ -102,6 +106,7 @@ export default function Players() {
                 {club.name}
               </option>
             ))}
+
           </select>
 
         </div>
@@ -196,6 +201,7 @@ export default function Players() {
 
                 </tr>
               );
+
             })}
 
           </tbody>
