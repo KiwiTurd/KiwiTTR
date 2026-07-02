@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
+import { supabase } from "../lib/supabase";
 
 import { getPlayer } from "../services/playerService";
 
@@ -20,6 +23,27 @@ export default function Dashboard() {
   const loser = latestMatch
     ? getPlayer(latestMatch.loserId)
     : undefined;
+
+  const [connectionStatus, setConnectionStatus] = useState("Testing...");
+  const [connectionError, setConnectionError] = useState("");
+
+  useEffect(() => {
+    async function testConnection() {
+      const { error } = await supabase
+        .from("players")
+        .select("*")
+        .limit(1);
+
+      if (error) {
+        setConnectionStatus("❌ Failed");
+        setConnectionError(error.message);
+      } else {
+        setConnectionStatus("✅ Connected");
+      }
+    }
+
+    testConnection();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -64,6 +88,24 @@ export default function Dashboard() {
 
           </div>
 
+          <div className="bg-white rounded-xl shadow p-6">
+
+            <p className="text-slate-500">
+              Supabase
+            </p>
+
+            <h2 className="text-xl font-bold mt-2">
+              {connectionStatus}
+            </h2>
+
+            {connectionError && (
+              <p className="text-sm text-red-600 mt-3 break-all">
+                {connectionError}
+              </p>
+            )}
+
+          </div>
+
         </div>
 
         <div className="lg:col-span-3">
@@ -85,9 +127,7 @@ export default function Dashboard() {
           <div>
 
             <p className="text-xl font-semibold">
-
               {winner.firstName} {winner.lastName}
-
             </p>
 
             <p className="text-slate-500">
@@ -95,15 +135,11 @@ export default function Dashboard() {
             </p>
 
             <p className="text-xl font-semibold">
-
               {loser.firstName} {loser.lastName}
-
             </p>
 
             <p className="mt-4 text-green-600 font-bold text-lg">
-
               +{latestMatch.winnerRatingChange}
-
             </p>
 
           </div>
