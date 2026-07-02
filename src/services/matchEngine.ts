@@ -11,10 +11,27 @@ export type MatchResult = {
 
 export function buildMatch(
   eventId: string,
-  winner: Player,
-  loser: Player,
+  player1: Player,
+  player2: Player,
   sets: MatchSet[]
 ): MatchResult {
+
+  let player1Sets = 0;
+  let player2Sets = 0;
+
+  for (const set of sets) {
+    if (set.player1Score > set.player2Score) {
+      player1Sets++;
+    } else {
+      player2Sets++;
+    }
+  }
+
+  const winner =
+    player1Sets > player2Sets ? player1 : player2;
+
+  const loser =
+    player1Sets > player2Sets ? player2 : player1;
 
   const result = calculateMatch(winner, loser);
 
@@ -29,10 +46,13 @@ export function buildMatch(
 
       eventId,
 
+      playedAt,
+
+      player1Id: player1.id,
+      player2Id: player2.id,
+
       winnerId: result.winner.id,
       loserId: result.loser.id,
-
-      playedAt,
 
       winnerRatingBefore: winner.rating,
       winnerRatingAfter: result.winner.rating,

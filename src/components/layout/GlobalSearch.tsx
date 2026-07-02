@@ -1,5 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import type { Player } from "../../types/player";
+import type { Club } from "../../types/club";
+import type { Event } from "../../types/event";
 
 import { getPlayers } from "../../services/supabase/playerService";
 import { getClubs } from "../../services/supabase/clubService";
@@ -10,12 +14,37 @@ export default function GlobalSearch() {
 
   const [query, setQuery] = useState("");
 
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  async function loadData() {
+    try {
+      const [playerData, clubData, eventData] =
+        await Promise.all([
+          getPlayers(),
+          getClubs(),
+          getEvents(),
+        ]);
+
+      setPlayers(playerData);
+      setClubs(clubData);
+      setEvents(eventData);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   const results = useMemo(() => {
     if (!query.trim()) return [];
 
     const search = query.toLowerCase();
 
-    const players = getPlayers()
+    const playerResults = players
       .filter((player) =>
         `${player.firstName} ${player.lastName}`
           .toLowerCase()
@@ -28,7 +57,7 @@ export default function GlobalSearch() {
         path: `/players/${player.id}`,
       }));
 
-    const clubs = getClubs()
+    const clubResults = clubs
       .filter((club) =>
         club.name.toLowerCase().includes(search)
       )
@@ -36,10 +65,10 @@ export default function GlobalSearch() {
         id: club.id,
         type: "Club",
         name: club.name,
-        path: "/clubs",
+        path: `/clubs/${club.id}`,
       }));
 
-    const events = getEvents()
+    const eventResults = events
       .filter((event) =>
         event.name.toLowerCase().includes(search)
       )
@@ -50,8 +79,12 @@ export default function GlobalSearch() {
         path: `/events/${event.id}`,
       }));
 
-    return [...players, ...clubs, ...events].slice(0, 10);
-  }, [query]);
+    return [
+      ...playerResults,
+      ...clubResults,
+      ...eventResults,
+    ].slice(0, 10);
+  }, [query, players, clubs, events]);
 
   return (
     <div className="relative">
@@ -65,11 +98,9 @@ export default function GlobalSearch() {
       />
 
       {results.length > 0 && (
-
         <div className="absolute left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 overflow-hidden">
 
           {results.map((result) => (
-
             <button
               key={`${result.type}-${result.id}`}
               onClick={() => {
@@ -78,25 +109,18 @@ export default function GlobalSearch() {
               }}
               className="w-full text-left px-4 py-3 hover:bg-slate-100 border-b last:border-b-0"
             >
-
               <div className="text-xs uppercase text-slate-400">
-
                 {result.type}
-
               </div>
 
               <div className="font-medium">
-
                 {result.name}
-
               </div>
 
             </button>
-
           ))}
 
         </div>
-
       )}
 
     </div>

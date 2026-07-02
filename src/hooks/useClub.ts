@@ -10,23 +10,35 @@ import {
 export default function useClub(
   id: string | undefined
 ) {
-  const [club, setClub] =
-    useState<Club>();
+  const [club, setClub] = useState<Club>();
 
-  const refresh = useCallback(() => {
-    if (!id) return;
+  const refresh = useCallback(async () => {
+    if (!id) {
+      setClub(undefined);
+      return;
+    }
 
-    setClub(getClub(id));
+    try {
+      const data = await getClub(id);
+
+      setClub(data ?? undefined);
+    } catch (error) {
+      console.error(error);
+    }
   }, [id]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
-  function save(updated: Club) {
-    updateClub(updated);
+  async function save(updated: Club) {
+    try {
+      await updateClub(updated);
 
-    refresh();
+      await refresh();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return {

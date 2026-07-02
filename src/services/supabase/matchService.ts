@@ -3,7 +3,11 @@ import type { Match } from "../../types/match";
 
 type MatchRow = {
   id: string;
+
   event_id: string;
+
+  player1_id: string;
+  player2_id: string;
 
   winner_id: string;
   loser_id: string;
@@ -30,6 +34,9 @@ function fromRow(row: MatchRow): Match {
 
     eventId: row.event_id,
 
+    player1Id: row.player1_id,
+    player2Id: row.player2_id,
+
     winnerId: row.winner_id,
     loserId: row.loser_id,
 
@@ -53,6 +60,9 @@ function toRow(match: Match) {
     id: match.id,
 
     event_id: match.eventId,
+
+    player1_id: match.player1Id,
+    player2_id: match.player2Id,
 
     winner_id: match.winnerId,
     loser_id: match.loserId,
@@ -78,24 +88,50 @@ export async function getMatches(): Promise<Match[]> {
     .select("*")
     .order("played_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return (data as MatchRow[]).map(fromRow);
 }
 
-export async function addMatch(match: Match) {
+export async function getMatch(
+  id: string
+): Promise<Match | null> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? fromRow(data as MatchRow) : null;
+}
+
+export async function addMatch(
+  match: Match
+): Promise<void> {
   const { error } = await supabase
     .from("matches")
     .insert(toRow(match));
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
-export async function deleteMatch(id: string) {
+export async function deleteMatch(
+  id: string
+): Promise<void> {
   const { error } = await supabase
     .from("matches")
     .delete()
     .eq("id", id);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }

@@ -10,11 +10,11 @@ export interface Match {
 
   playedAt: string;
 
+  // Position on the scoresheet
   player1Id: string;
   player2Id: string;
 
-  sets: MatchSet[];
-
+  // Result
   winnerId: string;
   loserId: string;
 
@@ -26,4 +26,6 @@ export interface Match {
 
   winnerRatingChange: number;
   loserRatingChange: number;
+
+  sets: MatchSet[];
 }

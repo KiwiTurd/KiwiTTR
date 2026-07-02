@@ -35,20 +35,14 @@ export async function recordMatch(
     }
   }
 
-  const winner =
-    playerAWins > playerBWins
-      ? playerA
-      : playerB;
-
-  const loser =
-    playerAWins > playerBWins
-      ? playerB
-      : playerA;
+  if (playerAWins === playerBWins) {
+    throw new Error("The match is tied.");
+  }
 
   const result = buildMatch(
     eventId,
-    winner,
-    loser,
+    playerA,
+    playerB,
     sets
   );
 
