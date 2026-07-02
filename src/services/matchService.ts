@@ -1,5 +1,4 @@
 import type { Match, MatchSet } from "../types/match";
-import type { Player } from "../types/player";
 
 import { calculateMatch } from "./ttrEngine";
 import { getPlayers, updatePlayer } from "./playerService";

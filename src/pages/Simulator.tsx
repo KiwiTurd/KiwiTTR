@@ -21,12 +21,19 @@ export default function Simulator() {
       firstName: "Winner",
       lastName: "Player",
       clubId: "",
+
       rating: winnerRating,
+      highestRating: winnerRating,
+
       wins: 0,
       losses: 0,
       matchesPlayed: 0,
+
       provisionalMatchesRemaining: winnerMatches,
       ratingReliability: 0,
+
+      isActive: true,
+
       createdAt: new Date().toISOString(),
     };
 
@@ -35,12 +42,19 @@ export default function Simulator() {
       firstName: "Loser",
       lastName: "Player",
       clubId: "",
+
       rating: loserRating,
+      highestRating: loserRating,
+
       wins: 0,
       losses: 0,
       matchesPlayed: 0,
+
       provisionalMatchesRemaining: loserMatches,
       ratingReliability: 0,
+
+      isActive: true,
+
       createdAt: new Date().toISOString(),
     };
 
@@ -69,7 +83,9 @@ export default function Simulator() {
           <input
             type="number"
             value={winnerRating}
-            onChange={(e) => setWinnerRating(Number(e.target.value))}
+            onChange={(e) =>
+              setWinnerRating(Number(e.target.value))
+            }
             className="w-full border rounded-lg p-3"
           />
         </div>
@@ -82,7 +98,9 @@ export default function Simulator() {
           <input
             type="number"
             value={winnerMatches}
-            onChange={(e) => setWinnerMatches(Number(e.target.value))}
+            onChange={(e) =>
+              setWinnerMatches(Number(e.target.value))
+            }
             className="w-full border rounded-lg p-3"
           />
         </div>
@@ -95,7 +113,9 @@ export default function Simulator() {
           <input
             type="number"
             value={loserRating}
-            onChange={(e) => setLoserRating(Number(e.target.value))}
+            onChange={(e) =>
+              setLoserRating(Number(e.target.value))
+            }
             className="w-full border rounded-lg p-3"
           />
         </div>
@@ -108,7 +128,9 @@ export default function Simulator() {
           <input
             type="number"
             value={loserMatches}
-            onChange={(e) => setLoserMatches(Number(e.target.value))}
+            onChange={(e) =>
+              setLoserMatches(Number(e.target.value))
+            }
             className="w-full border rounded-lg p-3"
           />
         </div>
@@ -120,32 +142,34 @@ export default function Simulator() {
           Calculate Rating Change
         </button>
 
-        {winnerNewRating !== null && loserNewRating !== null && (
-          <div className="border-t pt-6 space-y-4">
+        {winnerNewRating !== null &&
+          loserNewRating !== null && (
+            <div className="border-t pt-6 space-y-4">
 
-            <h2 className="text-2xl font-bold">
-              Result
-            </h2>
+              <h2 className="text-2xl font-bold">
+                Result
+              </h2>
 
-            <div className="flex justify-between">
-              <span>Winner</span>
+              <div className="flex justify-between">
+                <span>Winner</span>
 
-              <strong>
-                {winnerNewRating} ({winnerChange! >= 0 ? "+" : ""}
-                {winnerChange})
-              </strong>
+                <strong>
+                  {winnerNewRating} (
+                  {winnerChange! >= 0 ? "+" : ""}
+                  {winnerChange})
+                </strong>
+              </div>
+
+              <div className="flex justify-between">
+                <span>Loser</span>
+
+                <strong>
+                  {loserNewRating} ({loserChange})
+                </strong>
+              </div>
+
             </div>
-
-            <div className="flex justify-between">
-              <span>Loser</span>
-
-              <strong>
-                {loserNewRating} ({loserChange})
-              </strong>
-            </div>
-
-          </div>
-        )}
+          )}
 
       </div>
     </div>

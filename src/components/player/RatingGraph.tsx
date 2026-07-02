@@ -26,26 +26,20 @@ export default function RatingGraph({ playerId }: Props) {
 
   return (
     <div className="bg-white rounded-xl shadow p-8">
-
       <h2 className="text-2xl font-bold mb-6">
         Rating History
       </h2>
 
       {history.length === 0 ? (
-
         <p className="text-slate-500">
           No rating history available yet.
         </p>
-
       ) : (
-
         <ResponsiveContainer
           width="100%"
           height={300}
         >
-
           <LineChart data={history}>
-
             <CartesianGrid strokeDasharray="3 3" />
 
             <XAxis dataKey="date" />
@@ -53,13 +47,12 @@ export default function RatingGraph({ playerId }: Props) {
             <YAxis />
 
             <Tooltip
-              formatter={(value: number, name: string) => {
-                if (name === "rating") {
-                  return [value, "Rating"];
-                }
-
-                return [value, name];
-              }}
+              formatter={(value, name) => [
+                Number(value),
+                name === "rating"
+                  ? "Rating"
+                  : String(name),
+              ]}
             />
 
             <Line
@@ -70,13 +63,9 @@ export default function RatingGraph({ playerId }: Props) {
               dot={{ r: 5 }}
               activeDot={{ r: 8 }}
             />
-
           </LineChart>
-
         </ResponsiveContainer>
-
       )}
-
     </div>
   );
 }

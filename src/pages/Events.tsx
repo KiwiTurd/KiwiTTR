@@ -5,7 +5,6 @@ import type { Event } from "../types/event";
 
 import { addEvent, getEvents } from "../services/eventService";
 import { getMatches } from "../services/matchService";
-import { getPlayers } from "../services/playerService";
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -32,7 +31,6 @@ export default function Events() {
   }
 
   const matches = useMemo(() => getMatches(), []);
-  const players = useMemo(() => getPlayers(), []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -99,15 +97,11 @@ export default function Events() {
               >
 
                 <h2 className="text-2xl font-bold">
-
                   🏓 {event.name}
-
                 </h2>
 
                 <p className="text-slate-500 mt-2">
-
                   {new Date(event.date).toLocaleDateString()}
-
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 mt-6">
@@ -119,9 +113,7 @@ export default function Events() {
                     </p>
 
                     <p className="text-3xl font-bold">
-
                       {eventMatches.length}
-
                     </p>
 
                   </div>
@@ -133,9 +125,7 @@ export default function Events() {
                     </p>
 
                     <p className="text-3xl font-bold">
-
                       {playerIds.size}
-
                     </p>
 
                   </div>
@@ -143,9 +133,7 @@ export default function Events() {
                 </div>
 
                 <p className="text-blue-700 mt-6 font-semibold">
-
                   Open →
-
                 </p>
 
               </Link>
