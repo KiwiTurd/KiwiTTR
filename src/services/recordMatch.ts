@@ -29,31 +29,11 @@ export async function recordMatch(
     throw new Error("Players not found.");
   }
 
-  let playerAWins = 0;
-  let playerBWins = 0;
-
-  for (const set of sets) {
-    if (set.player1Score > set.player2Score) {
-      playerAWins++;
-    } else {
-      playerBWins++;
-    }
-  }
-
-  const winner =
-    playerAWins > playerBWins
-      ? playerA
-      : playerB;
-
-  const loser =
-    playerAWins > playerBWins
-      ? playerB
-      : playerA;
-
+  // Let buildMatch determine the winner from the set scores.
   const result = buildMatch(
     eventId,
-    winner,
-    loser,
+    playerA,
+    playerB,
     sets
   );
 
