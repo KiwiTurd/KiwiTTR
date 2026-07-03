@@ -13,7 +13,15 @@ import {
   getClubs,
 } from "../services/supabase/clubService";
 
+import useRole from "../hooks/useRole";
+
 export default function Events() {
+  const {
+    isAdmin,
+    isClubLeader,
+    clubId: userClubId,
+  } = useRole();
+
   const [events, setEvents] = useState<Event[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
 
@@ -26,7 +34,7 @@ export default function Events() {
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [isAdmin, isClubLeader, userClubId]);
 
   async function loadData() {
     try {
@@ -37,8 +45,28 @@ export default function Events() {
         getClubs(),
       ]);
 
-      setEvents(eventData);
-      setClubs(clubData);
+      if (isAdmin) {
+        setEvents(eventData);
+        setClubs(clubData);
+      } else if (isClubLeader && userClubId) {
+        setEvents(
+          eventData.filter(
+            (event) => event.clubId === userClubId
+          )
+        );
+
+        setClubs(
+          clubData.filter(
+            (club) => club.id === userClubId
+          )
+        );
+
+        setClubId(userClubId);
+      } else {
+        // Public users
+        setEvents(eventData);
+        setClubs(clubData);
+      }
 
     } catch (error) {
       console.error(error);
@@ -49,7 +77,11 @@ export default function Events() {
   }
 
   async function handleAddEvent() {
-    if (!name.trim() || !clubId || !eventDate) {
+    const assignedClubId = isAdmin
+      ? clubId
+      : userClubId;
+
+    if (!name.trim() || !assignedClubId || !eventDate) {
       alert("Please complete all fields.");
       return;
     }
@@ -59,7 +91,7 @@ export default function Events() {
     try {
       const event: Event = {
         id: crypto.randomUUID(),
-        clubId,
+        clubId: assignedClubId,
         name: name.trim(),
         date: eventDate,
       };
@@ -69,8 +101,11 @@ export default function Events() {
       await loadData();
 
       setName("");
-      setClubId("");
       setEventDate("");
+
+      if (isAdmin) {
+        setClubId("");
+      }
 
     } catch (error) {
       console.error(error);
@@ -97,60 +132,74 @@ export default function Events() {
         </h1>
 
         <p className="text-slate-500 mt-2">
-          Manage tournaments and club nights
+          Browse tournaments and club nights
         </p>
 
       </div>
 
-      <div className="bg-white rounded-xl shadow p-6">
+      {(isAdmin || isClubLeader) && (
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow p-6">
 
-          <input
-            placeholder="Event Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border rounded-lg p-3"
-          />
-
-          <select
-            value={clubId}
-            onChange={(e) => setClubId(e.target.value)}
-            className="border rounded-lg p-3"
+          <div
+            className={`grid gap-4 ${
+              isAdmin
+                ? "md:grid-cols-3"
+                : "md:grid-cols-2"
+            }`}
           >
-            <option value="">
-              Select Club
-            </option>
 
-            {clubs.map((club) => (
-              <option
-                key={club.id}
-                value={club.id}
+            <input
+              placeholder="Event Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border rounded-lg p-3"
+            />
+
+            {isAdmin && (
+
+              <select
+                value={clubId}
+                onChange={(e) => setClubId(e.target.value)}
+                className="border rounded-lg p-3"
               >
-                {club.name}
-              </option>
-            ))}
+                <option value="">
+                  Select Club
+                </option>
 
-          </select>
+                {clubs.map((club) => (
+                  <option
+                    key={club.id}
+                    value={club.id}
+                  >
+                    {club.name}
+                  </option>
+                ))}
 
-          <input
-            type="date"
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+              </select>
+
+            )}
+
+            <input
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              className="border rounded-lg p-3"
+            />
+
+          </div>
+
+          <button
+            onClick={handleAddEvent}
+            disabled={saving}
+            className="mt-6 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
+          >
+            {saving ? "Creating..." : "Create Event"}
+          </button>
 
         </div>
 
-        <button
-          onClick={handleAddEvent}
-          disabled={saving}
-          className="mt-6 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
-        >
-          {saving ? "Creating..." : "Create Event"}
-        </button>
-
-      </div>
+      )}
 
       {loading ? (
 

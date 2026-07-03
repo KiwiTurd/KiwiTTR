@@ -5,7 +5,7 @@ import AppLayout from "./pages/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Clubs from "./pages/Clubs";
 import ClubProfile from "./pages/ClubProfile";
-import Players from "./pages/Players";
+import PlayerManagement from "./pages/PlayerManagement";
 import PlayerProfile from "./pages/PlayerProfile";
 import Rankings from "./pages/Rankings";
 import Matches from "./pages/Matches";
@@ -16,7 +16,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AdminRoute from "./components/auth/AdminRoute";
 
 export const router = createBrowserRouter([
   {
@@ -27,88 +27,85 @@ export const router = createBrowserRouter([
     path: "/",
     element: <AppLayout />,
     children: [
+      // Dashboard
+
       {
         index: true,
         element: <Dashboard />,
       },
-      {
-        path: "admin",
-        element: (
-          <ProtectedRoute>
-            <Admin />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "clubs",
-        element: (
-          <ProtectedRoute>
-            <Clubs />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "clubs/:id",
-        element: (
-          <ProtectedRoute>
-            <ClubProfile />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "players",
-        element: (
-          <ProtectedRoute>
-            <Players />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "players/:id",
-        element: (
-          <ProtectedRoute>
-            <PlayerProfile />
-          </ProtectedRoute>
-        ),
-      },
+
+      // Public Pages
+
       {
         path: "rankings",
         element: <Rankings />,
       },
+
       {
-        path: "matches",
-        element: (
-          <ProtectedRoute>
-            <Matches />
-          </ProtectedRoute>
-        ),
+        path: "clubs",
+        element: <Clubs />,
       },
+
+      {
+        path: "clubs/:id",
+        element: <ClubProfile />,
+      },
+
+      {
+        path: "players/:id",
+        element: <PlayerProfile />,
+      },
+
       {
         path: "events",
-        element: (
-          <ProtectedRoute>
-            <Events />
-          </ProtectedRoute>
-        ),
+        element: <Events />,
       },
+
       {
         path: "events/:id",
-        element: (
-          <ProtectedRoute>
-            <EventProfile />
-          </ProtectedRoute>
-        ),
+        element: <EventProfile />,
       },
+
       {
         path: "simulator",
         element: <Simulator />,
       },
+
+      // Admin Pages
+
+      {
+        path: "players",
+        element: (
+          <AdminRoute>
+            <PlayerManagement />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "matches",
+        element: (
+          <AdminRoute>
+            <Matches />
+          </AdminRoute>
+        ),
+      },
+
       {
         path: "settings",
         element: (
-          <ProtectedRoute>
+          <AdminRoute>
             <Settings />
-          </ProtectedRoute>
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "admin",
+        element: (
+          <AdminRoute>
+            <Admin />
+          </AdminRoute>
         ),
       },
     ],

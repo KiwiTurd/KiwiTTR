@@ -20,7 +20,11 @@ import Button from "../components/ui/Button";
 
 import EditClubModal from "../components/clubs/EditClubModal";
 
+import useRole from "../hooks/useRole";
+
 export default function ClubProfile() {
+  const { isAdmin } = useRole();
+
   const { id } = useParams();
 
   const [club, setClub] = useState<Club | null>(null);
@@ -124,11 +128,13 @@ export default function ClubProfile() {
         title={club.name}
         subtitle={club.address}
         actions={
-          <Button
-            onClick={() => setEditing(true)}
-          >
-            Edit Club
-          </Button>
+          isAdmin ? (
+            <Button
+              onClick={() => setEditing(true)}
+            >
+              Edit Club
+            </Button>
+          ) : undefined
         }
       />
 
@@ -284,12 +290,16 @@ export default function ClubProfile() {
 
       </Card>
 
-      <EditClubModal
-        open={editing}
-        club={club}
-        onClose={() => setEditing(false)}
-        onSave={handleSave}
-      />
+      {isAdmin && (
+
+        <EditClubModal
+          open={editing}
+          club={club}
+          onClose={() => setEditing(false)}
+          onSave={handleSave}
+        />
+
+      )}
 
     </div>
   );

@@ -9,7 +9,12 @@ import {
   addMatch,
 } from "./supabase/matchService";
 
+import {
+  addRatingHistory,
+} from "./supabase/ratingHistoryService";
+
 import type { MatchSet } from "../types/match";
+import type { RatingHistory } from "../types/ratingHistory";
 
 export async function recordMatch(
   eventId: string,
@@ -35,14 +40,20 @@ export async function recordMatch(
     }
   }
 
-  if (playerAWins === playerBWins) {
-    throw new Error("The match is tied.");
-  }
+  const winner =
+    playerAWins > playerBWins
+      ? playerA
+      : playerB;
+
+  const loser =
+    playerAWins > playerBWins
+      ? playerB
+      : playerA;
 
   const result = buildMatch(
     eventId,
-    playerA,
-    playerB,
+    winner,
+    loser,
     sets
   );
 
@@ -50,6 +61,37 @@ export async function recordMatch(
   await updatePlayer(result.loser);
 
   await addMatch(result.match);
+
+  const winnerHistory: RatingHistory = {
+    id: crypto.randomUUID(),
+
+    playerId: result.winner.id,
+    matchId: result.match.id,
+
+    ratingBefore: result.match.winnerRatingBefore,
+    ratingAfter: result.match.winnerRatingAfter,
+
+    ratingChange: result.match.winnerRatingChange,
+
+    recordedAt: result.match.playedAt,
+  };
+
+  const loserHistory: RatingHistory = {
+    id: crypto.randomUUID(),
+
+    playerId: result.loser.id,
+    matchId: result.match.id,
+
+    ratingBefore: result.match.loserRatingBefore,
+    ratingAfter: result.match.loserRatingAfter,
+
+    ratingChange: result.match.loserRatingChange,
+
+    recordedAt: result.match.playedAt,
+  };
+
+  await addRatingHistory(winnerHistory);
+  await addRatingHistory(loserHistory);
 
   return result;
 }

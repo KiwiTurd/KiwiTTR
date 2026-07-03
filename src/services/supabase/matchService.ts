@@ -86,7 +86,9 @@ export async function getMatches(): Promise<Match[]> {
   const { data, error } = await supabase
     .from("matches")
     .select("*")
-    .order("played_at", { ascending: false });
+    .order("played_at", {
+      ascending: false,
+    });
 
   if (error) {
     throw error;
@@ -134,4 +136,42 @@ export async function deleteMatch(
   if (error) {
     throw error;
   }
+}
+
+export async function getPlayerMatches(
+  playerId: string
+): Promise<Match[]> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .or(
+      `player1_id.eq.${playerId},player2_id.eq.${playerId}`
+    )
+    .order("played_at", {
+      ascending: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as MatchRow[]).map(fromRow);
+}
+
+export async function getRecentMatches(
+  limit = 20
+): Promise<Match[]> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .order("played_at", {
+      ascending: false,
+    })
+    .limit(limit);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as MatchRow[]).map(fromRow);
 }

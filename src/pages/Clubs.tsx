@@ -11,7 +11,11 @@ import {
 
 import { getPlayers } from "../services/supabase/playerService";
 
+import useRole from "../hooks/useRole";
+
 export default function Clubs() {
+  const { isAdmin } = useRole();
+
   const [clubs, setClubs] = useState<Club[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
 
@@ -54,15 +58,12 @@ export default function Clubs() {
     try {
       const club: Club = {
         id: crypto.randomUUID(),
-
         name: name.trim(),
         shortName: shortName.trim(),
-
         address: address.trim(),
         phone: phone.trim(),
         email: email.trim(),
         website: website.trim(),
-
         createdAt: new Date().toISOString(),
       };
 
@@ -87,7 +88,6 @@ export default function Clubs() {
 
   const clubCards = useMemo(() => {
     return clubs.map((club) => {
-
       const clubPlayers = players.filter(
         (p) => p.clubId === club.id && p.isActive
       );
@@ -115,68 +115,72 @@ export default function Clubs() {
         </h1>
 
         <p className="text-slate-500 mt-2">
-          Manage table tennis clubs
+          Browse New Zealand table tennis clubs
         </p>
 
       </div>
 
-      <div className="bg-white rounded-xl shadow p-6">
+      {isAdmin && (
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl shadow p-6">
 
-          <input
-            placeholder="Club Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+          <div className="grid md:grid-cols-2 gap-4">
 
-          <input
-            placeholder="Short Name"
-            value={shortName}
-            onChange={(e) => setShortName(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+            <input
+              placeholder="Club Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border rounded-lg p-3"
+            />
 
-          <input
-            placeholder="Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+            <input
+              placeholder="Short Name"
+              value={shortName}
+              onChange={(e) => setShortName(e.target.value)}
+              className="border rounded-lg p-3"
+            />
 
-          <input
-            placeholder="Phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+            <input
+              placeholder="Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="border rounded-lg p-3"
+            />
 
-          <input
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+            <input
+              placeholder="Phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="border rounded-lg p-3"
+            />
 
-          <input
-            placeholder="Website"
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+            <input
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="border rounded-lg p-3"
+            />
+
+            <input
+              placeholder="Website"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="border rounded-lg p-3"
+            />
+
+          </div>
+
+          <button
+            onClick={handleAddClub}
+            disabled={saving}
+            className="mt-6 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
+          >
+            {saving ? "Adding..." : "Add Club"}
+          </button>
 
         </div>
 
-        <button
-          onClick={handleAddClub}
-          disabled={saving}
-          className="mt-6 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
-        >
-          {saving ? "Adding..." : "Add Club"}
-        </button>
-
-      </div>
+      )}
 
       {clubCards.length === 0 ? (
 

@@ -12,7 +12,15 @@ import {
   getClubs,
 } from "../services/supabase/clubService";
 
-export default function Players() {
+import useRole from "../hooks/useRole";
+
+export default function PlayerManagement() {
+  const {
+    isAdmin,
+    isClubLeader,
+    clubId: userClubId,
+  } = useRole();
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
 
@@ -25,7 +33,7 @@ export default function Players() {
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [isAdmin, userClubId]);
 
   async function loadData() {
     try {
@@ -36,8 +44,24 @@ export default function Players() {
         getClubs(),
       ]);
 
-      setPlayers(playerData);
-      setClubs(clubData);
+      if (isAdmin) {
+        setPlayers(playerData);
+        setClubs(clubData);
+      } else if (isClubLeader && userClubId) {
+        setPlayers(
+          playerData.filter(
+            (player) => player.clubId === userClubId
+          )
+        );
+
+        setClubs(
+          clubData.filter(
+            (club) => club.id === userClubId
+          )
+        );
+
+        setClubId(userClubId);
+      }
 
     } catch (error) {
       console.error(error);
@@ -48,7 +72,15 @@ export default function Players() {
   }
 
   async function handleAddPlayer() {
-    if (!firstName.trim() || !lastName.trim() || !clubId) {
+    const assignedClubId = isAdmin
+      ? clubId
+      : userClubId;
+
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !assignedClubId
+    ) {
       alert("Please complete all fields.");
       return;
     }
@@ -64,7 +96,7 @@ export default function Players() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
 
-        clubId,
+        clubId: assignedClubId,
 
         rating: startingRating,
         highestRating: startingRating,
@@ -87,7 +119,10 @@ export default function Players() {
 
       setFirstName("");
       setLastName("");
-      setClubId("");
+
+      if (isAdmin) {
+        setClubId("");
+      }
 
     } catch (error) {
       console.error(error);
@@ -101,46 +136,59 @@ export default function Players() {
     <div className="max-w-6xl mx-auto">
 
       <h1 className="text-4xl font-bold mb-8">
-        Players
+        Player Management
       </h1>
 
       <div className="bg-white rounded-xl shadow p-6 mb-8">
 
-        <div className="grid grid-cols-3 gap-4">
+        <div
+          className={`grid gap-4 ${
+            isAdmin
+              ? "grid-cols-3"
+              : "grid-cols-2"
+          }`}
+        >
 
           <input
             placeholder="First Name"
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) =>
+              setFirstName(e.target.value)
+            }
             className="border rounded-lg p-3"
           />
 
           <input
             placeholder="Last Name"
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) =>
+              setLastName(e.target.value)
+            }
             className="border rounded-lg p-3"
           />
 
-          <select
-            value={clubId}
-            onChange={(e) => setClubId(e.target.value)}
-            className="border rounded-lg p-3"
-          >
-            <option value="">
-              Select Club
-            </option>
-
-            {clubs.map((club) => (
-              <option
-                key={club.id}
-                value={club.id}
-              >
-                {club.name}
+          {isAdmin && (
+            <select
+              value={clubId}
+              onChange={(e) =>
+                setClubId(e.target.value)
+              }
+              className="border rounded-lg p-3"
+            >
+              <option value="">
+                Select Club
               </option>
-            ))}
 
-          </select>
+              {clubs.map((club) => (
+                <option
+                  key={club.id}
+                  value={club.id}
+                >
+                  {club.name}
+                </option>
+              ))}
+            </select>
+          )}
 
         </div>
 

@@ -3,11 +3,17 @@ import { NavLink } from "react-router-dom";
 
 import GlobalSearch from "./GlobalSearch";
 
+import useRole from "../../hooks/useRole";
+
 export default function Sidebar() {
+  const {
+    isAdmin,
+    isClubLeader,
+  } = useRole();
+
   const [competitionOpen, setCompetitionOpen] = useState(true);
   const [matchCentreOpen, setMatchCentreOpen] = useState(true);
-  const [toolsOpen, setToolsOpen] =useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-lg px-4 py-3 transition font-medium ${
@@ -75,48 +81,10 @@ export default function Sidebar() {
               </NavLink>
 
               <NavLink
-                to="/players"
-                className={childLinkClass}
-              >
-                Players
-              </NavLink>
-
-              <NavLink
                 to="/clubs"
                 className={childLinkClass}
               >
                 Clubs
-              </NavLink>
-
-            </div>
-
-          )}
-
-        </div>
-
-        {/* Match Centre */}
-
-        <div className="mb-3">
-
-          <button
-            onClick={() => setMatchCentreOpen(!matchCentreOpen)}
-            className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition"
-          >
-            <span>Match Centre</span>
-
-            <span>{matchCentreOpen ? "▼" : "▶"}</span>
-
-          </button>
-
-          {matchCentreOpen && (
-
-            <div className="mt-1 space-y-1">
-
-              <NavLink
-                to="/matches"
-                className={childLinkClass}
-              >
-                Record Match
               </NavLink>
 
               <NavLink
@@ -126,11 +94,57 @@ export default function Sidebar() {
                 Events
               </NavLink>
 
+              {isAdmin && (
+
+                <NavLink
+                  to="/players"
+                  className={childLinkClass}
+                >
+                  Player Management
+                </NavLink>
+
+              )}
+
             </div>
 
           )}
 
         </div>
+
+        {/* Match Centre */}
+
+        {(isAdmin || isClubLeader) && (
+
+          <div className="mb-3">
+
+            <button
+              onClick={() => setMatchCentreOpen(!matchCentreOpen)}
+              className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition"
+            >
+              <span>Match Centre</span>
+
+              <span>{matchCentreOpen ? "▼" : "▶"}</span>
+
+            </button>
+
+            {matchCentreOpen && (
+
+              <div className="mt-1 space-y-1">
+
+                <NavLink
+                  to="/matches"
+                  className={childLinkClass}
+                >
+                  Record Match
+                </NavLink>
+
+              </div>
+
+            )}
+
+          </div>
+
+        )}
 
         {/* Tools */}
 
@@ -157,6 +171,17 @@ export default function Sidebar() {
                 TTR Calculator
               </NavLink>
 
+              {isAdmin && (
+
+                <NavLink
+                  to="/settings"
+                  className={childLinkClass}
+                >
+                  Settings
+                </NavLink>
+
+              )}
+
             </div>
 
           )}
@@ -165,38 +190,9 @@ export default function Sidebar() {
 
       </nav>
 
-      <div className="border-t px-4 py-4">
-
-        <button
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition"
-        >
-          <span>Settings</span>
-
-          <span>{settingsOpen ? "▼" : "▶"}</span>
-
-        </button>
-
-        {settingsOpen && (
-
-          <div className="mt-1 space-y-1">
-
-            <NavLink
-              to="/settings"
-              className={childLinkClass}
-            >
-              Settings
-            </NavLink>
-
-          </div>
-
-        )}
-
-      </div>
-
       <div className="border-t px-6 py-4 text-xs text-slate-400">
 
-        Version 0.1.0
+        Version 0.2.0
 
       </div>
 

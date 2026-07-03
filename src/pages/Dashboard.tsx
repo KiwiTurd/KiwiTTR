@@ -3,19 +3,21 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 
-import type { Player } from "../types/player";
-import type { Club } from "../types/club";
-
-import { getPlayers } from "../services/supabase/playerService";
-import { getClubs } from "../services/supabase/clubService";
-
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
+
+import {
+  getDashboardData,
+} from "../services/supabase/dashboardService";
+
+type DashboardData = Awaited<
+  ReturnType<typeof getDashboardData>
+>;
 
 export default function Dashboard() {
   const { session, loading } = useAuth();
 
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [clubs, setClubs] = useState<Club[]>([]);
+  const [dashboard, setDashboard] =
+    useState<DashboardData | null>(null);
 
   useEffect(() => {
     void loadData();
@@ -23,21 +25,15 @@ export default function Dashboard() {
 
   async function loadData() {
     try {
-      const [playerData, clubData] = await Promise.all([
-        getPlayers(),
-        getClubs(),
-      ]);
-
-      setPlayers(playerData);
-      setClubs(clubData);
+      const data = await getDashboardData();
+      setDashboard(data);
     } catch (error) {
       console.error(error);
     }
   }
 
-  const activePlayers = players.filter(
-    (player) => player.isActive
-  ).length;
+  const activePlayers =
+    dashboard?.activePlayers ?? 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -54,7 +50,7 @@ export default function Dashboard() {
 
       </div>
 
-      <div className="grid lg:grid-cols-4 gap-6">
+      <div className="grid lg:grid-cols-5 gap-6">
 
         <div className="space-y-6">
 
@@ -77,7 +73,19 @@ export default function Dashboard() {
             </p>
 
             <h2 className="text-5xl font-bold mt-2">
-              {clubs.length}
+              {dashboard?.clubs.length ?? 0}
+            </h2>
+
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+
+            <p className="text-slate-500">
+              Events
+            </p>
+
+            <h2 className="text-5xl font-bold mt-2">
+              {dashboard?.totalEvents ?? 0}
             </h2>
 
           </div>
@@ -120,23 +128,11 @@ export default function Dashboard() {
 
         </div>
 
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-4">
 
           <TopRatedPlayersCard />
 
         </div>
-
-      </div>
-
-      <div className="bg-white rounded-xl shadow p-8">
-
-        <h2 className="text-2xl font-bold mb-6">
-          Latest Match
-        </h2>
-
-        <p className="text-slate-500">
-          Coming soon with the new Match Engine.
-        </p>
 
       </div>
 
