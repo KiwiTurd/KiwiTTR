@@ -27,6 +27,11 @@ export default function PlayerManagement() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [clubId, setClubId] = useState("");
+  const [initialRatingMode, setInitialRatingMode] = useState<
+  "1200" | "1500" | "club_average" | "custom"
+>("club_average");
+
+const [customRating, setCustomRating] = useState(1500);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,7 +75,32 @@ export default function PlayerManagement() {
       setLoading(false);
     }
   }
+const clubAverage = (() => {
+  const selectedClubId = isAdmin
+    ? clubId
+    : userClubId;
 
+  if (!selectedClubId) {
+    return 1500;
+  }
+
+  const clubPlayers = players.filter(
+    (player) =>
+      player.clubId === selectedClubId &&
+      player.isActive
+  );
+
+  if (clubPlayers.length === 0) {
+    return 1500;
+  }
+
+  return Math.round(
+    clubPlayers.reduce(
+      (sum, player) => sum + player.rating,
+      0
+    ) / clubPlayers.length
+  );
+})();
   async function handleAddPlayer() {
     const assignedClubId = isAdmin
       ? clubId
@@ -88,7 +118,25 @@ export default function PlayerManagement() {
     setSaving(true);
 
     try {
-      const startingRating = 1500;
+      let startingRating = 1500;
+
+switch (initialRatingMode) {
+  case "1200":
+    startingRating = 1200;
+    break;
+
+  case "1500":
+    startingRating = 1500;
+    break;
+
+  case "club_average":
+    startingRating = clubAverage;
+    break;
+
+  case "custom":
+    startingRating = customRating;
+    break;
+}
 
       const newPlayer: Player = {
         id: crypto.randomUUID(),
@@ -119,6 +167,8 @@ export default function PlayerManagement() {
 
       setFirstName("");
       setLastName("");
+      setInitialRatingMode("club_average");
+setCustomRating(1500);
 
       if (isAdmin) {
         setClubId("");
@@ -192,13 +242,109 @@ export default function PlayerManagement() {
 
         </div>
 
-        <button
-          onClick={handleAddPlayer}
-          disabled={saving}
-          className="mt-4 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
-        >
-          {saving ? "Adding..." : "Add Player"}
-        </button>
+        <div className="mt-6 border-t pt-6">
+
+  <h2 className="text-lg font-semibold mb-4">
+    Initial Rating
+  </h2>
+
+  <div className="space-y-3">
+
+    <label className="flex items-center gap-3 cursor-pointer">
+      <input
+        type="radio"
+        name="initialRating"
+        checked={initialRatingMode === "1200"}
+        onChange={() =>
+          setInitialRatingMode("1200")
+        }
+      />
+      <span>1200</span>
+    </label>
+
+    <label className="flex items-center gap-3 cursor-pointer">
+      <input
+        type="radio"
+        name="initialRating"
+        checked={initialRatingMode === "1500"}
+        onChange={() =>
+          setInitialRatingMode("1500")
+        }
+      />
+      <span>1500</span>
+    </label>
+
+    <label className="flex items-center gap-3 cursor-pointer">
+      <input
+        type="radio"
+        name="initialRating"
+        checked={initialRatingMode === "club_average"}
+        onChange={() =>
+          setInitialRatingMode("club_average")
+        }
+      />
+      <span>
+        Club Average ({clubAverage})
+      </span>
+    </label>
+
+    <label className="flex items-center gap-3 cursor-pointer">
+      <input
+        type="radio"
+        name="initialRating"
+        checked={initialRatingMode === "custom"}
+        onChange={() =>
+          setInitialRatingMode("custom")
+        }
+      />
+      <span>Custom</span>
+    </label>
+
+    {initialRatingMode === "custom" && (
+      <input
+        type="number"
+        min={0}
+        value={customRating}
+        onChange={(e) =>
+          setCustomRating(Number(e.target.value))
+        }
+        className="border rounded-lg p-3 w-48 ml-7"
+      />
+    )}
+
+  </div>
+
+  <div className="mt-5 bg-slate-100 rounded-lg p-4">
+
+    <p className="text-sm text-slate-500">
+      Starting Rating
+    </p>
+
+    <p className="text-3xl font-bold">
+
+      {initialRatingMode === "1200" && 1200}
+
+      {initialRatingMode === "1500" && 1500}
+
+      {initialRatingMode === "club_average" &&
+        clubAverage}
+
+      {initialRatingMode === "custom" &&
+        customRating}
+
+    </p>
+
+  </div>
+
+  <button
+    onClick={handleAddPlayer}
+    disabled={saving}
+    className="mt-6 bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg transition"
+  >
+    {saving ? "Adding..." : "Add Player"}
+  </button>
+
+</div>
 
       </div>
 
