@@ -70,10 +70,9 @@ export const notify = {
 
   // Matches
 
-  matchRecorded() {
-    toast.success("🏓 Match Point!", {
-      description:
-        "The match has been recorded successfully.",
+  matchRecorded(winner: string, score: string) {
+    toast.success("🏓 Match Recorded!", {
+      description: `${winner} won ${score}.`,
     });
   },
 
@@ -100,11 +99,31 @@ export const notify = {
     });
   },
 
+  clubUpdated(name: string) {
+    toast.success("🏓 Club Updated", {
+      description: `${name} has been updated.`,
+    });
+  },
+
   // Events
 
   eventCreated(name: string) {
     toast.success("🏆 Tournament Open!", {
       description: `${name} has been created.`,
+    });
+  },
+
+  eventUpdated(name: string) {
+    toast.success("🏆 Event Updated", {
+      description: `${name} has been updated.`,
+    });
+  },
+
+  // Profiles
+
+  profileLinked(name: string) {
+    toast.success("🔗 Profile Linked", {
+      description: `${name} has been linked to a player.`,
     });
   },
 
