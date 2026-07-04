@@ -18,8 +18,12 @@ export default function Simulator() {
   function handleCalculate() {
     const winner: Player = {
       id: "winner",
+
+      profileId: null,
+
       firstName: "Winner",
       lastName: "Player",
+
       clubId: "",
 
       rating: winnerRating,
@@ -27,9 +31,11 @@ export default function Simulator() {
 
       wins: 0,
       losses: 0,
+
       matchesPlayed: 0,
 
       provisionalMatchesRemaining: winnerMatches,
+
       ratingReliability: 0,
 
       isActive: true,
@@ -39,8 +45,12 @@ export default function Simulator() {
 
     const loser: Player = {
       id: "loser",
+
+      profileId: null,
+
       firstName: "Loser",
       lastName: "Player",
+
       clubId: "",
 
       rating: loserRating,
@@ -48,9 +58,11 @@ export default function Simulator() {
 
       wins: 0,
       losses: 0,
+
       matchesPlayed: 0,
 
       provisionalMatchesRemaining: loserMatches,
+
       ratingReliability: 0,
 
       isActive: true,

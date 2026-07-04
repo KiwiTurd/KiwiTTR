@@ -149,8 +149,8 @@ switch (initialRatingMode) {
 
   clubId,
 
-  rating: 1000,
-  highestRating: 1000,
+ rating: startingRating,
+highestRating: startingRating,
 
   wins: 0,
   losses: 0,
