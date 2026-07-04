@@ -1,6 +1,9 @@
 export interface Player {
   id: string;
 
+  // Linked user profile
+  profileId: string | null;
+
   firstName: string;
   lastName: string;
 

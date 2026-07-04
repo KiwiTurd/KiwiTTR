@@ -21,6 +21,7 @@ import Button from "../components/ui/Button";
 import EditClubModal from "../components/clubs/EditClubModal";
 
 import useRole from "../hooks/useRole";
+import { notify } from "../services/notificationService";
 
 export default function ClubProfile() {
   const { isAdmin } = useRole();
@@ -50,7 +51,7 @@ export default function ClubProfile() {
 
     } catch (error) {
       console.error(error);
-      alert("Failed to load club.");
+      notify.fault("Failed to load club.");
     }
   }
 
@@ -62,9 +63,11 @@ export default function ClubProfile() {
 
       await loadData();
 
+      notify.clubCreated(updatedClub.name);
+
     } catch (error) {
       console.error(error);
-      alert("Unable to save club.");
+      notify.fault("Unable to save club.");
     }
   }
 

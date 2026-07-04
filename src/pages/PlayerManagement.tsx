@@ -13,6 +13,7 @@ import {
 } from "../services/supabase/clubService";
 
 import useRole from "../hooks/useRole";
+import { notify } from "../services/notificationService";
 
 export default function PlayerManagement() {
   const {
@@ -70,7 +71,7 @@ const [customRating, setCustomRating] = useState(1500);
 
     } catch (error) {
       console.error(error);
-      alert("Failed to load players.");
+      notify.fault("Failed to load players.");
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ const clubAverage = (() => {
       !lastName.trim() ||
       !assignedClubId
     ) {
-      alert("Please complete all fields.");
+      notify.timeout("Please complete all fields.");
       return;
     }
 
@@ -139,31 +140,37 @@ switch (initialRatingMode) {
 }
 
       const newPlayer: Player = {
-        id: crypto.randomUUID(),
+  id: crypto.randomUUID(),
 
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+  profileId: null,
 
-        clubId: assignedClubId,
+  firstName,
+  lastName,
 
-        rating: startingRating,
-        highestRating: startingRating,
+  clubId,
 
-        wins: 0,
-        losses: 0,
-        matchesPlayed: 0,
+  rating: 1000,
+  highestRating: 1000,
 
-        provisionalMatchesRemaining: 10,
-        ratingReliability: 0,
+  wins: 0,
+  losses: 0,
 
-        isActive: true,
+  matchesPlayed: 0,
 
-        createdAt: new Date().toISOString(),
-      };
+  provisionalMatchesRemaining: 20,
+
+  ratingReliability: 0,
+
+  isActive: true,
+
+  createdAt: new Date().toISOString(),
+};
 
       await addPlayer(newPlayer);
 
       await loadData();
+
+      notify.playerAdded(`${newPlayer.firstName} ${newPlayer.lastName}`);
 
       setFirstName("");
       setLastName("");
@@ -176,7 +183,7 @@ setCustomRating(1500);
 
     } catch (error) {
       console.error(error);
-      alert("Failed to add player.");
+      notify.fault("Failed to add player.");
     } finally {
       setSaving(false);
     }

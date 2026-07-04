@@ -7,6 +7,7 @@ import type { Player } from "../../types/player";
 import { getEvents } from "../../services/supabase/eventService";
 import { getPlayers } from "../../services/supabase/playerService";
 import { recordMatch } from "../../services/recordMatch";
+import { notify } from "../../services/notificationService";
 
 import SetScoreInput from "./SetScoreInput";
 
@@ -40,6 +41,7 @@ export default function MatchForm() {
       setEvents(eventData);
     } catch (error) {
       console.error(error);
+      notify.fault("Unable to load match data.");
     }
   }
 
@@ -108,22 +110,30 @@ export default function MatchForm() {
 
   async function handleRecordMatch() {
     if (!eventId) {
-      alert("Please select an event.");
+      notify.timeout("Please select an event.");
       return;
     }
 
     if (!player1Id || !player2Id) {
-      alert("Please select both players.");
+      notify.timeout("Please select both players.");
       return;
     }
 
     if (player1Id === player2Id) {
-      alert("A player cannot play themselves.");
+      notify.fault("A player cannot play themselves.");
       return;
     }
 
     if (summary.player1Sets === summary.player2Sets) {
-      alert("The match is tied.");
+      notify.timeout("The match is tied.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Record this match?\n\n${summary.winner} will win ${summary.player1Sets}-${summary.player2Sets}.`
+    );
+
+    if (!confirmed) {
       return;
     }
 
@@ -135,7 +145,10 @@ export default function MatchForm() {
         sets
       );
 
-      alert("Match recorded successfully!");
+      notify.matchRecorded(
+        summary.winner,
+        `${summary.player1Sets}-${summary.player2Sets}`
+      );
 
       setEventId("");
       setPlayer1Id("");
@@ -154,9 +167,9 @@ export default function MatchForm() {
       console.error(error);
 
       if (error instanceof Error) {
-        alert(error.message);
+        notify.fault(error.message);
       } else {
-        alert("Unable to record match.");
+        notify.fault("Unable to record match.");
       }
     }
   }

@@ -3,35 +3,59 @@ import type { Player } from "../../types/player";
 
 type PlayerRow = {
   id: string;
+
   profile_id: string | null;
+
   club_id: string;
+
   first_name: string;
   last_name: string;
+
   rating: number;
   highest_rating: number;
+
   wins: number;
   losses: number;
+
   matches_played: number;
+
   provisional_matches_remaining: number;
+
   rating_reliability: number;
+
   is_active: boolean;
+
   created_at: string;
 };
 
 function fromRow(row: PlayerRow): Player {
   return {
     id: row.id,
+
+    profileId: row.profile_id,
+
     clubId: row.club_id,
+
     firstName: row.first_name,
     lastName: row.last_name,
+
     rating: row.rating,
     highestRating: row.highest_rating,
+
     wins: row.wins,
     losses: row.losses,
+
     matchesPlayed: row.matches_played,
-    provisionalMatchesRemaining: row.provisional_matches_remaining,
-    ratingReliability: Number(row.rating_reliability),
+
+    provisionalMatchesRemaining:
+      row.provisional_matches_remaining,
+
+    ratingReliability: Number(
+      row.rating_reliability
+    ),
+
     isActive: row.is_active,
+
     createdAt: row.created_at,
   };
 }
@@ -39,17 +63,30 @@ function fromRow(row: PlayerRow): Player {
 function toRow(player: Player) {
   return {
     id: player.id,
+
+    profile_id: player.profileId,
+
     club_id: player.clubId,
+
     first_name: player.firstName,
     last_name: player.lastName,
+
     rating: player.rating,
     highest_rating: player.highestRating,
+
     wins: player.wins,
     losses: player.losses,
+
     matches_played: player.matchesPlayed,
-    provisional_matches_remaining: player.provisionalMatchesRemaining,
-    rating_reliability: player.ratingReliability,
+
+    provisional_matches_remaining:
+      player.provisionalMatchesRemaining,
+
+    rating_reliability:
+      player.ratingReliability,
+
     is_active: player.isActive,
+
     created_at: player.createdAt,
   };
 }
@@ -58,7 +95,9 @@ export async function getPlayers(): Promise<Player[]> {
   const { data, error } = await supabase
     .from("players")
     .select("*")
-    .order("rating", { ascending: false });
+    .order("rating", {
+      ascending: false,
+    });
 
   if (error) {
     console.error(error);
@@ -68,7 +107,9 @@ export async function getPlayers(): Promise<Player[]> {
   return (data as PlayerRow[]).map(fromRow);
 }
 
-export async function getPlayer(id: string): Promise<Player | null> {
+export async function getPlayer(
+  id: string
+): Promise<Player | null> {
   const { data, error } = await supabase
     .from("players")
     .select("*")
@@ -80,46 +121,68 @@ export async function getPlayer(id: string): Promise<Player | null> {
     throw error;
   }
 
-  return data ? fromRow(data as PlayerRow) : null;
+  return data
+    ? fromRow(data as PlayerRow)
+    : null;
 }
 
-export async function addPlayer(player: Player) {
+export async function addPlayer(
+  player: Player
+): Promise<void> {
   const row = toRow(player);
 
-  console.log("Sending player to Supabase:", row);
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("players")
-    .insert(row)
-    .select();
-
-  console.log("Response:", data);
+    .insert(row);
 
   if (error) {
-    console.error("Supabase insert error:", error);
-
-    alert(
-      `${error.message}\n\n${error.details ?? ""}\n\n${error.hint ?? ""}`
+    console.error(
+      "Supabase insert error:",
+      error
     );
 
     throw error;
   }
 }
 
-export async function updatePlayer(player: Player) {
+export async function updatePlayer(
+  player: Player
+): Promise<void> {
   const { error } = await supabase
     .from("players")
     .update(toRow(player))
     .eq("id", player.id);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
-export async function deletePlayer(id: string) {
+export async function deletePlayer(
+  id: string
+): Promise<void> {
   const { error } = await supabase
     .from("players")
     .delete()
     .eq("id", id);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
+}
+
+export async function linkPlayerToProfile(
+  playerId: string,
+  profileId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from("players")
+    .update({
+      profile_id: profileId,
+    })
+    .eq("id", playerId);
+
+  if (error) {
+    throw error;
+  }
 }

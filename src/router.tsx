@@ -7,13 +7,16 @@ import Clubs from "./pages/Clubs";
 import ClubProfile from "./pages/ClubProfile";
 import PlayerManagement from "./pages/PlayerManagement";
 import PlayerProfile from "./pages/PlayerProfile";
+import MyProfile from "./pages/MyProfile";
 import Rankings from "./pages/Rankings";
 import Matches from "./pages/Matches";
 import Events from "./pages/Events";
 import EventProfile from "./pages/EventProfile";
 import Simulator from "./pages/Simulator";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 
 import AdminRoute from "./components/auth/AdminRoute";
@@ -23,6 +26,12 @@ export const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
+
+  {
+    path: "/register",
+    element: <Register />,
+  },
+
   {
     path: "/",
     element: <AppLayout />,
@@ -54,6 +63,11 @@ export const router = createBrowserRouter([
       {
         path: "players/:id",
         element: <PlayerProfile />,
+      },
+
+      {
+        path: "my-profile",
+        element: <MyProfile />,
       },
 
       {
@@ -96,6 +110,15 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <Settings />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "settings/users",
+        element: (
+          <AdminRoute>
+            <UserManagement />
           </AdminRoute>
         ),
       },

@@ -14,6 +14,7 @@ import {
 } from "../services/supabase/clubService";
 
 import useRole from "../hooks/useRole";
+import { notify } from "../services/notificationService";
 
 export default function Events() {
   const {
@@ -63,14 +64,13 @@ export default function Events() {
 
         setClubId(userClubId);
       } else {
-        // Public users
         setEvents(eventData);
         setClubs(clubData);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Failed to load events.");
+      notify.fault("Failed to load events.");
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export default function Events() {
       : userClubId;
 
     if (!name.trim() || !assignedClubId || !eventDate) {
-      alert("Please complete all fields.");
+      notify.timeout("Please complete all fields.");
       return;
     }
 
@@ -100,6 +100,8 @@ export default function Events() {
 
       await loadData();
 
+      notify.eventCreated(event.name);
+
       setName("");
       setEventDate("");
 
@@ -109,7 +111,7 @@ export default function Events() {
 
     } catch (error) {
       console.error(error);
-      alert("Failed to create event.");
+      notify.fault("Failed to create event.");
     } finally {
       setSaving(false);
     }

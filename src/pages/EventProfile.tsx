@@ -9,6 +9,8 @@ import { getEvents } from "../services/supabase/eventService";
 import { getMatches } from "../services/supabase/matchService";
 import { getPlayers } from "../services/supabase/playerService";
 
+import { notify } from "../services/notificationService";
+
 export default function EventProfile() {
   const { id } = useParams();
 
@@ -42,6 +44,7 @@ export default function EventProfile() {
 
     } catch (error) {
       console.error(error);
+      notify.fault("Unable to load event.");
     } finally {
       setLoading(false);
     }
@@ -85,7 +88,6 @@ export default function EventProfile() {
   >();
 
   matches.forEach((match) => {
-
     if (!standings.has(match.winnerId)) {
       standings.set(match.winnerId, {
         wins: 0,
@@ -102,7 +104,6 @@ export default function EventProfile() {
 
     standings.get(match.winnerId)!.wins++;
     standings.get(match.loserId)!.losses++;
-
   });
 
   const ranking = [...standings.entries()].sort(
@@ -134,27 +135,17 @@ export default function EventProfile() {
       <div className="grid md:grid-cols-2 gap-6">
 
         <div className="bg-white rounded-xl shadow p-6">
-
-          <p className="text-slate-500">
-            Players
-          </p>
-
+          <p className="text-slate-500">Players</p>
           <h2 className="text-5xl font-bold mt-2">
             {standings.size}
           </h2>
-
         </div>
 
         <div className="bg-white rounded-xl shadow p-6">
-
-          <p className="text-slate-500">
-            Matches
-          </p>
-
+          <p className="text-slate-500">Matches</p>
           <h2 className="text-5xl font-bold mt-2">
             {matches.length}
           </h2>
-
         </div>
 
       </div>
@@ -178,12 +169,10 @@ export default function EventProfile() {
             <thead>
 
               <tr className="border-b">
-
                 <th className="text-left pb-3">Rank</th>
                 <th className="text-left pb-3">Player</th>
                 <th className="text-center pb-3">W</th>
                 <th className="text-center pb-3">L</th>
-
               </tr>
 
             </thead>
@@ -197,12 +186,10 @@ export default function EventProfile() {
                 );
 
                 return (
-
                   <tr
                     key={playerId}
                     className="border-b"
                   >
-
                     <td className="py-3">
                       {index === 0
                         ? "🥇"
@@ -226,9 +213,7 @@ export default function EventProfile() {
                     <td className="text-center">
                       {stats.losses}
                     </td>
-
                   </tr>
-
                 );
 
               })}

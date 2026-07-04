@@ -73,12 +73,19 @@ export default function Sidebar() {
 
             <div className="mt-1 space-y-1">
 
-              <NavLink
-                to="/rankings"
-                className={childLinkClass}
-              >
-                Rankings
-              </NavLink>
+             <NavLink
+  to="/rankings"
+  className={childLinkClass}
+>
+  Rankings
+</NavLink>
+
+<NavLink
+  to="/my-profile"
+  className={childLinkClass}
+>
+  My Profile
+</NavLink>
 
               <NavLink
                 to="/clubs"

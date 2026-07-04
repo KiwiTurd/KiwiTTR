@@ -7,6 +7,8 @@ import type { Club } from "../types/club";
 import { getPlayers } from "../services/supabase/playerService";
 import { getClubs } from "../services/supabase/clubService";
 
+import { notify } from "../services/notificationService";
+
 export default function Rankings() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -31,9 +33,10 @@ export default function Rankings() {
 
       setPlayers(playerData);
       setClubs(clubData);
+
     } catch (error) {
       console.error(error);
-      alert("Failed to load rankings.");
+      notify.fault("Failed to load rankings.");
     } finally {
       setLoading(false);
     }

@@ -26,6 +26,8 @@ import {
 import RatingGraph from "../components/player/RatingGraph";
 import RecentMatchCard from "../components/player/RecentMatchCard";
 
+import { notify } from "../services/notificationService";
+
 export default function PlayerProfile() {
   const { id } = useParams();
 
@@ -83,7 +85,7 @@ export default function PlayerProfile() {
 
     } catch (error) {
       console.error(error);
-      alert("Unable to load player.");
+      notify.fault("Unable to load player.");
     } finally {
       setLoading(false);
     }
@@ -298,7 +300,8 @@ export default function PlayerProfile() {
         </div>
 
       </div>
-            <div className="bg-white rounded-xl shadow p-8">
+
+      <div className="bg-white rounded-xl shadow p-8">
 
         <h2 className="text-2xl font-bold mb-6">
           Career Statistics
@@ -307,69 +310,41 @@ export default function PlayerProfile() {
         <div className="grid md:grid-cols-2 gap-y-4">
 
           <p>Wins</p>
-
-          <p className="font-semibold">
-            {player.wins}
-          </p>
+          <p className="font-semibold">{player.wins}</p>
 
           <p>Losses</p>
-
-          <p className="font-semibold">
-            {player.losses}
-          </p>
+          <p className="font-semibold">{player.losses}</p>
 
           <p>Win Percentage</p>
-
-          <p className="font-semibold">
-            {winPercentage}%
-          </p>
+          <p className="font-semibold">{winPercentage}%</p>
 
           <p>Matches Played</p>
-
-          <p className="font-semibold">
-            {player.matchesPlayed}
-          </p>
+          <p className="font-semibold">{player.matchesPlayed}</p>
 
           <p>Highest Rating</p>
-
-          <p className="font-semibold">
-            {player.highestRating}
-          </p>
+          <p className="font-semibold">{player.highestRating}</p>
 
           <p>Current Rating</p>
-
-          <p className="font-semibold">
-            {player.rating}
-          </p>
+          <p className="font-semibold">{player.rating}</p>
 
           <p>Rating Reliability</p>
-
-          <p className="font-semibold">
-            {player.ratingReliability}
-          </p>
+          <p className="font-semibold">{player.ratingReliability}</p>
 
           <p>Provisional Matches Remaining</p>
-
           <p className="font-semibold">
-
             {player.provisionalMatchesRemaining === 0
               ? "Established"
               : player.provisionalMatchesRemaining}
-
           </p>
 
           <p>Status</p>
-
           <p className="font-semibold">
-
             {player.isActive
               ? "Active"
               : "Inactive"}
-
           </p>
 
           <p>Member Since</p>
-
           <p className="font-semibold">
             {new Date(
               player.createdAt

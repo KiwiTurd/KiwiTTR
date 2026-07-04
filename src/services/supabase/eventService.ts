@@ -60,7 +60,9 @@ export async function getEvent(
   return data ? fromRow(data as EventRow) : null;
 }
 
-export async function addEvent(event: Event) {
+export async function addEvent(
+  event: Event
+): Promise<void> {
   const { error } = await supabase
     .from("events")
     .insert(toRow(event));
@@ -71,7 +73,9 @@ export async function addEvent(event: Event) {
   }
 }
 
-export async function updateEvent(event: Event) {
+export async function updateEvent(
+  event: Event
+): Promise<void> {
   const { error } = await supabase
     .from("events")
     .update(toRow(event))
@@ -83,7 +87,9 @@ export async function updateEvent(event: Event) {
   }
 }
 
-export async function deleteEvent(id: string) {
+export async function deleteEvent(
+  id: string
+): Promise<void> {
   const { error } = await supabase
     .from("events")
     .delete()
