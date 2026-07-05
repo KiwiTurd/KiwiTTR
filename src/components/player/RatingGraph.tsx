@@ -149,50 +149,50 @@ export default function RatingGraph({
     // Keep every match played TODAY,
 // but only the final rating for previous days.
 
-const today = new Date().toISOString().split("T")[0];
-
-const grouped = new Map<
-  string,
-  RatingHistory[]
->();
+const grouped = new Map<string, RatingHistory[]>();
 
 filtered.forEach((record) => {
-
-  const key = new Date(record.recordedAt)
+  const day = new Date(record.recordedAt)
     .toISOString()
     .split("T")[0];
 
-  if (!grouped.has(key)) {
-    grouped.set(key, []);
+  if (!grouped.has(day)) {
+    grouped.set(day, []);
   }
 
-  grouped.get(key)!.push(record);
-
+  grouped.get(day)!.push(record);
 });
+
+// Find the latest day that has rating history
+const latestDay = [...grouped.keys()]
+  .sort()
+  .at(-1);
 
 const daily: RatingHistory[] = [];
 
-grouped.forEach((records, day) => {
+[...grouped.entries()]
+  .sort(([a], [b]) => a.localeCompare(b))
+  .forEach(([day, records]) => {
 
-  if (day === today) {
+    records.sort(
+      (a, b) =>
+        new Date(a.recordedAt).getTime() -
+        new Date(b.recordedAt).getTime()
+    );
 
-    // Today's matches stay individual
-    daily.push(...records);
+    if (day === latestDay) {
 
-  } else {
+      // Show every rating change on the most recent day
+      daily.push(...records);
 
-    // Historical days become one point
-    daily.push(records[records.length - 1]);
+    } else {
 
-  }
+      // Older days collapse to the day's final rating
+      daily.push(records[records.length - 1]);
 
-});
+    }
 
-daily.sort(
-  (a, b) =>
-    new Date(a.recordedAt).getTime() -
-    new Date(b.recordedAt).getTime()
-);
+  });
 
     if (daily.length === 0) {
       return [];

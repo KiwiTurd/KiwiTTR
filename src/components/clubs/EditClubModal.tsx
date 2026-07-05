@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 
 import type { Club } from "../../types/club";
 
-import Modal from "../ui/Modal";
-import Button from "../ui/Button";
+import Modal from "../shared/Modal";
+import Button from "../shared/Button";
 
 interface Props {
   open: boolean;

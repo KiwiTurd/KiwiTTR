@@ -1,4 +1,4 @@
-import Card from "./Card";
+import Card from "../shared/Card";
 
 interface Props {
   title: string;

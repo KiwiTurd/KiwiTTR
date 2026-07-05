@@ -1,9 +1,14 @@
 import {
   LogOut,
   Shield,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
 
 import { supabase } from "../../lib/supabase";
 
@@ -102,7 +107,7 @@ export default function SidebarFooter() {
 
         </div>
 
-      ) : (
+      ) : session ? (
 
         <>
 
@@ -114,7 +119,6 @@ export default function SidebarFooter() {
               border
               border-slate-200
               bg-slate-50
-
               ${
                 collapsed
                   ? "p-3"
@@ -135,20 +139,14 @@ export default function SidebarFooter() {
                 className="
                   h-11
                   w-11
-
                   rounded-full
-
                   bg-blue-900
-
                   flex
                   items-center
                   justify-center
-
                   text-white
-
                   font-bold
                   text-sm
-
                   shrink-0
                 "
               >
@@ -169,7 +167,7 @@ export default function SidebarFooter() {
 
                   <p className="text-xs text-slate-500 truncate mt-0.5">
 
-                    {session?.user.email}
+                    {session.user.email}
 
                   </p>
 
@@ -178,19 +176,13 @@ export default function SidebarFooter() {
                       inline-flex
                       items-center
                       gap-1
-
                       mt-2
-
                       rounded-full
-
                       bg-blue-100
-
                       px-2
                       py-1
-
                       text-[11px]
                       font-medium
-
                       text-blue-800
                     "
                   >
@@ -215,29 +207,20 @@ export default function SidebarFooter() {
             onClick={handleLogout}
             className={`
               mt-3
-
               flex
               items-center
-
               ${
                 collapsed
                   ? "justify-center"
                   : "justify-center gap-2"
               }
-
               w-full
-
               rounded-xl
-
               border
-
               py-2.5
-
               text-slate-600
-
               transition-all
               duration-200
-
               hover:border-red-300
               hover:bg-red-50
               hover:text-red-700
@@ -258,30 +241,155 @@ export default function SidebarFooter() {
 
           </button>
 
-          {/* Version */}
+        </>
+
+      ) : (
+
+        <>
+
+          {/* Guest Card */}
 
           <div
-            className="
-              mt-4
-              border-t
-              pt-3
-              text-center
-              text-xs
-              text-slate-400
-            "
+            className={`
+              rounded-2xl
+              border
+              border-slate-200
+              bg-slate-50
+              ${
+                collapsed
+                  ? "p-3"
+                  : "p-4"
+              }
+            `}
           >
 
-            {collapsed
+            {collapsed ? (
 
-              ? `v${__APP_VERSION__}`
+              <div className="flex justify-center">
 
-              : `KiwiTTR v${__APP_VERSION__}`}
+                <div
+                  className="
+                    h-11
+                    w-11
+                    rounded-full
+                    bg-blue-900
+                    flex
+                    items-center
+                    justify-center
+                    text-white
+                    font-bold
+                  "
+                >
+
+                  ?
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <>
+
+                <h3 className="font-semibold">
+
+                  Welcome
+
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500">
+
+                  Sign in to access your profile, ratings and competitions.
+
+                </p>
+
+              </>
+
+            )}
 
           </div>
+
+          <Link
+            to="/login"
+            className={`
+              mt-3
+              flex
+              items-center
+              ${
+                collapsed
+                  ? "justify-center"
+                  : "justify-center gap-2"
+              }
+              w-full
+              rounded-xl
+              bg-blue-900
+              py-2.5
+              font-medium
+              text-white
+              transition
+              hover:bg-blue-800
+            `}
+          >
+
+            <LogIn className="w-4 h-4" />
+
+            {!collapsed && "Sign In"}
+
+          </Link>
+
+          {!collapsed && (
+
+            <Link
+              to="/register"
+              className="
+                mt-3
+                flex
+                items-center
+                justify-center
+                gap-2
+                w-full
+                rounded-xl
+                border
+                py-2.5
+                font-medium
+                text-slate-700
+                transition
+                hover:bg-slate-50
+              "
+            >
+
+              <UserPlus className="w-4 h-4" />
+
+              Create Account
+
+            </Link>
+
+          )}
 
         </>
 
       )}
+
+      {/* Version */}
+
+      <div
+        className="
+          mt-4
+          border-t
+          pt-3
+          text-center
+          text-xs
+          text-slate-400
+        "
+      >
+
+        {collapsed
+
+          ? `v${__APP_VERSION__}`
+
+          : `KiwiTTR v${__APP_VERSION__}`}
+
+      </div>
 
     </div>
 

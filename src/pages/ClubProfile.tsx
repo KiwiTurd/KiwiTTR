@@ -15,8 +15,8 @@ import {
 
 import PageHeader from "../components/ui/PageHeader";
 import StatCard from "../components/ui/StatCard";
-import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
+import Card from "../components/shared/Card";
+import Button from "../components/shared/Button";
 
 import EditClubModal from "../components/clubs/EditClubModal";
 
