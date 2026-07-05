@@ -176,9 +176,9 @@ export default function Dashboard() {
 
       </div>
 
-      <div className="text-center text-sm text-slate-400 pb-2">
-  KiwiTTR v{__APP_VERSION__} • © 2026
-</div>
+      <p className="text-sm text-slate-500">
+  Version {__APP_VERSION__}
+</p>
 
     </div>
   );

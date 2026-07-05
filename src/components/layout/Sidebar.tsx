@@ -1,59 +1,116 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+
+import {
+  PanelLeft,
+  PanelLeftClose,
+  LayoutDashboard,
+  Trophy,
+  User,
+  Building2,
+  CalendarDays,
+  Users,
+  ClipboardPen,
+  Calculator,
+  Settings,
+  Medal,
+  Wrench,
+  Swords,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+
+import { useSidebar } from "../../context/SidebarContext";
 
 import GlobalSearch from "./GlobalSearch";
 
 import useRole from "../../hooks/useRole";
+
+import SidebarLink from "./SidebarLink";
 
 export default function Sidebar() {
   const {
     isAdmin,
     isClubLeader,
   } = useRole();
+  const {
+  collapsed,
+  toggle,
+} = useSidebar();
 
   const [competitionOpen, setCompetitionOpen] = useState(true);
   const [matchCentreOpen, setMatchCentreOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(false);
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `block rounded-lg px-4 py-3 transition font-medium ${
-      isActive
-        ? "bg-blue-900 text-white"
-        : "text-slate-800 hover:bg-slate-100"
-    }`;
+  ({ isActive }: { isActive: boolean }) =>
+  `flex items-center ${
+    collapsed
+      ? "justify-center px-0"
+      : "gap-3 px-4"
+  } py-3 rounded-lg transition font-medium ${
+    isActive
+      ? "bg-blue-900 text-white"
+      : "text-slate-800 hover:bg-slate-100"
+  }`;
 
-  const childLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `block rounded-lg px-4 py-2 ml-5 transition ${
-      isActive
-        ? "bg-blue-900 text-white"
-        : "text-slate-700 hover:bg-slate-100"
-    }`;
+({ isActive }: { isActive: boolean }) =>
+  `flex items-center ${
+    collapsed
+      ? "justify-center px-0"
+      : "gap-3 px-4"
+  } py-3 rounded-lg transition font-medium ${
+    isActive
+      ? "bg-blue-900 text-white"
+      : "text-slate-700 hover:bg-slate-100"
+  }`;
 
   return (
-    <aside className="w-72 bg-white border-r border-slate-200 flex flex-col h-screen">
+    <aside
+  className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-200 flex flex-col shadow-sm z-40 transition-all duration-200 ${
+    collapsed
+      ? "w-20"
+      : "w-72"
+  }`}
+>
 
-      <div className="px-6 py-6 border-b">
+      <div className="px-4 py-5 border-b flex items-center justify-between">
 
-        <h1 className="text-2xl font-bold tracking-tight">
-          KiwiTTR
-        </h1>
+  {!collapsed && (
+    <h1 className="text-2xl font-bold tracking-tight">
+      KiwiTTR
+    </h1>
+  )}
 
-      </div>
+  <button
+    onClick={toggle}
+    className="rounded-lg p-2 hover:bg-slate-100 transition"
+  >
+    {collapsed ? (
+      <PanelLeft className="w-5 h-5 text-slate-600" />
+    ) : (
+      <PanelLeftClose className="w-5 h-5 text-slate-600" />
+    )}
+  </button>
 
-      <nav className="flex-1 overflow-y-auto px-4 py-4">
+</div>
 
-        <NavLink
-          to="/"
-          className={navLinkClass}
-        >
-          Dashboard
-        </NavLink>
+      <nav className="flex-1 px-4 py-4 overflow-y-auto">
 
-        <div className="mt-6 mb-6">
+        <SidebarLink
+  to="/"
+  label="Dashboard"
+  icon={<LayoutDashboard className="w-5 h-5" />}
+  collapsed={collapsed}
+/>
 
-          <GlobalSearch />
+        {!collapsed && (
 
-        </div>
+  <div className="mt-6 mb-6">
+
+    <GlobalSearch />
+
+  </div>
+
+)}
 
         {/* Competition */}
 
@@ -63,52 +120,64 @@ export default function Sidebar() {
             onClick={() => setCompetitionOpen(!competitionOpen)}
             className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition"
           >
-            <span>Competition</span>
+            <div className="flex items-center gap-2">
 
-            <span>{competitionOpen ? "▼" : "▶"}</span>
+  <Medal className="w-4 h-4" />
 
+  {!collapsed && (
+    <span>Competition</span>
+  )}
+
+</div>
+
+{!collapsed &&
+  (competitionOpen ? (
+    <ChevronDown className="w-4 h-4" />
+  ) : (
+    <ChevronRight className="w-4 h-4" />
+  ))}
           </button>
 
           {competitionOpen && (
 
             <div className="mt-1 space-y-1">
 
-             <NavLink
+             <SidebarLink
   to="/rankings"
-  className={childLinkClass}
->
-  Rankings
-</NavLink>
+  label="Rankings"
+  icon={<Trophy className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
-<NavLink
+<SidebarLink
   to="/my-profile"
-  className={childLinkClass}
->
-  My Profile
-</NavLink>
+  label="My Profile"
+  icon={<User className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
-              <NavLink
-                to="/clubs"
-                className={childLinkClass}
-              >
-                Clubs
-              </NavLink>
+             <SidebarLink
+  to="/clubs"
+  label="Clubs"
+  icon={<Building2 className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
-              <NavLink
-                to="/events"
-                className={childLinkClass}
-              >
-                Events
-              </NavLink>
+              <SidebarLink
+  to="/events"
+  label="Events"
+  icon={<CalendarDays className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
               {isAdmin && (
 
-                <NavLink
-                  to="/players"
-                  className={childLinkClass}
-                >
-                  Player Management
-                </NavLink>
+                <SidebarLink
+  to="/players"
+  label="Player Management"
+  icon={<Users className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
               )}
 
@@ -128,9 +197,22 @@ export default function Sidebar() {
               onClick={() => setMatchCentreOpen(!matchCentreOpen)}
               className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition"
             >
-              <span>Match Centre</span>
+              <div className="flex items-center gap-2">
 
-              <span>{matchCentreOpen ? "▼" : "▶"}</span>
+  <Swords className="w-4 h-4" />
+
+  {!collapsed && (
+    <span>Match Centre</span>
+  )}
+
+</div>
+
+{!collapsed &&
+  (matchCentreOpen ? (
+    <ChevronDown className="w-4 h-4" />
+  ) : (
+    <ChevronRight className="w-4 h-4" />
+  ))}
 
             </button>
 
@@ -138,12 +220,12 @@ export default function Sidebar() {
 
               <div className="mt-1 space-y-1">
 
-                <NavLink
-                  to="/matches"
-                  className={childLinkClass}
-                >
-                  Record Match
-                </NavLink>
+                <SidebarLink
+  to="/matches"
+  label="Record Match"
+  icon={<ClipboardPen className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
               </div>
 
@@ -161,9 +243,22 @@ export default function Sidebar() {
             onClick={() => setToolsOpen(!toolsOpen)}
             className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-100 transition"
           >
-            <span>Tools</span>
+            <div className="flex items-center gap-2">
 
-            <span>{toolsOpen ? "▼" : "▶"}</span>
+  <Wrench className="w-4 h-4" />
+
+  {!collapsed && (
+    <span>Tools</span>
+  )}
+
+</div>
+
+{!collapsed &&
+  (toolsOpen ? (
+    <ChevronDown className="w-4 h-4" />
+  ) : (
+    <ChevronRight className="w-4 h-4" />
+  ))}
 
           </button>
 
@@ -171,21 +266,21 @@ export default function Sidebar() {
 
             <div className="mt-1 space-y-1">
 
-              <NavLink
-                to="/simulator"
-                className={childLinkClass}
-              >
-                TTR Calculator
-              </NavLink>
+              <SidebarLink
+  to="/simulator"
+  label="TTR Calculator"
+  icon={<Calculator className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
               {isAdmin && (
 
-                <NavLink
-                  to="/settings"
-                  className={childLinkClass}
-                >
-                  Settings
-                </NavLink>
+                <SidebarLink
+  to="/settings"
+  label="Settings"
+  icon={<Settings className="w-4 h-4" />}
+  collapsed={collapsed}
+/>
 
               )}
 
@@ -197,11 +292,11 @@ export default function Sidebar() {
 
       </nav>
 
-      <div className="border-t px-6 py-4 text-xs text-slate-400">
-
-        Version 0.2.0
-
-      </div>
+      <div className="border-t px-4 py-4 text-xs text-slate-400 text-center">
+  {collapsed
+    ? `v${__APP_VERSION__}`
+    : `KiwiTTR v${__APP_VERSION__}`}
+</div>
 
     </aside>
   );

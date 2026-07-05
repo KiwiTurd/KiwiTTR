@@ -10,23 +10,32 @@ import { router } from "./router";
 
 import { AuthProvider } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
+import { SidebarProvider } from "./context/SidebarContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+
     <AuthProvider>
+
       <ProfileProvider>
 
-        <RouterProvider router={router} />
+        <SidebarProvider>
 
-        <Toaster
-          position="bottom-right"
-          richColors
-          closeButton
-          expand
-          duration={4000}
-        />
+          <RouterProvider router={router} />
+
+          <Toaster
+            position="bottom-right"
+            richColors
+            closeButton
+            expand
+            duration={4000}
+          />
+
+        </SidebarProvider>
 
       </ProfileProvider>
+
     </AuthProvider>
+
   </StrictMode>
 );
