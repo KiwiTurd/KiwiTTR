@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import Sidebar from "./Sidebar";
-import Navbar from "./Navbar";
 
 import { useSidebar } from "../../context/SidebarContext";
 
@@ -17,31 +16,28 @@ export default function Layout({
 
   return (
 
-    <div className="h-screen bg-slate-100 overflow-hidden">
-
-      {/* Sidebar */}
+    <div className="flex h-screen bg-slate-100">
 
       <Sidebar />
 
-      {/* Main */}
-
-      <div
-        className={`h-screen flex flex-col transition-all duration-200 ${
-          collapsed
-            ? "ml-20"
-            : "ml-72"
-        }`}
+      <main
+        className={`
+          flex-1
+          overflow-y-auto
+          transition-all
+          duration-300
+          p-8
+          ${
+            collapsed
+              ? "ml-20"
+              : "ml-72"
+          }
+        `}
       >
 
-        <Navbar />
+        {children}
 
-        <main className="flex-1 overflow-y-auto p-8">
-
-          {children}
-
-        </main>
-
-      </div>
+      </main>
 
     </div>
 
