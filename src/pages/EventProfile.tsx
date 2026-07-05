@@ -11,6 +11,8 @@ import { getPlayers } from "../services/supabase/playerService";
 
 import { notify } from "../services/notificationService";
 
+import EventMatchCard from "../components/events/EventMatchCard";
+
 export default function EventProfile() {
   const { id } = useParams();
 
@@ -18,6 +20,8 @@ export default function EventProfile() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [showMatches, setShowMatches] = useState(false);
 
   useEffect(() => {
     void loadData();
@@ -34,10 +38,14 @@ export default function EventProfile() {
           getPlayers(),
         ]);
 
-      setEvent(events.find((e) => e.id === id) ?? null);
+      setEvent(
+        events.find((e) => e.id === id) ?? null
+      );
 
       setMatches(
-        matchData.filter((m) => m.eventId === id)
+        matchData.filter(
+          (m) => m.eventId === id
+        )
       );
 
       setPlayers(playerData);
@@ -88,6 +96,7 @@ export default function EventProfile() {
   >();
 
   matches.forEach((match) => {
+
     if (!standings.has(match.winnerId)) {
       standings.set(match.winnerId, {
         wins: 0,
@@ -104,6 +113,7 @@ export default function EventProfile() {
 
     standings.get(match.winnerId)!.wins++;
     standings.get(match.loserId)!.losses++;
+
   });
 
   const ranking = [...standings.entries()].sort(
@@ -135,17 +145,27 @@ export default function EventProfile() {
       <div className="grid md:grid-cols-2 gap-6">
 
         <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-slate-500">Players</p>
+
+          <p className="text-slate-500">
+            Players
+          </p>
+
           <h2 className="text-5xl font-bold mt-2">
             {standings.size}
           </h2>
+
         </div>
 
         <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-slate-500">Matches</p>
+
+          <p className="text-slate-500">
+            Matches
+          </p>
+
           <h2 className="text-5xl font-bold mt-2">
             {matches.length}
           </h2>
+
         </div>
 
       </div>
@@ -169,10 +189,23 @@ export default function EventProfile() {
             <thead>
 
               <tr className="border-b">
-                <th className="text-left pb-3">Rank</th>
-                <th className="text-left pb-3">Player</th>
-                <th className="text-center pb-3">W</th>
-                <th className="text-center pb-3">L</th>
+
+                <th className="text-left pb-3">
+                  Rank
+                </th>
+
+                <th className="text-left pb-3">
+                  Player
+                </th>
+
+                <th className="text-center pb-3">
+                  W
+                </th>
+
+                <th className="text-center pb-3">
+                  L
+                </th>
+
               </tr>
 
             </thead>
@@ -186,11 +219,14 @@ export default function EventProfile() {
                 );
 
                 return (
+
                   <tr
                     key={playerId}
                     className="border-b"
                   >
+
                     <td className="py-3">
+
                       {index === 0
                         ? "🥇"
                         : index === 1
@@ -198,12 +234,15 @@ export default function EventProfile() {
                         : index === 2
                         ? "🥉"
                         : index + 1}
+
                     </td>
 
                     <td>
+
                       {player
                         ? `${player.firstName} ${player.lastName}`
                         : "Unknown"}
+
                     </td>
 
                     <td className="text-center">
@@ -213,7 +252,9 @@ export default function EventProfile() {
                     <td className="text-center">
                       {stats.losses}
                     </td>
+
                   </tr>
+
                 );
 
               })}
@@ -223,6 +264,74 @@ export default function EventProfile() {
           </table>
 
         )}
+
+      </div>
+
+      <div className="bg-white rounded-xl shadow p-8">
+
+        <button
+          onClick={() =>
+            setShowMatches(!showMatches)
+          }
+          className="w-full flex items-center justify-between hover:text-blue-700 transition"
+        >
+
+          <h2 className="text-2xl font-bold">
+            Match Results ({matches.length})
+          </h2>
+
+          <span
+            className={`text-2xl transition-transform duration-300 ${
+              showMatches
+                ? "rotate-90"
+                : ""
+            }`}
+          >
+            ▶
+          </span>
+
+        </button>
+
+        <div
+          className={`overflow-hidden transition-all duration-500 ${
+            showMatches
+              ? "max-h-[5000px] opacity-100 mt-6"
+              : "max-h-0 opacity-0"
+          }`}
+        >
+
+          {matches.length === 0 ? (
+
+            <p className="text-slate-500">
+              No matches have been recorded yet.
+            </p>
+
+          ) : (
+
+            <div className="space-y-4">
+
+              {matches.map((match) => (
+
+                <EventMatchCard
+                  key={match.id}
+                  match={match}
+                  winner={players.find(
+                    (p) =>
+                      p.id === match.winnerId
+                  )}
+                  loser={players.find(
+                    (p) =>
+                      p.id === match.loserId
+                  )}
+                />
+
+              ))}
+
+            </div>
+
+          )}
+
+        </div>
 
       </div>
 

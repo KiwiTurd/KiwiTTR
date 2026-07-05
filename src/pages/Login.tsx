@@ -2,18 +2,29 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { supabase } from "../lib/supabase";
+
+import {
+  getProfile,
+} from "../services/supabase/profileService";
+
 import { notify } from "../services/notificationService";
 
 export default function Login() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] =
+    useState("");
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
+
+    if (
+      !email.trim() ||
+      !password.trim()
+    ) {
       notify.timeout(
         "Please enter your email and password."
       );
@@ -22,22 +33,56 @@ export default function Login() {
 
     setLoading(true);
 
-    const { error } =
+    const {
+      data,
+      error,
+    } =
       await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-    setLoading(false);
-
     if (error) {
+
+      setLoading(false);
+
       notify.fault(error.message);
+
       return;
+
     }
+
+    //
+    // Check account status
+    //
+    const profile =
+      await getProfile(
+        data.user.id
+      );
+
+    if (
+      profile &&
+      profile.status === "disabled"
+    ) {
+
+      await supabase.auth.signOut();
+
+      setLoading(false);
+
+      notify.fault(
+        "Your account has been disabled. Please contact an administrator."
+      );
+
+      return;
+
+    }
+
+    setLoading(false);
 
     notify.welcomeBack();
 
     navigate("/");
+
   }
 
   function handleKeyDown(
@@ -110,7 +155,9 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-slate-400 text-white py-3 rounded-xl font-semibold transition"
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {loading
+              ? "Signing In..."
+              : "Sign In"}
           </button>
 
         </div>

@@ -13,7 +13,10 @@ type ProfileRow = {
   first_name: string | null;
   last_name: string | null;
 
+  email: string | null;
+
   role: string;
+  status: string;
 
   club_id: string | null;
   player_id: string | null;
@@ -28,7 +31,10 @@ function fromRow(row: ProfileRow): Profile {
     firstName: row.first_name ?? "",
     lastName: row.last_name ?? "",
 
+    email: row.email ?? "",
+
     role: row.role as Profile["role"],
+    status: row.status as Profile["status"],
 
     clubId: row.club_id,
     playerId: row.player_id,
@@ -44,7 +50,10 @@ function toRow(profile: Profile) {
     first_name: profile.firstName,
     last_name: profile.lastName,
 
+    email: profile.email,
+
     role: profile.role,
+    status: profile.status,
 
     club_id: profile.clubId,
     player_id: profile.playerId,
@@ -179,12 +188,44 @@ export async function saveProfile(
       first_name: profile.firstName,
       last_name: profile.lastName,
 
+      email: profile.email,
+
       role: profile.role,
+      status: profile.status,
 
       club_id: profile.clubId,
       player_id: profile.playerId,
     })
     .eq("id", profile.id);
+
+  if (error) {
+    throw error;
+  }
+}
+export async function setProfileStatus(
+  profileId: string,
+  status: Profile["status"]
+): Promise<void> {
+
+  console.log("Updating profile ID:", profileId);
+
+  const { data: row } = await supabase
+    .from("profiles")
+    .select("id, first_name, status")
+    .eq("id", profileId);
+
+  console.log("Row before update:", row);
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      status,
+    })
+    .eq("id", profileId)
+    .select();
+
+  console.log("Update result:", data);
+  console.log("Update error:", error);
 
   if (error) {
     throw error;

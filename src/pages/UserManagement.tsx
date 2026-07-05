@@ -7,6 +7,7 @@ import type { Player } from "../types/player";
 import {
   getProfiles,
   saveProfile,
+  setProfileStatus,
 } from "../services/supabase/profileService";
 
 import {
@@ -21,6 +22,7 @@ import EditUserModal from "../components/settings/EditUserModal";
 import { notify } from "../services/notificationService";
 
 export default function UserManagement() {
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -39,6 +41,7 @@ export default function UserManagement() {
 
   async function loadData() {
     try {
+
       setLoading(true);
 
       const [
@@ -56,16 +59,21 @@ export default function UserManagement() {
       setPlayers(playerData);
 
     } catch (error) {
+
       console.error(error);
       notify.fault("Failed to load users.");
+
     } finally {
+
       setLoading(false);
+
     }
   }
 
   function getClubName(
     clubId: string | null
   ) {
+
     if (!clubId) {
       return "-";
     }
@@ -75,12 +83,57 @@ export default function UserManagement() {
         (club) => club.id === clubId
       )?.name ?? "-"
     );
+
+  }
+
+  function getPlayerName(
+    playerId: string | null
+  ) {
+
+    if (!playerId) {
+      return "-";
+    }
+
+    const player = players.find(
+      (p) => p.id === playerId
+    );
+
+    if (!player) {
+      return "-";
+    }
+
+    return `${player.firstName} ${player.lastName}`;
+
+  }
+
+  function getStatusBadge(
+    status: Profile["status"]
+  ) {
+
+    if (status === "active") {
+
+      return (
+        <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-3 py-1 text-sm font-medium">
+          🟢 Active
+        </span>
+      );
+
+    }
+
+    return (
+      <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 px-3 py-1 text-sm font-medium">
+        🔴 Disabled
+      </span>
+    );
+
   }
 
   function getRoleDisplay(
     role: Profile["role"]
   ) {
+
     switch (role) {
+
       case "admin":
         return "👑 Admin";
 
@@ -89,34 +142,85 @@ export default function UserManagement() {
 
       default:
         return "👤 Member";
+
     }
+
   }
 
   async function handleSave(
     profile: Profile
   ) {
-    try {
-      await saveProfile(profile);
 
-      setProfiles((current) =>
-        current.map((p) =>
-          p.id === profile.id
-            ? profile
-            : p
-        )
-      );
+    try {
+
+      await saveProfile(profile);
 
       notify.edgeBall(
         "User updated successfully."
       );
 
+      await loadData();
+
     } catch (error) {
+
       console.error(error);
-      notify.fault("Failed to save user.");
+
+      notify.fault(
+        "Failed to save user."
+      );
+
     }
+
+  }
+
+  async function handleToggleStatus(
+    profile: Profile
+  ) {
+
+    const newStatus =
+      profile.status === "active"
+        ? "disabled"
+        : "active";
+
+    const confirmed = window.confirm(
+      `${
+        newStatus === "disabled"
+          ? "Disable"
+          : "Enable"
+      } ${profile.firstName} ${profile.lastName}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      await setProfileStatus(
+        profile.id,
+        newStatus
+      );
+
+      notify.edgeBall(
+        `User ${newStatus}.`
+      );
+
+      await loadData();
+
+    } catch (error) {
+
+      console.error(error);
+
+      notify.fault(
+        "Unable to update user."
+      );
+
+    }
+
   }
 
   return (
+
     <div className="max-w-7xl mx-auto">
 
       <h1 className="text-4xl font-bold mb-8">
@@ -136,6 +240,14 @@ export default function UserManagement() {
               </th>
 
               <th className="text-left">
+                Email
+              </th>
+
+              <th className="text-left">
+                Status
+              </th>
+
+              <th className="text-left">
                 Role
               </th>
 
@@ -143,8 +255,12 @@ export default function UserManagement() {
                 Club
               </th>
 
+              <th className="text-left">
+                Linked Player
+              </th>
+
               <th className="text-center">
-                Action
+                Actions
               </th>
 
             </tr>
@@ -152,13 +268,12 @@ export default function UserManagement() {
           </thead>
 
           <tbody>
-
-            {loading ? (
+                        {loading ? (
 
               <tr>
 
                 <td
-                  colSpan={4}
+                  colSpan={7}
                   className="text-center py-10"
                 >
                   Loading users...
@@ -176,37 +291,93 @@ export default function UserManagement() {
                 >
 
                   <td className="p-4">
+
                     {profile.firstName ||
                     profile.lastName
                       ? `${profile.firstName} ${profile.lastName}`
                       : "Unnamed User"}
+
                   </td>
 
                   <td>
+
+                    {profile.email || "-"}
+
+                  </td>
+
+                  <td>
+
+                    {getStatusBadge(
+                      profile.status
+                    )}
+
+                  </td>
+
+                  <td>
+
                     {getRoleDisplay(
                       profile.role
                     )}
+
                   </td>
 
                   <td>
+
                     {getClubName(
                       profile.clubId
                     )}
+
+                  </td>
+
+                  <td>
+
+                    {getPlayerName(
+                      profile.playerId
+                    )}
+
                   </td>
 
                   <td className="text-center">
 
-                    <button
-                      onClick={() => {
-                        setSelectedProfile(
-                          profile
-                        );
-                        setModalOpen(true);
-                      }}
-                      className="text-blue-700 hover:underline"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex justify-center gap-4">
+
+                      <button
+                        onClick={() => {
+
+                          setSelectedProfile(
+                            profile
+                          );
+
+                          setModalOpen(
+                            true
+                          );
+
+                        }}
+                        className="text-blue-700 hover:underline"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          void handleToggleStatus(
+                            profile
+                          )
+                        }
+                        className={
+                          profile.status ===
+                          "active"
+                            ? "text-red-600 hover:underline"
+                            : "text-green-600 hover:underline"
+                        }
+                      >
+                        {profile.status ===
+                        "active"
+                          ? "Disable"
+                          : "Enable"}
+                      </button>
+
+                    </div>
 
                   </td>
 
@@ -221,24 +392,37 @@ export default function UserManagement() {
         </table>
 
       </div>
-
-      <EditUserModal
+            <EditUserModal
         profile={selectedProfile}
         clubs={clubs}
         players={players}
         open={modalOpen}
         onClose={() => {
+
           setModalOpen(false);
-          setSelectedProfile(null);
+
+          setSelectedProfile(
+            null
+          );
 
           void loadData();
+
         }}
-        onSave={async (profile) => {
-          await handleSave(profile);
+        onSave={async (
+          profile
+        ) => {
+
+          await handleSave(
+            profile
+          );
+
           await loadData();
+
         }}
       />
 
     </div>
+
   );
+
 }
