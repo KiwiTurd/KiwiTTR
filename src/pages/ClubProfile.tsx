@@ -13,8 +13,8 @@ import {
   getPlayers,
 } from "../services/supabase/playerService";
 
-import PageHeader from "../components/ui/PageHeader";
-import StatCard from "../components/ui/StatCard";
+import PageHeader from "../components/shared/PageHeader";
+import StatCard from "../components/shared/StatCard";
 import Card from "../components/shared/Card";
 import Button from "../components/shared/Button";
 

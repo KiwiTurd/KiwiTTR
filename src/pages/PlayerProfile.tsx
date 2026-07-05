@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   BadgeCheck,
   Building2,
-  CalendarDays,
   ShieldCheck,
   Star,
   Target,

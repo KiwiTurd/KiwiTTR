@@ -1,33 +1,29 @@
 import type { ReactNode } from "react";
 
-type Props = {
+interface Props {
   title: string;
-  description?: string;
+  subtitle?: string;
   actions?: ReactNode;
-};
+}
 
 export default function PageHeader({
   title,
-  description,
+  subtitle,
   actions,
 }: Props) {
   return (
-    <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="flex justify-between items-start mb-8">
 
       <div>
 
-        <h1 className="text-4xl font-black tracking-tight text-slate-900">
-
+        <h1 className="text-5xl font-bold">
           {title}
-
         </h1>
 
-        {description && (
+        {subtitle && (
 
-          <p className="mt-2 text-slate-500">
-
-            {description}
-
+          <p className="text-slate-500 mt-2">
+            {subtitle}
           </p>
 
         )}
@@ -35,13 +31,9 @@ export default function PageHeader({
       </div>
 
       {actions && (
-
         <div>
-
           {actions}
-
         </div>
-
       )}
 
     </div>
