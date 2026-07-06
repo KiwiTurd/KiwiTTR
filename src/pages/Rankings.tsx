@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import {
+  ChevronRight,
+  Medal,
+  Search,
+  Trophy,
+  Award,
+} from "lucide-react";
+
 import type { Player } from "../types/player";
 import type { Club } from "../types/club";
 
@@ -10,23 +18,36 @@ import { getClubs } from "../services/supabase/clubService";
 import { notify } from "../services/notificationService";
 
 export default function Rankings() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [clubs, setClubs] = useState<Club[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [players, setPlayers] =
+    useState<Player[]>([]);
 
-  const [search, setSearch] = useState("");
-  const [clubFilter, setClubFilter] = useState("");
+  const [clubs, setClubs] =
+    useState<Club[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [search, setSearch] =
+    useState("");
+
+  const [clubFilter, setClubFilter] =
+    useState("");
 
   useEffect(() => {
     void loadData();
   }, []);
 
   async function loadData() {
+
     try {
+
       setLoading(true);
 
-      const [playerData, clubData] = await Promise.all([
+      const [
+        playerData,
+        clubData,
+      ] = await Promise.all([
         getPlayers(),
         getClubs(),
       ]);
@@ -35,89 +56,228 @@ export default function Rankings() {
       setClubs(clubData);
 
     } catch (error) {
+
       console.error(error);
-      notify.fault("Failed to load rankings.");
+
+      notify.fault(
+        "Failed to load rankings."
+      );
+
     } finally {
+
       setLoading(false);
+
     }
+
   }
 
   const rankings = useMemo(() => {
-    return players
-      .filter((player) => player.isActive)
-      .filter((player) =>
-        !clubFilter ? true : player.clubId === clubFilter
-      )
-      .filter((player) =>
-        `${player.firstName} ${player.lastName}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      )
-      .sort((a, b) => b.rating - a.rating);
-  }, [players, clubFilter, search]);
 
-  function getClubName(clubId: string) {
-    return clubs.find((c) => c.id === clubId)?.name ?? "-";
+    return players
+
+      .filter(
+        (player) => player.isActive
+      )
+
+      .filter((player) =>
+
+        !clubFilter
+
+          ? true
+
+          : player.clubId ===
+            clubFilter
+
+      )
+
+      .filter((player) =>
+
+        `${player.firstName} ${player.lastName}`
+
+          .toLowerCase()
+
+          .includes(
+            search.toLowerCase()
+          )
+
+      )
+
+      .sort(
+        (a, b) =>
+          b.rating - a.rating
+      );
+
+  }, [
+    players,
+    search,
+    clubFilter,
+  ]);
+
+  function getClubName(
+    clubId: string
+  ) {
+
+    return (
+      clubs.find(
+        (club) =>
+          club.id === clubId
+      )?.name ?? "-"
+    );
+
   }
 
-  function getRankDisplay(rank: number) {
-    switch (rank) {
-      case 1:
-        return "🥇";
-      case 2:
-        return "🥈";
-      case 3:
-        return "🥉";
-      default:
-        return rank.toString();
-    }
+function getRankBadge(rank: number) {
+
+  if (rank === 1) {
+
+    return (
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-400 text-white">
+        <Trophy className="h-4 w-4 fill-current" />
+      </div>
+    );
+
+  }
+
+  if (rank === 2) {
+
+    return (
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-400 text-white">
+        <Medal className="h-4 w-4" />
+      </div>
+    );
+
+  }
+
+  if (rank === 3) {
+
+    return (
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-700 text-white">
+        <Award className="h-4 w-4" />
+      </div>
+    );
+
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
 
-      <div className="flex justify-between items-center mb-8">
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900">
 
-        <div>
-          <h1 className="text-4xl font-bold">
-            Grand Rankings
-          </h1>
+      {rank}
 
-          <p className="text-slate-500 mt-2">
-            Live KiwiTTR Rankings
-          </p>
+    </div>
+
+  );
+
+}
+  
+return (
+
+    <div className="max-w-7xl mx-auto space-y-8">
+
+      {/* Header */}
+
+      <div>
+
+        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+
+          <Trophy className="h-4 w-4" />
+
+          National Rankings
+
         </div>
+
+        <h1 className="mt-4 text-5xl font-black tracking-tight">
+
+          Rankings
+
+        </h1>
+
+        <p className="mt-3 text-lg text-slate-500">
+
+          Live KiwiTTR rankings across New Zealand.
+
+        </p>
 
       </div>
 
-      <div className="bg-white rounded-xl shadow p-6 mb-8">
+      {/* Filters */}
 
-        <div className="grid md:grid-cols-2 gap-4">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
-          <input
-            type="text"
-            placeholder="Search player..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border rounded-lg p-3"
-          />
+        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+
+          <div className="relative">
+
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+              className="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                py-3
+                pl-12
+                pr-4
+
+                outline-none
+
+                transition
+
+                focus:border-blue-700
+                focus:ring-4
+                focus:ring-blue-100
+              "
+            />
+
+          </div>
 
           <select
             value={clubFilter}
-            onChange={(e) => setClubFilter(e.target.value)}
-            className="border rounded-lg p-3"
+            onChange={(e) =>
+              setClubFilter(e.target.value)
+            }
+            className="
+              rounded-xl
+              border
+              border-slate-300
+
+              px-4
+              py-3
+
+              outline-none
+
+              transition
+
+              focus:border-blue-700
+              focus:ring-4
+              focus:ring-blue-100
+            "
           >
+
             <option value="">
+
               All Clubs
+
             </option>
 
             {clubs.map((club) => (
+
               <option
                 key={club.id}
                 value={club.id}
               >
+
                 {club.name}
+
               </option>
+
             ))}
 
           </select>
@@ -126,145 +286,161 @@ export default function Rankings() {
 
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      {/* Rankings */}
 
-        <table className="w-full">
+      <div className="space-y-3">
 
-          <thead className="bg-slate-100">
+        {loading ? (
 
-            <tr>
+          <div className="rounded-3xl border bg-white p-12 text-center text-slate-500">
 
-              <th className="text-left p-4">
-                Rank
-              </th>
+            Loading rankings...
 
-              <th className="text-left">
-                Player
-              </th>
+          </div>
 
-              <th className="text-left">
-                Club
-              </th>
+        ) : rankings.length === 0 ? (
 
-              <th className="text-center">
-                Rating
-              </th>
+          <div className="rounded-3xl border bg-white p-12 text-center text-slate-500">
 
-              <th className="text-center">
-                W
-              </th>
+            No players found.
 
-              <th className="text-center">
-                L
-              </th>
+          </div>
 
-              <th className="text-center">
-                Win %
-              </th>
+        ) : (
 
-            </tr>
+          rankings.map((player, index) => {
 
-          </thead>
+            return (
 
-          <tbody>
+              <Link
+  key={player.id}
+  to={`/players/${player.id}`}
+  className="
+    group
+    block
 
-            {loading ? (
+    rounded-2xl
+    border
+    border-slate-200
 
-              <tr>
+    bg-white
 
-                <td
-                  colSpan={7}
-                  className="text-center py-10 text-slate-500"
-                >
-                  Loading rankings...
-                </td>
+    px-6
+    py-2.5
 
-              </tr>
+    shadow-sm
 
-            ) : rankings.length === 0 ? (
+    transition-all
+    duration-200
 
-              <tr>
+    hover:-translate-y-0.5
+    hover:border-blue-200
+    hover:shadow-md
+  "
+>
 
-                <td
-                  colSpan={7}
-                  className="text-center py-10 text-slate-500"
-                >
-                  No players found.
-                </td>
+  <div className="flex items-center">
 
-              </tr>
+    {/* Rank */}
 
-            ) : (
+    <div className="shrink-0">
 
-              rankings.map((player, index) => {
+      {getRankBadge(index + 1)}
 
-                const matches =
-                  player.wins + player.losses;
+    </div>
 
-                const winPercentage =
-                  matches === 0
-                    ? "-"
-                    : `${(
-                        (player.wins / matches) *
-                        100
-                      ).toFixed(1)}%`;
+    {/* Space between rank and player */}
 
-                return (
+    <div className="w-8" />
 
-                  <tr
-                    key={player.id}
-                    className="border-t hover:bg-slate-50 transition"
-                  >
+    {/* Player */}
 
-                    <td className="p-4 font-bold text-lg">
-                      {getRankDisplay(index + 1)}
-                    </td>
+    <div className="min-w-0 flex-1">
 
-                    <td className="font-medium">
+      <h2 className="truncate text-lg font-semibold tracking-tight text-slate-900">
 
-                      <Link
-                        to={`/players/${player.id}`}
-                        className="text-blue-700 hover:text-blue-900 hover:underline"
-                      >
-                        {player.firstName} {player.lastName}
-                      </Link>
+        {player.firstName} {player.lastName}
 
-                    </td>
+      </h2>
 
-                    <td>
-                      {getClubName(player.clubId)}
-                    </td>
+      <p className="mt-0.5 truncate text-sm text-slate-500">
 
-                    <td className="text-center font-bold">
-                      {player.rating}
-                    </td>
+        {getClubName(player.clubId)}
 
-                    <td className="text-center">
-                      {player.wins}
-                    </td>
+      </p>
 
-                    <td className="text-center">
-                      {player.losses}
-                    </td>
+    </div>
 
-                    <td className="text-center">
-                      {winPercentage}
-                    </td>
+    {/* Rating */}
 
-                  </tr>
+    <div className="mr-5 hidden md:block">
 
-                );
+      <div
+        className="
+          rounded-full
 
-              })
+          bg-blue-100
 
-            )}
+          px-3
+          py-1
 
-          </tbody>
+          text-base
+          font-semibold
 
-        </table>
+          text-blue-900
+        "
+      >
+
+        {player.rating} TTR
 
       </div>
 
     </div>
+
+    {/* Arrow */}
+
+    <ChevronRight
+      className="
+        h-5
+        w-5
+
+        shrink-0
+
+        text-slate-400
+
+        transition-transform
+
+        group-hover:translate-x-1
+      "
+    />
+
+  </div>
+
+</Link>
+
+            );
+
+          })
+
+        )}
+
+      </div>
+
+      <div className="text-center text-sm text-slate-500">
+
+        Showing{" "}
+        <span className="font-semibold">
+
+          {rankings.length}
+
+        </span>{" "}
+
+        ranked player{rankings.length === 1 ? "" : "s"}.
+
+      </div>
+
+    </div>
+
   );
+
 }
