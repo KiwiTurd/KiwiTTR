@@ -28,6 +28,11 @@ type PlayerRow = {
   created_at: string;
 };
 
+export interface PlayerSearchResult
+  extends Player {
+  clubName: string;
+}
+
 function fromRow(row: PlayerRow): Player {
   return {
     id: row.id,
@@ -100,7 +105,6 @@ export async function getPlayers(): Promise<Player[]> {
     });
 
   if (error) {
-    console.error(error);
     throw error;
   }
 
@@ -117,7 +121,6 @@ export async function getPlayer(
     .maybeSingle();
 
   if (error) {
-    console.error(error);
     throw error;
   }
 
@@ -126,21 +129,47 @@ export async function getPlayer(
     : null;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Search list (Player Selector)
+|--------------------------------------------------------------------------
+*/
+
+export async function getPlayerSearchList(): Promise<
+  PlayerSearchResult[]
+> {
+  const { data, error } =
+    await supabase
+      .from("players")
+      .select(`
+        *,
+        clubs (
+          name
+        )
+      `)
+      .eq("is_active", true)
+      .order("rating", {
+        ascending: false,
+      });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as any[]).map((row) => ({
+    ...fromRow(row),
+    clubName: row.clubs?.name ?? "",
+  }));
+}
+
 export async function addPlayer(
   player: Player
 ): Promise<void> {
-  const row = toRow(player);
-
   const { error } = await supabase
     .from("players")
-    .insert(row);
+    .insert(toRow(player));
 
   if (error) {
-    console.error(
-      "Supabase insert error:",
-      error
-    );
-
     throw error;
   }
 }
