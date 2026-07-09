@@ -25,7 +25,7 @@ export default function NewTournament() {
 
   const navigate = useNavigate();
 
-  const { startTournament } =
+  const { startTournament, saveTournament } =
   useTournament();
 
 const {
@@ -40,11 +40,21 @@ const [clubs, setClubs] =
 const [name, setName] =
   useState("");
 
+const [
+  eventDescription,
+  setEventDescription,
+] = useState("");
+
 const [clubId, setClubId] =
   useState("");
 
 const [date, setDate] =
   useState("");
+
+const [
+  playerLimitEnabled,
+  setPlayerLimitEnabled,
+] = useState(false);
 
 const [playerCount, setPlayerCount] =
   useState("32");
@@ -67,6 +77,18 @@ const [seedByTTR, setSeedByTTR] =
 
 const [socialPlay, setSocialPlay] =
   useState(false);
+
+const [allowSignUp, setAllowSignUp] =
+  useState(false);
+
+const [signUpClosesAt, setSignUpClosesAt] =
+  useState("");
+
+const [ttrLimitEnabled, setTtrLimitEnabled] =
+  useState(false);
+
+const [ttrLimit, setTtrLimit] =
+  useState("2000");
 
 const selectedClub = useMemo(() => {
   return clubs.find(
@@ -105,12 +127,15 @@ useEffect(() => {
 
   const poolCount = useMemo(() => {
 
-    return Math.ceil(
-      Number(playerCount) / poolSize
-    );
+    if (!playerLimitEnabled) {
+      return null;
+    }
+
+    return Math.ceil(Number(playerCount) / poolSize);
 
   }, [
     playerCount,
+    playerLimitEnabled,
     poolSize,
   ]);
 
@@ -118,19 +143,23 @@ useEffect(() => {
 
     if (format === "knockout") {
 
-      return Number(playerCount);
+      return playerLimitEnabled
+        ? Number(playerCount)
+        : null;
 
     }
 
     if (format === "doubles") {
 
-      return Math.ceil(
-        Number(playerCount) / 2
-      );
+      return playerLimitEnabled
+        ? Math.ceil(Number(playerCount) / 2)
+        : null;
 
     }
 
-    return (
+    return poolCount === null
+      ? null
+      : (
       poolCount *
       playersProgressing
     );
@@ -138,11 +167,12 @@ useEffect(() => {
   }, [
     format,
     playerCount,
+    playerLimitEnabled,
     poolCount,
     playersProgressing,
   ]);
 
-  function continueToPlayers() {
+  async function continueToPlayers() {
 
     if (!name.trim()) {
       notify.timeout(
@@ -184,12 +214,17 @@ useEffect(() => {
     }
 
     const parsedPlayerCount =
-      Number(playerCount);
+      playerLimitEnabled
+        ? Number(playerCount)
+        : 256;
 
     if (
-      !Number.isInteger(parsedPlayerCount) ||
-      parsedPlayerCount < 2 ||
-      parsedPlayerCount > 256
+      playerLimitEnabled &&
+      (
+        !Number.isInteger(parsedPlayerCount) ||
+        parsedPlayerCount < 2 ||
+        parsedPlayerCount > 256
+      )
     ) {
       notify.timeout(
         "Please enter a whole number of players between 2 and 256."
@@ -198,6 +233,7 @@ useEffect(() => {
     }
 
     if (
+      playerLimitEnabled &&
       format === "doubles" &&
       parsedPlayerCount % 2 !== 0
     ) {
@@ -207,18 +243,41 @@ useEffect(() => {
       return;
     }
 
-    startTournament({
+    const parsedTtrLimit =
+      Number(ttrLimit);
 
+    if (
+      ttrLimitEnabled &&
+      (
+        !Number.isInteger(parsedTtrLimit) ||
+        parsedTtrLimit < 0
+      )
+    ) {
+      notify.timeout(
+        "Please enter a valid whole-number TTR limit."
+      );
+      return;
+    }
+
+    const settings = {
       name,
+
+      eventDescription:
+        eventDescription.trim(),
 
       clubId: assignedClubId,
 
       date,
 
+      signUpClosesAt:
+        allowSignUp && signUpClosesAt
+          ? signUpClosesAt
+          : null,
+
       playerCount:
-        format === "doubles"
-          ? parsedPlayerCount
-          : parsedPlayerCount,
+        parsedPlayerCount,
+
+      playerLimitEnabled,
 
       format,
 
@@ -238,7 +297,41 @@ useEffect(() => {
           ? true
           : socialPlay,
 
-    });
+      allowSignUp,
+
+      ttrLimitEnabled,
+
+      ttrLimit: ttrLimitEnabled
+        ? parsedTtrLimit
+        : 2000,
+    };
+
+    if (allowSignUp) {
+      try {
+        await saveTournament({
+          id: "",
+          settings,
+          players: [],
+          pools: [],
+          matches: [],
+          knockout: [],
+        });
+
+        notify.edgeBall(
+          "Tournament is open for sign ups."
+        );
+        navigate("/tournaments");
+      } catch (error) {
+        console.error(error);
+        notify.fault(
+          "Unable to open tournament sign ups."
+        );
+      }
+
+      return;
+    }
+
+    startTournament(settings);
 
     navigate(
       "/tournaments/players"
@@ -303,6 +396,18 @@ useEffect(() => {
                 className="w-full rounded-xl border p-3"
               />
 
+              <textarea
+                value={eventDescription}
+                onChange={(event) =>
+                  setEventDescription(
+                    event.target.value
+                  )
+                }
+                placeholder="Event Description (optional)"
+                rows={3}
+                className="w-full resize-none rounded-xl border p-3"
+              />
+
               <div>
 
   {isAdmin ? (
@@ -364,6 +469,51 @@ useEffect(() => {
                 className="w-full rounded-xl border p-3"
               />
 
+              <label className="flex items-center gap-3 rounded-xl border bg-slate-50 p-3">
+
+                <input
+                  type="checkbox"
+                  checked={allowSignUp}
+                  onChange={() =>
+                    setAllowSignUp(
+                      !allowSignUp
+                    )
+                  }
+                />
+
+                <span className="font-medium">
+
+                  Allow Sign Up
+
+                </span>
+
+              </label>
+
+              {allowSignUp && (
+
+                <div>
+
+                  <label className="font-medium">
+
+                    Sign Up Close Date
+
+                  </label>
+
+                  <input
+                    type="date"
+                    value={signUpClosesAt}
+                    onChange={(event) =>
+                      setSignUpClosesAt(
+                        event.target.value
+                      )
+                    }
+                    className="mt-2 w-full rounded-xl border p-3"
+                  />
+
+                </div>
+
+              )}
+
             </div>
 
           </div>
@@ -378,7 +528,31 @@ useEffect(() => {
 
             </h2>
 
-            <label className="font-medium">
+            <label className="flex items-center gap-3">
+
+              <input
+                type="checkbox"
+                checked={playerLimitEnabled}
+                onChange={() =>
+                  setPlayerLimitEnabled(
+                    !playerLimitEnabled
+                  )
+                }
+              />
+
+              <span className="font-medium">
+
+                Set player limit
+
+              </span>
+
+            </label>
+
+            {playerLimitEnabled ? (
+
+            <div className="mt-5">
+
+              <label className="font-medium">
 
               Number of Players
 
@@ -394,6 +568,18 @@ useEffect(() => {
               }
               className="mt-2 w-full rounded-xl border p-3"
             />
+
+            </div>
+
+            ) : (
+
+              <div className="mt-5 rounded-xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
+
+                Pool and knockout sizes will be calculated from the players selected later.
+
+              </div>
+
+            )}
 
           </div>
 
@@ -618,9 +804,53 @@ useEffect(() => {
 
             </label>
 
+            <label className="flex items-center gap-3">
+
+              <input
+                type="checkbox"
+                checked={ttrLimitEnabled}
+                onChange={() =>
+                  setTtrLimitEnabled(
+                    !ttrLimitEnabled
+                  )
+                }
+              />
+
+              Set TTR limit
+
+            </label>
+
+            {ttrLimitEnabled && (
+
+              <div>
+
+                <label className="font-medium">
+
+                  Maximum TTR
+
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  value={ttrLimit}
+                  onChange={(event) =>
+                    setTtrLimit(
+                      event.target.value
+                    )
+                  }
+                  className="mt-2 w-full rounded-xl border p-3"
+                />
+
+              </div>
+
+            )}
+
             <p className="text-sm text-slate-500">
 
-              {socialPlay
+              {ttrLimitEnabled
+                ? "Only players at or below the TTR limit can enter this tournament."
+                : socialPlay
                 ? format === "doubles"
                   ? "Doubles is a knockout-only format and is never TTR dependent."
                   : "Social play keeps the draw casual and random."
@@ -657,7 +887,9 @@ useEffect(() => {
             "
           >
 
-            Continue to Player Selection
+            {allowSignUp
+              ? "Open Sign Ups"
+              : "Continue to Player Selection"}
 
             <ArrowRight className="h-5 w-5" />
 
@@ -668,21 +900,21 @@ useEffect(() => {
 
         <div>
 
-          <div className="sticky top-24 rounded-3xl border bg-white p-8 shadow-sm">
+          <div className="sticky top-24 rounded-3xl border bg-white p-5 shadow-sm">
 
-            <h2 className="text-xl font-bold">
+            <h2 className="text-lg font-bold">
 
               Tournament Preview
 
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500">
 
               Review your tournament before selecting players.
 
             </p>
 
-            <div className="mt-8 space-y-5">
+            <div className="mt-5 space-y-3 text-sm">
 
               <div className="flex items-center justify-between">
 
@@ -738,13 +970,53 @@ useEffect(() => {
 
                 <span className="text-slate-500">
 
+                  Sign Ups
+
+                </span>
+
+                <strong>
+
+                  {allowSignUp ? "Open" : "Off"}
+
+                </strong>
+
+              </div>
+
+              {allowSignUp && (
+
+                <div className="flex items-center justify-between">
+
+                  <span className="text-slate-500">
+
+                    Close Date
+
+                  </span>
+
+                  <strong>
+
+                    {signUpClosesAt || "None"}
+
+                  </strong>
+
+                </div>
+
+              )}
+
+              <hr className="border-slate-200" />
+
+              <div className="flex items-center justify-between">
+
+                <span className="text-slate-500">
+
                   Players
 
                 </span>
 
                 <strong>
 
-                  {Number(playerCount) || "-"}
+                  {playerLimitEnabled
+                    ? Number(playerCount) || "-"
+                    : "Dynamic"}
 
                 </strong>
 
@@ -784,7 +1056,7 @@ useEffect(() => {
 
                     <strong>
 
-                      {poolCount}
+                      {poolCount ?? "Dynamic"}
 
                     </strong>
 
@@ -832,7 +1104,9 @@ useEffect(() => {
 
                     <strong>
 
-                      {knockoutSize} Players
+                      {knockoutSize === null
+                        ? "Dynamic"
+                        : `${knockoutSize} Players`}
 
                     </strong>
 
@@ -854,17 +1128,34 @@ useEffect(() => {
 
                   <strong>
 
-                    {Number(playerCount)
-                      ? Math.ceil(
-                          Number(playerCount) / 2
-                        )
-                      : "-"}
+                    {playerLimitEnabled &&
+                    Number(playerCount)
+                      ? Math.ceil(Number(playerCount) / 2)
+                      : "Dynamic"}
 
                   </strong>
 
                 </div>
 
               )}
+
+              <div className="flex items-center justify-between">
+
+                <span className="text-slate-500">
+
+                  TTR Limit
+
+                </span>
+
+                <strong>
+
+                  {ttrLimitEnabled
+                    ? `Max ${Number(ttrLimit) || 0}`
+                    : "Off"}
+
+                </strong>
+
+              </div>
 
               <div className="flex items-center justify-between">
 
@@ -883,25 +1174,6 @@ useEffect(() => {
                 </strong>
 
               </div>
-
-            </div>
-
-            <div className="mt-8 rounded-2xl bg-blue-50 p-5">
-
-              <h3 className="font-semibold text-blue-900">
-
-                What's Next?
-
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-blue-700">
-
-                Continue to select the players for this tournament.
-                Once all players have been selected, KiwiTTR will
-                automatically seed the tournament according to the
-                selected settings and generate the draw.
-
-              </p>
 
             </div>
 

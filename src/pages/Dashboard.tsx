@@ -24,6 +24,7 @@ import { useTournament } from "../context/TournamentContext";
 import useRole from "../hooks/useRole";
 
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
+import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
 
 import type { Club } from "../types/club";
 import type { Player } from "../types/player";
@@ -80,6 +81,10 @@ export default function Dashboard() {
   });
 
   const loadData = useCallback(async () => {
+    if (!session) {
+      return;
+    }
+
     try {
       if (isAdmin) {
         const data =
@@ -128,6 +133,7 @@ export default function Dashboard() {
   }, [
     isAdmin,
     playerId,
+    session,
     userClubId,
   ]);
 
@@ -213,6 +219,10 @@ export default function Dashboard() {
       )
       .slice(0, 5);
   }, [savedTournaments]);
+
+  if (!loading && !session) {
+    return <SignedOutDashboard />;
+  }
 
   if (isAdmin) {
     return (
@@ -432,7 +442,9 @@ export default function Dashboard() {
                         tournament.settings.date
                       ).toLocaleDateString()}
                       {" "}·{" "}
-                      {tournament.settings.playerCount} players
+                      {tournament.settings.playerLimitEnabled
+                        ? `${tournament.settings.playerCount} players`
+                        : `${tournament.players.length} players signed up`}
                     </p>
                   </div>
 
@@ -859,6 +871,54 @@ function QuickActions({
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SignedOutDashboard() {
+  return (
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-4xl flex-col items-center justify-center px-4 text-center">
+      <FullLogo className="h-20 w-auto" />
+
+      <h1 className="mt-8 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+        Welcome to KiwiTTR
+      </h1>
+
+      <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+        A modern table tennis platform for ratings, clubs,
+        events, tournaments and player progress.
+      </p>
+
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link
+          to="/login"
+          className="rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
+        >
+          Sign In
+        </Link>
+
+        <Link
+          to="/register"
+          className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-900 transition hover:bg-slate-50"
+        >
+          Create Account
+        </Link>
+      </div>
+
+      <section className="mt-10 max-w-3xl rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left shadow-sm">
+        <h2 className="text-lg font-bold text-slate-950">
+          About KiwiTTR
+        </h2>
+
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          KiwiTTR is inspired by the German TTR rating system,
+          bringing structured, transparent table tennis ratings
+          into a broader club and competition platform. The goal is
+          to create the ultimate table tennis hub: rankings that
+          feel meaningful, tournaments that are easy to run, and
+          profiles that make every match part of a player story.
+        </p>
+      </section>
     </div>
   );
 }

@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronRight,
+  ListChecks,
+  Trophy,
+  Users,
+} from "lucide-react";
 
 import type { Event } from "../types/event";
 import type { Match } from "../types/match";
@@ -61,7 +69,7 @@ export default function EventProfile() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-3xl font-bold">
           Loading...
         </h1>
       </div>
@@ -78,9 +86,10 @@ export default function EventProfile() {
 
         <Link
           to="/events"
-          className="text-blue-700 hover:underline mt-4 inline-block"
+          className="mt-4 inline-flex items-center gap-2 text-blue-700 hover:underline"
         >
-          ← Back to Events
+          <ArrowLeft className="h-4 w-4" />
+          Back to Events
         </Link>
 
       </div>
@@ -125,84 +134,81 @@ export default function EventProfile() {
 
       <Link
         to="/events"
-        className="text-blue-700 hover:underline"
+        className="inline-flex items-center gap-2 text-blue-700 hover:underline"
       >
-        ← Back to Events
+        <ArrowLeft className="h-4 w-4" />
+        Back to Events
       </Link>
 
-      <div className="bg-white rounded-xl shadow p-8">
+      <div className="rounded-3xl border bg-white p-6 shadow-sm">
 
-        <h1 className="text-5xl font-bold">
-          🏓 {event.name}
+        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">
+          <CalendarDays className="h-4 w-4" />
+          Event
+        </div>
+
+        <h1 className="mt-4 text-4xl font-black tracking-tight">
+          {event.name}
         </h1>
 
-        <p className="text-slate-500 mt-3">
+        <p className="mt-2 text-slate-500">
           {new Date(event.date).toLocaleDateString()}
         </p>
 
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid gap-3 md:grid-cols-2">
 
-        <div className="bg-white rounded-xl shadow p-6">
+        <CompactStat
+          icon={<Users className="h-5 w-5 text-blue-700" />}
+          label="Players"
+          value={standings.size}
+        />
 
-          <p className="text-slate-500">
-            Players
-          </p>
-
-          <h2 className="text-5xl font-bold mt-2">
-            {standings.size}
-          </h2>
-
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-
-          <p className="text-slate-500">
-            Matches
-          </p>
-
-          <h2 className="text-5xl font-bold mt-2">
-            {matches.length}
-          </h2>
-
-        </div>
+        <CompactStat
+          icon={<Trophy className="h-5 w-5 text-amber-500" />}
+          label="Matches"
+          value={matches.length}
+        />
 
       </div>
 
-      <div className="bg-white rounded-xl shadow p-8">
+      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
 
-        <h2 className="text-2xl font-bold mb-6">
-          Standings
-        </h2>
+        <div className="flex items-center gap-3 border-b px-5 py-4">
+          <ListChecks className="h-5 w-5 text-blue-700" />
+          <h2 className="text-xl font-bold">
+            Standings
+          </h2>
+        </div>
 
         {ranking.length === 0 ? (
 
-          <p className="text-slate-500">
+          <p className="px-5 py-6 text-sm text-slate-500">
             No matches yet.
           </p>
 
         ) : (
 
-          <table className="w-full">
+          <table className="w-full text-sm">
 
             <thead>
 
-              <tr className="border-b">
+              <tr className="border-b bg-slate-50 text-slate-500">
 
-                <th className="text-left pb-3">
+                <th className="px-5 py-3 text-left font-semibold">
                   Rank
                 </th>
 
-                <th className="text-left pb-3">
+                <th className="px-5 py-3 text-left font-semibold">
                   Player
                 </th>
 
-                <th className="text-center pb-3">
+                <th className="px-5 py-3 text-center font-semibold">
                   W
                 </th>
 
-                <th className="text-center pb-3">
+                <th className="px-5 py-3 text-center font-semibold">
                   L
                 </th>
 
@@ -222,22 +228,22 @@ export default function EventProfile() {
 
                   <tr
                     key={playerId}
-                    className="border-b"
+                    className="border-b last:border-b-0 hover:bg-slate-50"
                   >
 
-                    <td className="py-3">
+                    <td className="px-5 py-3 font-semibold">
 
                       {index === 0
-                        ? "🥇"
+                        ? "1"
                         : index === 1
-                        ? "🥈"
+                        ? "2"
                         : index === 2
-                        ? "🥉"
+                        ? "3"
                         : index + 1}
 
                     </td>
 
-                    <td>
+                    <td className="px-5 py-3">
 
                       {player
                         ? `${player.firstName} ${player.lastName}`
@@ -245,11 +251,11 @@ export default function EventProfile() {
 
                     </td>
 
-                    <td className="text-center">
+                    <td className="px-5 py-3 text-center font-semibold">
                       {stats.wins}
                     </td>
 
-                    <td className="text-center">
+                    <td className="px-5 py-3 text-center font-semibold">
                       {stats.losses}
                     </td>
 
@@ -267,42 +273,40 @@ export default function EventProfile() {
 
       </div>
 
-      <div className="bg-white rounded-xl shadow p-8">
+      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
 
         <button
           onClick={() =>
             setShowMatches(!showMatches)
           }
-          className="w-full flex items-center justify-between hover:text-blue-700 transition"
+          className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-slate-50"
         >
 
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl font-bold">
             Match Results ({matches.length})
           </h2>
 
-          <span
-            className={`text-2xl transition-transform duration-300 ${
+          <ChevronRight
+            className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${
               showMatches
                 ? "rotate-90"
                 : ""
             }`}
-          >
-            ▶
-          </span>
+          />
 
         </button>
 
         <div
           className={`overflow-hidden transition-all duration-500 ${
             showMatches
-              ? "max-h-[5000px] opacity-100 mt-6"
+              ? "max-h-[5000px] border-t p-5 opacity-100"
               : "max-h-0 opacity-0"
           }`}
         >
 
           {matches.length === 0 ? (
 
-            <p className="text-slate-500">
+            <p className="text-sm text-slate-500">
               No matches have been recorded yet.
             </p>
 
@@ -335,6 +339,30 @@ export default function EventProfile() {
 
       </div>
 
+    </div>
+  );
+}
+
+function CompactStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm">
+      {icon}
+      <div>
+        <p className="text-xs font-semibold uppercase text-slate-500">
+          {label}
+        </p>
+        <p className="text-xl font-black">
+          {value}
+        </p>
+      </div>
     </div>
   );
 }

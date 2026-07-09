@@ -80,12 +80,20 @@ export const router = createBrowserRouter([
 
       {
         path: "players/:id",
-        element: <PlayerProfile />,
+        element: (
+          <ProtectedRoute>
+            <PlayerProfile />
+          </ProtectedRoute>
+        ),
       },
 
       {
         path: "my-profile",
-        element: <MyProfile />,
+        element: (
+          <ProtectedRoute>
+            <MyProfile />
+          </ProtectedRoute>
+        ),
       },
 
       {
@@ -100,7 +108,11 @@ export const router = createBrowserRouter([
 
       {
         path: "tournaments",
-        element: <TournamentCentre />,
+        element: (
+          <ProtectedRoute>
+            <TournamentCentre />
+          </ProtectedRoute>
+        ),
       },
 
       // Tournament Wizard
@@ -126,9 +138,9 @@ export const router = createBrowserRouter([
       {
   path: "tournaments/live",
   element: (
-    <AdminRoute>
+    <RoleRoute allowedRoles={["admin", "club_admin"]}>
       <TournamentLive />
-    </AdminRoute>
+    </RoleRoute>
   ),
 },
 
@@ -140,9 +152,9 @@ export const router = createBrowserRouter([
       {
         path: "tournaments/:id/live",
         element: (
-          <AdminRoute>
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
             <TournamentLive />
-          </AdminRoute>
+          </RoleRoute>
         ),
       },
 

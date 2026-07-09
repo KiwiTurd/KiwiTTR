@@ -190,12 +190,15 @@ export default function MobileBottomNav() {
       label: "Events",
       icon: <CalendarDays className="h-5 w-5" />,
     },
-    {
+  ];
+
+  if (session) {
+    competitionItems.push({
       to: "/tournaments",
       label: "Tournaments",
       icon: <Trophy className="h-5 w-5" />,
-    },
-  ];
+    });
+  }
 
   if (isAdmin || isClubLeader) {
     competitionItems.push({
@@ -470,17 +473,19 @@ export default function MobileBottomNav() {
             : "translate-y-0 opacity-100"
         }`}
       >
-        <div className="mx-auto grid max-w-lg grid-cols-6 items-center justify-items-center gap-1">
+        <div className="mx-auto flex max-w-lg items-center justify-center gap-1">
           {navButton(
             "home",
             "KiwiTTR",
             <IconLogo className="h-9 w-9" />
           )}
 
-          {routeButton(
-            "/my-profile",
-            "My Profile",
-            <User className="h-6 w-6" />
+          {session && (
+            routeButton(
+              "/my-profile",
+              "My Profile",
+              <User className="h-6 w-6" />
+            )
           )}
 
           {navButton(

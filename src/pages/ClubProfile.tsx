@@ -8,6 +8,8 @@ import { Link, useParams } from "react-router-dom";
 
 import {
   Building2,
+  CalendarDays,
+  ChevronRight,
   Pencil,
 } from "lucide-react";
 
@@ -23,13 +25,14 @@ import {
   getPlayers,
 } from "../services/supabase/playerService";
 
-import StatCard from "../components/shared/StatCard";
 import Card from "../components/shared/Card";
 
 import EditClubModal from "../components/clubs/EditClubModal";
 
 import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
+import { useTournament } from "../context/TournamentContext";
+import type { SavedTournament } from "../types/tournament";
 
 function externalUrl(url: string) {
   return /^https?:\/\//i.test(url)
@@ -45,6 +48,8 @@ export default function ClubProfile() {
   } = useRole();
 
   const { id } = useParams();
+  const { savedTournaments } =
+    useTournament();
 
   const [club, setClub] = useState<Club | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -143,6 +148,40 @@ export default function ClubProfile() {
       isClubLeader &&
       clubId === club?.id
     );
+
+  const upcomingTournaments =
+    useMemo(() => {
+      if (!club) {
+        return [];
+      }
+
+      const today = new Date()
+        .toISOString()
+        .slice(0, 10);
+
+      return savedTournaments
+        .filter(tournament => {
+          const finished =
+            tournament.status === "completed";
+          const cancelled =
+            tournament.status === "cancelled";
+
+          return (
+            tournament.settings.clubId === club.id &&
+            !finished &&
+            !cancelled &&
+            tournament.settings.date >= today
+          );
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.settings.date).getTime() -
+            new Date(b.settings.date).getTime()
+        );
+    }, [
+      club,
+      savedTournaments,
+    ]);
 
   if (!club) {
     return (
@@ -277,20 +316,20 @@ export default function ClubProfile() {
 
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-3 md:grid-cols-3">
 
-        <StatCard
-          title="Players"
+        <ClubStatCard
+          label="Players"
           value={rankings.length}
         />
 
-        <StatCard
-          title="Average Rating"
+        <ClubStatCard
+          label="Average Rating"
           value={averageRating}
         />
 
-        <StatCard
-          title="Top Player"
+        <ClubStatCard
+          label="Top Player"
           value={
             topPlayer
               ? `${topPlayer.firstName} ${topPlayer.lastName}`
@@ -299,6 +338,51 @@ export default function ClubProfile() {
         />
 
       </div>
+
+      <Card className="p-0 overflow-hidden">
+
+        <div className="flex items-center justify-between border-b px-5 py-4">
+
+          <div className="flex items-center gap-2">
+
+            <CalendarDays className="h-5 w-5 text-blue-700" />
+
+            <h2 className="text-xl font-bold">
+              Upcoming Tournaments
+            </h2>
+
+          </div>
+
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
+            {upcomingTournaments.length}
+          </span>
+
+        </div>
+
+        {upcomingTournaments.length === 0 ? (
+
+          <div className="px-5 py-6 text-sm text-slate-500">
+            No upcoming tournaments for this club.
+          </div>
+
+        ) : (
+
+          <div className="divide-y">
+
+            {upcomingTournaments.map(tournament => (
+
+              <TournamentListRow
+                key={tournament.id}
+                tournament={tournament}
+              />
+
+            ))}
+
+          </div>
+
+        )}
+
+      </Card>
 
       <Card className="p-8">
 
@@ -388,5 +472,80 @@ export default function ClubProfile() {
       )}
 
     </div>
+  );
+}
+
+function tournamentFormatLabel(
+  tournament: SavedTournament
+) {
+  return tournament.settings.format === "pools"
+    ? "Pools -> Knockout"
+    : tournament.settings.format === "doubles"
+      ? "Doubles Knockout"
+      : "Straight Knockout";
+}
+
+function ClubStatCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-semibold uppercase text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-lg font-bold text-slate-950">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function TournamentListRow({
+  tournament,
+}: {
+  tournament: SavedTournament;
+}) {
+  const totalMatches =
+    tournament.matches.length +
+    tournament.knockout.length;
+  const completedMatches = [
+    ...tournament.matches,
+    ...tournament.knockout,
+  ].filter(match => match.completed).length;
+  const live =
+    totalMatches > 0 &&
+    completedMatches < totalMatches;
+
+  return (
+    <Link
+      to={`/tournaments/${tournament.id}/viewer`}
+      className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="truncate text-base font-medium">
+            {tournament.settings.name}
+          </h3>
+          {live && (
+            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+              Live
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-slate-500">
+          {new Date(
+            tournament.settings.date
+          ).toLocaleDateString()}
+          {" "}·{" "}
+          {tournamentFormatLabel(tournament)}
+        </p>
+      </div>
+
+      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+    </Link>
   );
 }

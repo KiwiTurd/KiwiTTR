@@ -273,11 +273,7 @@ return points;
   }, [chartData]);
 
   return (
-    <div className="bg-white rounded-xl shadow p-8">
-
-      <h2 className="text-2xl font-bold mb-6">
-        Rating History
-      </h2>
+    <div>
 
       <div className="flex flex-wrap gap-2 mb-6">
 

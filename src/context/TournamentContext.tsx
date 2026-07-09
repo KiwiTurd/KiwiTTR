@@ -19,9 +19,13 @@ import type {
 } from "../types/tournament";
 import { defaultTournament } from "../types/tournament";
 import {
+  cancelTournament as cancelTournamentRecord,
+  deleteTournament as deleteTournamentRecord,
   getTournament,
   getTournaments,
   saveTournamentRecord,
+  signUpForTournament as signUpForTournamentRecord,
+  updateTournamentMetadata,
 } from "../services/supabase/tournamentService";
 
 interface TournamentContextType {
@@ -62,6 +66,23 @@ interface TournamentContextType {
   loadTournament: (
     id: string
   ) => Promise<SavedTournament | null>;
+
+  signUpForTournament: (
+    id: string,
+    playerId: string
+  ) => Promise<SavedTournament>;
+
+  updateTournamentDetails: (
+    tournament: SavedTournament
+  ) => Promise<SavedTournament>;
+
+  cancelTournament: (
+    id: string
+  ) => Promise<SavedTournament>;
+
+  deleteTournament: (
+    id: string
+  ) => Promise<void>;
 
   setTournamentState: (
     tournament: TournamentState
@@ -289,6 +310,75 @@ export function TournamentProvider({
     return saved;
   }
 
+  async function signUpForTournament(
+    id: string,
+    playerId: string
+  ): Promise<SavedTournament> {
+    const saved =
+      await signUpForTournamentRecord(
+        id,
+        playerId
+      );
+
+    setTournament(current =>
+      current.id === saved.id
+        ? saved
+        : current
+    );
+    commitSavedTournament(saved);
+
+    return saved;
+  }
+
+  async function updateTournamentDetails(
+    tournamentToUpdate: SavedTournament
+  ): Promise<SavedTournament> {
+    const saved =
+      await updateTournamentMetadata(
+        tournamentToUpdate
+      );
+
+    setTournament(current =>
+      current.id === saved.id
+        ? saved
+        : current
+    );
+    commitSavedTournament(saved);
+
+    return saved;
+  }
+
+  async function cancelTournament(
+    id: string
+  ): Promise<SavedTournament> {
+    const saved =
+      await cancelTournamentRecord(id);
+
+    setTournament(current =>
+      current.id === saved.id
+        ? saved
+        : current
+    );
+    commitSavedTournament(saved);
+
+    return saved;
+  }
+
+  async function deleteTournament(
+    id: string
+  ): Promise<void> {
+    await deleteTournamentRecord(id);
+
+    setSavedTournaments(current =>
+      current.filter(item => item.id !== id)
+    );
+    setTournament(current =>
+      current.id === id
+        ? defaultTournament
+        : current
+    );
+  }
+
   function setTournamentState(
     nextTournament: TournamentState
   ) {
@@ -314,6 +404,10 @@ export function TournamentProvider({
         setKnockout,
         saveTournament,
         loadTournament,
+        signUpForTournament,
+        updateTournamentDetails,
+        cancelTournament,
+        deleteTournament,
         setTournamentState,
         resetTournament,
       }}

@@ -15,7 +15,6 @@ import {
   Phone,
   ShieldCheck,
   Star,
-  Target,
   Trophy,
   TrendingUp,
   Users,
@@ -253,6 +252,68 @@ export default function PlayerProfile() {
       ? `#${rank}`
       : "-";
   }, [players, player]);
+
+  const linkedPlayer = useMemo(() => {
+    if (!linkedPlayerId) {
+      return null;
+    }
+
+    return players.find(
+      (item) => item.id === linkedPlayerId
+    ) ?? null;
+  }, [
+    linkedPlayerId,
+    players,
+  ]);
+
+  const headToHead = useMemo(() => {
+    if (
+      !player ||
+      !linkedPlayerId ||
+      player.id === linkedPlayerId
+    ) {
+      return null;
+    }
+
+    const sharedMatches = matches.filter(
+      (match) =>
+        (
+          match.player1Id === player.id &&
+          match.player2Id === linkedPlayerId
+        ) ||
+        (
+          match.player2Id === player.id &&
+          match.player1Id === linkedPlayerId
+        )
+    );
+
+    if (sharedMatches.length === 0) {
+      return {
+        played: 0,
+        linkedWins: 0,
+        viewedWins: 0,
+      };
+    }
+
+    return {
+      played: sharedMatches.length,
+      linkedWins: sharedMatches.filter(
+        (match) =>
+          match.winnerId === linkedPlayerId
+      ).length,
+      viewedWins: sharedMatches.filter(
+        (match) =>
+          match.winnerId === player.id
+      ).length,
+    };
+  }, [
+    linkedPlayerId,
+    matches,
+    player,
+  ]);
+
+  const showHeadToHead =
+    Boolean(headToHead && linkedPlayer);
 
   function openEdit() {
     if (!player || !isOwnPlayer) {
@@ -622,7 +683,13 @@ return (
 
     {/* Stat Cards */}
 
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div
+      className="grid gap-3"
+      style={{
+        gridTemplateColumns:
+          "repeat(auto-fit, minmax(220px, 1fr))",
+      }}
+    >
 
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
 
@@ -670,28 +737,6 @@ return (
 
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
 
-        <Target className="h-5 w-5 shrink-0 text-emerald-600" />
-
-        <div className="min-w-0">
-
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-
-            Win Percentage
-
-          </p>
-
-          <h3 className="text-2xl font-black">
-
-            {winPercentage}%
-
-          </h3>
-
-        </div>
-
-      </div>
-
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-
         <Users className="h-5 w-5 shrink-0 text-indigo-600" />
 
         <div className="min-w-0">
@@ -711,6 +756,37 @@ return (
         </div>
 
       </div>
+
+      {showHeadToHead && headToHead && linkedPlayer && (
+
+      <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 shadow-sm">
+
+        <Users className="h-5 w-5 shrink-0 text-blue-700" />
+
+        <div className="min-w-0">
+
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+
+            Head to Head
+
+          </p>
+
+          <h3 className="text-2xl font-black">
+
+            {headToHead.linkedWins}-{headToHead.viewedWins}
+
+          </h3>
+
+          <p className="truncate text-xs text-blue-900/70">
+            You vs {player.firstName}
+            {" "}· {headToHead.played} played
+          </p>
+
+        </div>
+
+      </div>
+
+      )}
 
     </div>
 

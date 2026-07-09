@@ -209,19 +209,40 @@ export default function Events() {
   }, [eventCards, search]);
 
   const tournamentCards = useMemo(() => {
-    return savedTournaments.map((tournament) => ({
-      tournament,
-      club: clubs.find(
-        (club) =>
-          club.id === tournament.settings.clubId
-      ),
-      liveMatches: tournament.knockout.filter(
-        (match) =>
-          !match.completed &&
-          match.playerOne &&
-          match.playerTwo
-      ).length,
-    }));
+    const today =
+      new Date().toISOString().slice(0, 10);
+
+    return savedTournaments
+      .map((tournament) => {
+        const liveMatches =
+          tournament.knockout.filter(
+            (match) =>
+              !match.completed &&
+              match.playerOne &&
+              match.playerTwo
+          ).length;
+        const totalMatches =
+          tournament.matches.length +
+          tournament.knockout.length;
+
+        return {
+          tournament,
+          club: clubs.find(
+            (club) =>
+              club.id === tournament.settings.clubId
+          ),
+          liveMatches,
+          totalMatches,
+        };
+      })
+      .filter(({ tournament, totalMatches }) => {
+        return (
+          tournament.settings.date === today &&
+          totalMatches > 0 &&
+          tournament.status !== "completed" &&
+          tournament.status !== "cancelled"
+        );
+      });
   }, [clubs, savedTournaments]);
 
   const upcomingEvents = useMemo(() => {
@@ -236,7 +257,7 @@ export default function Events() {
   }, [events]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10">
+      <div className="mx-auto max-w-7xl space-y-8">
 
       <div>
 
@@ -254,39 +275,39 @@ export default function Events() {
 
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
 
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <CalendarDays className="h-6 w-6 text-blue-700" />
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <CalendarDays className="h-5 w-5 text-blue-700" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase text-slate-500">
               Events
             </p>
-            <p className="text-3xl font-black">
+            <p className="text-xl font-black">
               {events.length}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <Trophy className="h-6 w-6 text-amber-500" />
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Trophy className="h-5 w-5 text-amber-500" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Tournaments
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Live Viewers
             </p>
-            <p className="text-3xl font-black">
+            <p className="text-xl font-black">
               {tournamentCards.length}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <Building2 className="h-6 w-6 text-indigo-600" />
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Building2 className="h-5 w-5 text-indigo-600" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase text-slate-500">
               Upcoming
             </p>
-            <p className="text-3xl font-black">
+            <p className="text-xl font-black">
               {upcomingEvents}
             </p>
           </div>
@@ -305,7 +326,7 @@ export default function Events() {
             </h2>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
 
             {tournamentCards.map(({
               tournament,
@@ -316,20 +337,20 @@ export default function Events() {
               <Link
                 key={tournament.id}
                 to={`/tournaments/${tournament.id}/viewer`}
-                className="group block rounded-2xl border border-green-200 bg-white p-6 shadow-sm transition hover:border-green-400 hover:shadow-md"
+                className="group block rounded-xl border border-green-200 bg-white px-4 py-3 shadow-sm transition hover:border-green-400 hover:bg-green-50/40"
               >
-                <div className="flex flex-wrap items-center justify-between gap-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
                       <span className="h-2 w-2 rounded-full bg-green-500" />
                       Live Viewer
                     </div>
 
-                    <h3 className="mt-4 truncate text-2xl font-black">
+                    <h3 className="mt-2 truncate text-base font-medium">
                       {tournament.settings.name}
                     </h3>
 
-                    <p className="mt-2 text-slate-500">
+                    <p className="text-sm text-slate-500">
                       {club?.name ?? "-"} ·{" "}
                       {new Date(
                         tournament.settings.date
@@ -338,13 +359,13 @@ export default function Events() {
                   </div>
 
                   <div className="text-right">
-                    <div className="text-sm font-semibold text-slate-500">
+                    <div className="text-xs font-semibold text-slate-500">
                       Live Matches
                     </div>
-                    <div className="mt-1 text-3xl font-black text-green-700">
+                    <div className="text-xl font-black text-green-700">
                       {liveMatches}
                     </div>
-                    <div className="mt-3 flex items-center justify-end gap-2 font-semibold text-blue-700">
+                    <div className="mt-1 flex items-center justify-end gap-2 text-sm font-semibold text-blue-700">
                       Open
                       <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                     </div>
@@ -362,16 +383,16 @@ export default function Events() {
 
       {canCreateEvent && (
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
-          <div className="flex items-center gap-3 border-b px-8 py-5">
-            <Plus className="h-6 w-6 text-blue-700" />
-            <h2 className="text-2xl font-bold">
+          <div className="flex items-center gap-3 border-b px-5 py-4">
+            <Plus className="h-5 w-5 text-blue-700" />
+            <h2 className="text-xl font-bold">
               Create Event
             </h2>
           </div>
 
-          <div className="p-8">
+          <div className="p-5">
             <div
               className={`grid gap-4 ${
                 isAdmin
@@ -435,7 +456,7 @@ export default function Events() {
             <button
               onClick={handleAddEvent}
               disabled={saving}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               <Plus className="h-5 w-5" />
               {saving ? "Creating..." : "Create Event"}
@@ -446,7 +467,7 @@ export default function Events() {
 
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
 
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -484,46 +505,37 @@ export default function Events() {
 
       ) : (
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-          {filteredEventCards.map(({ event, club }) => (
+          <div className="divide-y">
 
-            <Link
-              key={event.id}
-              to={`/events/${event.id}`}
-              className="group block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-blue-300 hover:shadow-md"
-            >
-              <div className="flex items-start justify-between gap-4">
+            {filteredEventCards.map(({ event, club }) => (
+
+              <Link
+                key={event.id}
+                to={`/events/${event.id}`}
+                className="group flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
+              >
                 <div className="min-w-0">
-                  <h2 className="truncate text-2xl font-bold">
+                  <h2 className="truncate text-base font-medium">
                     {event.name}
                   </h2>
 
-                  <p className="mt-1 text-slate-500">
-                    {club?.name ?? "-"}
+                  <p className="text-sm text-slate-500">
+                    {club?.name ?? "-"} ·{" "}
+                    {new Date(event.date).toLocaleDateString()}
                   </p>
                 </div>
 
-                <CalendarDays className="h-7 w-7 shrink-0 text-blue-700" />
-              </div>
+                <div className="flex shrink-0 items-center gap-2 text-sm font-semibold text-blue-700">
+                  Open
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                </div>
+              </Link>
 
-              <div className="mt-6 rounded-xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">
-                  Event Date
-                </p>
+            ))}
 
-                <p className="text-2xl font-black">
-                  {new Date(event.date).toLocaleDateString()}
-                </p>
-              </div>
-
-              <div className="mt-6 flex items-center gap-2 font-semibold text-blue-700">
-                Open
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-              </div>
-            </Link>
-
-          ))}
+          </div>
 
         </div>
 

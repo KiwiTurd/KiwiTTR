@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { useTournament } from "../context/TournamentContext";
+import useRole from "../hooks/useRole";
 import { advanceWinner } from "../services/tournament/advanceKnockout";
 import { getQualifiers } from "../services/tournament/getQualifiers";
 import {
@@ -48,6 +49,11 @@ export default function TournamentLive() {
     setMatches,
     setKnockout,
   } = useTournament();
+  const {
+    isAdmin,
+    isClubLeader,
+    clubId: userClubId,
+  } = useRole();
 
   const { id } = useParams();
 
@@ -152,6 +158,10 @@ export default function TournamentLive() {
     totalMatches > 0 &&
     completedMatches === totalMatches &&
     Boolean(champion);
+
+  const tournamentLocked =
+    tournament.status === "completed" ||
+    tournament.status === "cancelled";
 
   function resetEntry() {
     setWinnerId("");
@@ -293,6 +303,31 @@ export default function TournamentLive() {
     );
   }
 
+  if (
+    !isAdmin &&
+    (
+      !isClubLeader ||
+      userClubId !== tournament.settings.clubId
+    )
+  ) {
+    return (
+      <div className="mx-auto max-w-3xl rounded-3xl border bg-white p-10 text-center shadow-sm">
+        <h1 className="text-3xl font-black">
+          Tournament unavailable
+        </h1>
+        <p className="mt-3 text-slate-500">
+          Only admins and this club's admins can manage this tournament.
+        </p>
+        <Link
+          to="/tournaments"
+          className="mt-6 inline-flex rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white hover:bg-blue-800"
+        >
+          Open Tournaments
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-6">
@@ -325,7 +360,7 @@ export default function TournamentLive() {
             <div className="mt-2 text-2xl font-black">
               {playerName(champion)}
             </div>
-            {tournamentComplete && (
+            {tournamentComplete && !tournamentLocked && (
               <button
                 type="button"
                 onClick={() => void finishTournament()}
@@ -366,6 +401,12 @@ export default function TournamentLive() {
           value={`${completedMatches}/${Math.max(1, totalMatches)}`}
         />
       </div>
+
+      {tournamentLocked && (
+        <div className="rounded-2xl border bg-slate-50 px-5 py-4 font-semibold text-slate-700">
+          This tournament is {tournament.status}. Results and draw management are locked.
+        </div>
+      )}
 
       <div className="flex gap-3">
         {tournament.settings.format === "pools" && (
@@ -448,6 +489,10 @@ export default function TournamentLive() {
                   <button
                     key={match.id}
                     onClick={() => {
+                      if (tournamentLocked) {
+                        return;
+                      }
+
                       if (
                         match.playerOne &&
                         match.playerTwo &&
@@ -566,7 +611,7 @@ export default function TournamentLive() {
             </div>
           </div>
 
-          {activeTab === "pools" && (
+          {!tournamentLocked && activeTab === "pools" && (
             <PoolQueue
               matches={remainingPoolMatches}
               selectedMatch={selectedPoolMatch}
@@ -577,7 +622,7 @@ export default function TournamentLive() {
             />
           )}
 
-          {activeTab === "knockout" && (
+          {!tournamentLocked && activeTab === "knockout" && (
             <KnockoutQueue
               matches={playableKnockoutMatches}
               selectedMatch={selectedKnockoutMatch}
@@ -588,7 +633,7 @@ export default function TournamentLive() {
             />
           )}
 
-          {activeTab === "pools" && selectedPoolMatch && (
+          {!tournamentLocked && activeTab === "pools" && selectedPoolMatch && (
             <ResultEntry
               title="Enter Pool Result"
               playerOne={selectedPoolMatch.playerOne}
@@ -601,7 +646,7 @@ export default function TournamentLive() {
             />
           )}
 
-          {activeTab === "knockout" && selectedKnockoutMatch && (
+          {!tournamentLocked && activeTab === "knockout" && selectedKnockoutMatch && (
             <ResultEntry
               title="Enter Knockout Result"
               playerOne={selectedKnockoutMatch.playerOne}

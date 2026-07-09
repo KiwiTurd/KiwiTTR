@@ -21,13 +21,19 @@ type TournamentRow = {
   id: string;
   club_id: string;
   name: string;
+  event_description: string | null;
   tournament_date: string;
+  signup_closes_at: string | null;
   player_count: number;
+  player_limit_enabled: boolean;
   format: TournamentState["settings"]["format"];
   pool_size: number;
   progressing: number;
   seed_by_ttr: boolean;
   social_play: boolean;
+  allow_sign_up: boolean;
+  ttr_limit_enabled: boolean;
+  ttr_limit: number | null;
   status: "draft" | "active" | "completed" | "cancelled";
   created_at: string;
   updated_at: string;
@@ -183,16 +189,27 @@ function fromTournamentRow(
     id: row.id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    status: row.status,
     settings: {
       name: row.name,
+      eventDescription:
+        row.event_description ?? "",
       clubId: row.club_id,
       date: row.tournament_date,
+      signUpClosesAt:
+        row.signup_closes_at ?? null,
       playerCount: row.player_count,
+      playerLimitEnabled:
+        row.player_limit_enabled ?? true,
       format: row.format,
       poolSize: row.pool_size,
       progressing: row.progressing,
       seedByTTR: row.seed_by_ttr,
       socialPlay: row.social_play,
+      allowSignUp: row.allow_sign_up ?? false,
+      ttrLimitEnabled:
+        row.ttr_limit_enabled ?? false,
+      ttrLimit: row.ttr_limit ?? 2000,
     },
     ...details,
   };
@@ -203,16 +220,32 @@ function toTournamentRow(tournament: TournamentState) {
     id: tournament.id || crypto.randomUUID(),
     club_id: tournament.settings.clubId,
     name: tournament.settings.name,
+    event_description:
+      tournament.settings.eventDescription,
     tournament_date: tournament.settings.date,
+    signup_closes_at:
+      tournament.settings.signUpClosesAt,
     player_count: tournament.settings.playerCount,
+    player_limit_enabled:
+      tournament.settings.playerLimitEnabled,
     format: tournament.settings.format,
     pool_size: tournament.settings.poolSize,
     progressing: tournament.settings.progressing,
     seed_by_ttr: tournament.settings.seedByTTR,
     social_play: tournament.settings.socialPlay,
-    status: tournament.knockout.some(match => match.winnerId)
-      ? "active"
-      : "draft",
+    allow_sign_up: tournament.settings.allowSignUp,
+    ttr_limit_enabled:
+      tournament.settings.ttrLimitEnabled,
+    ttr_limit: tournament.settings.ttrLimitEnabled
+      ? tournament.settings.ttrLimit
+      : null,
+    status:
+      tournament.status === "completed" ||
+      tournament.status === "cancelled"
+        ? tournament.status
+        : tournament.knockout.some(match => match.winnerId)
+          ? "active"
+          : "draft",
   };
 }
 
@@ -267,6 +300,42 @@ function collectPlayers(
   });
 
   return [...players.values()];
+}
+
+function toTournamentPlayerInsert(
+  tournamentId: string,
+  player: Player,
+  index: number
+) {
+  const pair = parsePairId(player.id);
+
+  return {
+    tournament_id: tournamentId,
+    app_player_id: player.id,
+    player_id: isUuid(player.id)
+      ? player.id
+      : null,
+    profile_id: player.profileId,
+    club_id: player.clubId,
+    pair_player_one_id: pair?.playerOneId ?? null,
+    pair_player_two_id: pair?.playerTwoId ?? null,
+    first_name: player.firstName,
+    last_name: player.lastName,
+    mobile: player.mobile,
+    email: player.email,
+    rating: player.rating,
+    highest_rating: player.highestRating,
+    wins: player.wins,
+    losses: player.losses,
+    matches_played: player.matchesPlayed,
+    provisional_matches_remaining:
+      player.provisionalMatchesRemaining,
+    rating_reliability: player.ratingReliability,
+    is_active: player.isActive,
+    seed_position: index + 1,
+    is_pair: Boolean(pair),
+    source_created_at: player.createdAt,
+  };
 }
 
 async function throwIfError(
@@ -560,37 +629,12 @@ export async function saveTournamentRecord(
   const tournamentPlayers =
     collectPlayers(tournament);
   const playerRows = tournamentPlayers.map(
-    (player, index) => {
-      const pair = parsePairId(player.id);
-
-      return {
-        tournament_id: tournamentId,
-        app_player_id: player.id,
-        player_id: isUuid(player.id)
-          ? player.id
-          : null,
-        profile_id: player.profileId,
-        club_id: player.clubId,
-        pair_player_one_id: pair?.playerOneId ?? null,
-        pair_player_two_id: pair?.playerTwoId ?? null,
-        first_name: player.firstName,
-        last_name: player.lastName,
-        mobile: player.mobile,
-        email: player.email,
-        rating: player.rating,
-        highest_rating: player.highestRating,
-        wins: player.wins,
-        losses: player.losses,
-        matches_played: player.matchesPlayed,
-        provisional_matches_remaining:
-          player.provisionalMatchesRemaining,
-        rating_reliability: player.ratingReliability,
-        is_active: player.isActive,
-        seed_position: index + 1,
-        is_pair: Boolean(pair),
-        source_created_at: player.createdAt,
-      };
-    }
+    (player, index) =>
+      toTournamentPlayerInsert(
+        tournamentId,
+        player,
+        index
+      )
   );
 
   const savedPlayerRows =
@@ -868,6 +912,199 @@ export async function saveTournamentRecord(
     savedTournamentRow,
     await loadTournamentDetails(tournamentId)
   );
+}
+
+export async function updateTournamentMetadata(
+  tournament: SavedTournament
+): Promise<SavedTournament> {
+  if (
+    tournament.status === "completed" ||
+    tournament.status === "cancelled"
+  ) {
+    throw new Error(
+      "Finished or cancelled tournaments cannot be edited."
+    );
+  }
+
+  const { error } = await supabase
+    .from("tournaments")
+    .update({
+      club_id: tournament.settings.clubId,
+      name: tournament.settings.name,
+      event_description:
+        tournament.settings.eventDescription,
+      tournament_date: tournament.settings.date,
+      signup_closes_at:
+        tournament.settings.signUpClosesAt,
+      player_count: tournament.settings.playerCount,
+      player_limit_enabled:
+        tournament.settings.playerLimitEnabled,
+      format: tournament.settings.format,
+      pool_size: tournament.settings.poolSize,
+      progressing: tournament.settings.progressing,
+      seed_by_ttr: tournament.settings.seedByTTR,
+      social_play: tournament.settings.socialPlay,
+      allow_sign_up:
+        tournament.settings.allowSignUp,
+      ttr_limit_enabled:
+        tournament.settings.ttrLimitEnabled,
+      ttr_limit: tournament.settings.ttrLimitEnabled
+        ? tournament.settings.ttrLimit
+        : null,
+    })
+    .eq("id", tournament.id)
+    .not("status", "in", "(completed,cancelled)");
+
+  if (error) {
+    throw error;
+  }
+
+  const saved = await getTournament(tournament.id);
+
+  if (!saved) {
+    throw new Error("Tournament not found.");
+  }
+
+  return saved;
+}
+
+export async function cancelTournament(
+  tournamentId: string
+): Promise<SavedTournament> {
+  const { error } = await supabase
+    .from("tournaments")
+    .update({
+      status: "cancelled",
+      allow_sign_up: false,
+    })
+    .eq("id", tournamentId)
+    .not("status", "eq", "completed");
+
+  if (error) {
+    throw error;
+  }
+
+  const saved = await getTournament(tournamentId);
+
+  if (!saved) {
+    throw new Error("Tournament not found.");
+  }
+
+  return saved;
+}
+
+export async function deleteTournament(
+  tournamentId: string
+) {
+  const { error } = await supabase
+    .from("tournaments")
+    .delete()
+    .eq("id", tournamentId)
+    .not("status", "eq", "completed");
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function signUpForTournament(
+  tournamentId: string,
+  playerId: string
+): Promise<SavedTournament> {
+  const tournament =
+    await getTournament(tournamentId);
+
+  if (!tournament) {
+    throw new Error("Tournament not found.");
+  }
+
+  if (!tournament.settings.allowSignUp) {
+    throw new Error(
+      "This tournament is not open for sign ups."
+    );
+  }
+
+  if (
+    tournament.status === "completed" ||
+    tournament.status === "cancelled"
+  ) {
+    throw new Error(
+      "This tournament is not open for sign ups."
+    );
+  }
+
+  if (
+    tournament.settings.signUpClosesAt &&
+    new Date(tournament.settings.signUpClosesAt) <
+      new Date(new Date().toISOString().slice(0, 10))
+  ) {
+    throw new Error(
+      "Sign ups have closed for this tournament."
+    );
+  }
+
+  if (
+    tournament.pools.length > 0 ||
+    tournament.matches.length > 0 ||
+    tournament.knockout.length > 0
+  ) {
+    throw new Error(
+      "Sign ups are closed once the draw has been built."
+    );
+  }
+
+  if (
+    tournament.players.some(
+      player => player.id === playerId
+    )
+  ) {
+    return tournament;
+  }
+
+  if (
+    tournament.settings.playerLimitEnabled &&
+    tournament.players.length >=
+    tournament.settings.playerCount
+  ) {
+    throw new Error("This tournament is full.");
+  }
+
+  const player = await getPlayer(playerId);
+
+  if (!player) {
+    throw new Error(
+      "Linked player account was not found."
+    );
+  }
+
+  if (
+    tournament.settings.ttrLimitEnabled &&
+    player.rating > tournament.settings.ttrLimit
+  ) {
+    throw new Error(
+      "Your TTR is above this tournament limit."
+    );
+  }
+
+  await throwIfError(
+    await supabase
+      .from("tournament_players")
+      .insert(
+        toTournamentPlayerInsert(
+          tournament.id,
+          player,
+          tournament.players.length
+        )
+      )
+  );
+
+  const saved = await getTournament(tournamentId);
+
+  if (!saved) {
+    throw new Error("Tournament not found.");
+  }
+
+  return saved;
 }
 
 async function ensureTournamentEvent(

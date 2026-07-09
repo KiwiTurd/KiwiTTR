@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { useSidebar } from "../../context/SidebarContext";
+import { useAuth } from "../../context/AuthContext";
 
 import useRole from "../../hooks/useRole";
 
@@ -28,6 +29,7 @@ import SidebarLink from "./SidebarLink";
 
 export default function Sidebar() {
   const { collapsed } = useSidebar();
+  const { session } = useAuth();
 
   const {
     isAdmin,
@@ -61,14 +63,16 @@ export default function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto px-4 py-4">
 
-        <SidebarLink
-          to="/my-profile"
-          label="My Profile"
-          icon={
-            <User className="h-5 w-5" />
-          }
-          collapsed={collapsed}
-        />
+        {session && (
+          <SidebarLink
+            to="/my-profile"
+            label="My Profile"
+            icon={
+              <User className="h-5 w-5" />
+            }
+            collapsed={collapsed}
+          />
+        )}
 
         <SidebarLink
           to="/"
@@ -117,14 +121,16 @@ export default function Sidebar() {
             collapsed={collapsed}
           />
 
-          <SidebarLink
-            to="/tournaments"
-            label="Tournaments"
-            icon={
-              <Trophy className="h-4 w-4" />
-            }
-            collapsed={collapsed}
-          />
+          {session && (
+            <SidebarLink
+              to="/tournaments"
+              label="Tournaments"
+              icon={
+                <Trophy className="h-4 w-4" />
+              }
+              collapsed={collapsed}
+            />
+          )}
 
           {(isAdmin || isClubLeader) && (
             <SidebarLink

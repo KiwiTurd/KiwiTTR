@@ -3,11 +3,17 @@ import type { Player } from "./player";
 export interface TournamentSettings {
   name: string;
 
+  eventDescription: string;
+
   clubId: string;
 
   date: string;
 
+  signUpClosesAt: string | null;
+
   playerCount: number;
+
+  playerLimitEnabled: boolean;
 
   format: "knockout" | "pools" | "doubles";
 
@@ -18,6 +24,12 @@ export interface TournamentSettings {
   seedByTTR: boolean;
 
   socialPlay: boolean;
+
+  allowSignUp: boolean;
+
+  ttrLimitEnabled: boolean;
+
+  ttrLimit: number;
 }
 
 export interface Pool {
@@ -105,6 +117,8 @@ export interface TournamentState {
 
   updatedAt?: string;
 
+  status?: "draft" | "active" | "completed" | "cancelled";
+
   settings: TournamentSettings;
 
   players: Player[];
@@ -129,11 +143,17 @@ export const defaultTournament: TournamentState = {
   settings: {
     name: "",
 
+    eventDescription: "",
+
     clubId: "",
 
     date: "",
 
+    signUpClosesAt: null,
+
     playerCount: 32,
+
+    playerLimitEnabled: false,
 
     format: "pools",
 
@@ -144,6 +164,12 @@ export const defaultTournament: TournamentState = {
     seedByTTR: true,
 
     socialPlay: false,
+
+    allowSignUp: false,
+
+    ttrLimitEnabled: false,
+
+    ttrLimit: 2000,
   },
 
   players: [],

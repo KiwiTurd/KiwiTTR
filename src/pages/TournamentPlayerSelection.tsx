@@ -106,6 +106,15 @@ const [doublesPairs, setDoublesPairs] =
 const isDoubles =
   tournament.settings.format === "doubles";
 
+const hasPlayerLimit =
+  tournament.settings.playerLimitEnabled;
+
+const hasValidPlayerTotal =
+  hasPlayerLimit
+    ? selectedPlayers.length ===
+      tournament.settings.playerCount
+    : selectedPlayers.length >= 2;
+
   const [search, setSearch] =
     useState("");
 
@@ -172,6 +181,14 @@ const isDoubles =
           return false;
         }
 
+        if (
+          tournament.settings.ttrLimitEnabled &&
+          player.rating >
+            tournament.settings.ttrLimit
+        ) {
+          return false;
+        }
+
         const fullName =
           `${player.firstName} ${player.lastName}`;
 
@@ -185,6 +202,8 @@ const isDoubles =
       players,
       search,
       tournament.settings.clubId,
+      tournament.settings.ttrLimit,
+      tournament.settings.ttrLimitEnabled,
     ]);
 
   function addPlayer(player: Player) {
@@ -429,7 +448,9 @@ const isDoubles =
 
             <p className="mt-2 text-slate-500">
 
-  {selectedPlayers.length} / {tournament.settings.playerCount} selected
+  {hasPlayerLimit
+    ? `${selectedPlayers.length} / ${tournament.settings.playerCount} selected`
+    : `${selectedPlayers.length} selected`}
 
 </p>
 
@@ -439,9 +460,16 @@ const isDoubles =
     className="h-full rounded-full bg-green-500 transition-all duration-300"
     style={{
       width: `${
-        (selectedPlayers.length /
-          tournament.settings.playerCount) *
-        100
+        hasPlayerLimit
+          ? Math.min(
+              (selectedPlayers.length /
+                tournament.settings.playerCount) *
+                100,
+              100
+            )
+          : selectedPlayers.length >= 2
+            ? 100
+            : 0
       }%`,
     }}
   />
@@ -614,8 +642,7 @@ navigate(
 
   }}
   disabled={
-  selectedPlayers.length !==
-    tournament.settings.playerCount ||
+  !hasValidPlayerTotal ||
   (
     isDoubles &&
     doublesPairs.some(
