@@ -30,17 +30,11 @@ export default function TopRatedPlayersCard() {
   const medals = ["🥇", "🥈", "🥉"];
 
   return (
-    <div className="bg-white rounded-xl shadow p-6 h-full">
-
-      <h2 className="text-xl font-bold mb-5">
-        🏆 Top Rated Players
-      </h2>
-
-      <div className="space-y-3">
+    <div className="divide-y">
 
         {players.length === 0 ? (
 
-          <p className="text-slate-500">
+          <p className="px-5 py-4 text-sm text-slate-500">
             No players yet.
           </p>
 
@@ -51,22 +45,22 @@ export default function TopRatedPlayersCard() {
             <Link
               key={player.id}
               to={`/players/${player.id}`}
-              className="flex justify-between items-center rounded-lg px-3 py-3 hover:bg-slate-50 transition"
+              className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
             >
 
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
 
-                <span className="w-7 text-xl">
+                <span className="w-7 shrink-0 text-lg">
                   {index < 3 ? medals[index] : index + 1}
                 </span>
 
-                <span className="font-medium">
+                <span className="truncate text-sm font-semibold">
                   {player.firstName} {player.lastName}
                 </span>
 
               </div>
 
-              <span className="font-bold text-lg">
+              <span className="text-base font-black">
                 {player.rating}
               </span>
 
@@ -75,8 +69,6 @@ export default function TopRatedPlayersCard() {
           ))
 
         )}
-
-      </div>
 
     </div>
   );

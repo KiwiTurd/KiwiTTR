@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 
+import {
+  Shield,
+  UserCog,
+} from "lucide-react";
+
 import type {
   Profile,
   UserRole,
@@ -31,10 +36,29 @@ export default function EditUserModal({
   const [edited, setEdited] =
     useState<Profile | null>(null);
 
+  function normalizeName(value: string) {
+    return value.trim().toLowerCase();
+  }
+
+  function namesMatch(player: Player) {
+    return (
+      normalizeName(player.firstName) ===
+        normalizeName(edited?.firstName ?? "") &&
+      normalizeName(player.lastName) ===
+        normalizeName(edited?.lastName ?? "")
+    );
+  }
+
   useEffect(() => {
+    const timer = window.setTimeout(() => {
     if (profile) {
       setEdited({ ...profile });
     }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [profile]);
 
   if (!open || !edited) {
@@ -51,18 +75,24 @@ export default function EditUserModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
 
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-8">
+      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
 
-        <h2 className="text-2xl font-bold mb-6">
-          Edit User
-        </h2>
+        <div className="flex items-center gap-3 border-b px-6 py-5">
 
-        <div className="space-y-4">
+          <UserCog className="h-6 w-6 text-blue-700" />
+
+          <h2 className="text-2xl font-bold">
+            Edit User
+          </h2>
+
+        </div>
+
+        <div className="space-y-4 p-6">
 
           <input
-            className="border rounded-lg p-3 w-full"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             value={edited.firstName}
             onChange={(e) =>
               setEdited({
@@ -74,7 +104,7 @@ export default function EditUserModal({
           />
 
           <input
-            className="border rounded-lg p-3 w-full"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             value={edited.lastName}
             onChange={(e) =>
               setEdited({
@@ -85,8 +115,21 @@ export default function EditUserModal({
             placeholder="Last Name"
           />
 
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm text-slate-500">
+              Email
+            </p>
+            <p className="font-semibold">
+              {edited.email || "-"}
+            </p>
+          </div>
+
+          <div className="relative">
+
+            <Shield className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+
           <select
-            className="border rounded-lg p-3 w-full"
+            className="w-full appearance-none rounded-xl border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             value={edited.role}
             onChange={(e) =>
               setEdited({
@@ -96,20 +139,22 @@ export default function EditUserModal({
             }
           >
             <option value="admin">
-              👑 Admin
+              Admin
             </option>
 
-            <option value="club_leader">
-              🏓 Club Leader
+            <option value="club_admin">
+              Club Admin
             </option>
 
-            <option value="member">
-              👤 Member
+            <option value="player">
+              Player
             </option>
           </select>
 
+          </div>
+
           <select
-            className="border rounded-lg p-3 w-full"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             value={edited.clubId ?? ""}
             onChange={(e) =>
               setEdited({
@@ -134,7 +179,7 @@ export default function EditUserModal({
           </select>
 
           <select
-            className="border rounded-lg p-3 w-full"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             value={edited.playerId ?? ""}
             onChange={(e) =>
               setEdited({
@@ -149,12 +194,7 @@ export default function EditUserModal({
             </option>
 
             {players
-              .filter((player) =>
-                !edited.clubId
-                  ? true
-                  : player.clubId ===
-                    edited.clubId
-              )
+              .filter(namesMatch)
               .map((player) => (
                 <option
                   key={player.id}
@@ -168,18 +208,18 @@ export default function EditUserModal({
 
         </div>
 
-        <div className="flex justify-end gap-3 mt-8">
+        <div className="flex justify-end gap-3 border-t px-6 py-4">
 
           <button
             onClick={onClose}
-            className="border rounded-lg px-5 py-2"
+            className="rounded-xl bg-slate-100 px-5 py-2 font-medium text-slate-900 transition hover:bg-slate-200"
           >
             Cancel
           </button>
 
           <button
             onClick={handleSave}
-            className="bg-blue-900 text-white rounded-lg px-5 py-2"
+            className="rounded-xl bg-blue-900 px-5 py-2 font-medium text-white transition hover:bg-blue-800"
           >
             Save Changes
           </button>

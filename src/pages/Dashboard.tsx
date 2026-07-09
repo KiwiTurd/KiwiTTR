@@ -1,55 +1,146 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 
 import {
-  Users,
+  ArrowRight,
   Building2,
   CalendarDays,
+  ClipboardPen,
+  Medal,
+  Settings,
   ShieldCheck,
   Trophy,
-  ClipboardPen,
-  ArrowRight,
+  User,
+  Users,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
+import { useTournament } from "../context/TournamentContext";
+import useRole from "../hooks/useRole";
 
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
+
+import type { Club } from "../types/club";
+import type { Player } from "../types/player";
 
 import {
   getDashboardData,
 } from "../services/supabase/dashboardService";
+import {
+  getClub,
+} from "../services/supabase/clubService";
+import {
+  getPlayer,
+  getPlayers,
+} from "../services/supabase/playerService";
 
 type DashboardData = Awaited<
   ReturnType<typeof getDashboardData>
 >;
 
+type MemberDashboardData = {
+  player: Player | null;
+  club: Club | null;
+  clubPlayers: Player[];
+};
+
+function getPlayerName(player: Player) {
+  return `${player.firstName} ${player.lastName}`.trim();
+}
+
 export default function Dashboard() {
 
   const { session, loading } = useAuth();
+  const { savedTournaments } =
+    useTournament();
+
+  const {
+    isAdmin,
+    isClubLeader,
+    isPlayer,
+    playerId,
+    clubId: userClubId,
+  } = useRole();
 
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
 
-  useEffect(() => {
-    void loadData();
-  }, []);
+  const [
+    memberDashboard,
+    setMemberDashboard,
+  ] = useState<MemberDashboardData>({
+    player: null,
+    club: null,
+    clubPlayers: [],
+  });
 
-  async function loadData() {
-
+  const loadData = useCallback(async () => {
     try {
+      if (isAdmin) {
+        const data =
+          await getDashboardData();
 
-      const data =
-        await getDashboardData();
+        setDashboard(data);
+        return;
+      }
 
-      setDashboard(data);
+      const linkedPlayer =
+        playerId
+          ? await getPlayer(playerId)
+          : null;
 
+      const selectedClubId =
+        userClubId ?? linkedPlayer?.clubId ?? null;
+
+      const [
+        club,
+        players,
+      ] = await Promise.all([
+        selectedClubId
+          ? getClub(selectedClubId)
+          : Promise.resolve(null),
+        getPlayers(),
+      ]);
+
+      const clubPlayers = players
+        .filter((player) =>
+          selectedClubId
+            ? player.clubId === selectedClubId
+            : false
+        )
+        .sort(
+          (a, b) => b.rating - a.rating
+        );
+
+      setMemberDashboard({
+        player: linkedPlayer,
+        club,
+        clubPlayers,
+      });
     } catch (error) {
-
       console.error(error);
-
     }
+  }, [
+    isAdmin,
+    playerId,
+    userClubId,
+  ]);
 
-  }
+  useEffect(() => {
+    const timer =
+      window.setTimeout(() => {
+        void loadData();
+      }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [loadData]);
 
   const activePlayers =
     dashboard?.activePlayers ?? 0;
@@ -60,11 +151,334 @@ export default function Dashboard() {
   const events =
     dashboard?.totalEvents ?? 0;
 
+  const {
+    player,
+    club,
+    clubPlayers,
+  } = memberDashboard;
+
+  const topClubPlayers = useMemo(() => {
+    return clubPlayers.slice(0, 5);
+  }, [clubPlayers]);
+
+  const clubRank = useMemo(() => {
+    if (!player) {
+      return null;
+    }
+
+    const index =
+      clubPlayers.findIndex(
+        (clubPlayer) =>
+          clubPlayer.id === player.id
+      );
+
+    return index >= 0
+      ? index + 1
+      : null;
+  }, [
+    clubPlayers,
+    player,
+  ]);
+
+  const winRate = useMemo(() => {
+    if (!player?.matchesPlayed) {
+      return null;
+    }
+
+    return Math.round(
+      (player.wins / player.matchesPlayed) * 100
+    );
+  }, [player]);
+
+  const isMemberDashboard =
+    !isAdmin &&
+    (isClubLeader || isPlayer);
+
+  const upcomingTournaments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return savedTournaments
+      .filter((tournament) => {
+        const date = new Date(
+          tournament.settings.date
+        );
+        date.setHours(0, 0, 0, 0);
+        return date >= today;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.settings.date).getTime() -
+          new Date(b.settings.date).getTime()
+      )
+      .slice(0, 5);
+  }, [savedTournaments]);
+
+  if (isAdmin) {
+    return (
+
+      <div className="mx-auto max-w-7xl space-y-10">
+
+        <div>
+
+          <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
+
+            KiwiTTR
+
+          </p>
+
+          <h1 className="mt-2 text-5xl font-black tracking-tight">
+
+            Dashboard
+
+          </h1>
+
+          <p className="mt-3 text-lg text-slate-500">
+
+            Welcome back. Here's what's happening today.
+
+          </p>
+
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+
+            <div className="flex items-center justify-between">
+
+              <Users className="h-5 w-5 text-blue-700" />
+
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+
+                Players
+
+              </span>
+
+            </div>
+
+            <h2 className="mt-3 text-3xl font-black">
+
+              {activePlayers}
+
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+
+              Active Players
+
+            </p>
+
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+
+            <div className="flex items-center justify-between">
+
+              <Building2 className="h-5 w-5 text-indigo-600" />
+
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+
+                Clubs
+
+              </span>
+
+            </div>
+
+            <h2 className="mt-3 text-3xl font-black">
+
+              {clubs}
+
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+
+              Registered Clubs
+
+            </p>
+
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+
+            <div className="flex items-center justify-between">
+
+              <CalendarDays className="h-5 w-5 text-emerald-600" />
+
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+
+                Events
+
+              </span>
+
+            </div>
+
+            <h2 className="mt-3 text-3xl font-black">
+
+              {events}
+
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+
+              Total Events
+
+            </p>
+
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+
+            <div className="flex items-center justify-between">
+
+              <ShieldCheck className="h-5 w-5 text-green-600" />
+
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+
+                Status
+
+              </span>
+
+            </div>
+
+            <h2 className="mt-3 text-xl font-bold">
+
+              {loading
+                ? "Checking..."
+                : session
+                  ? "Online"
+                  : "Offline"}
+
+            </h2>
+
+            <p className="mt-1 truncate text-sm text-slate-500">
+
+              {session?.user.email ?? "Not signed in"}
+
+            </p>
+
+          </div>
+
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+          <div className="flex items-center justify-between border-b px-5 py-4">
+
+            <div className="flex items-center gap-3">
+
+              <Trophy className="h-5 w-5 text-amber-500" />
+
+              <h2 className="text-lg font-bold">
+
+                Top Rated Players
+
+              </h2>
+
+            </div>
+
+          </div>
+
+            <TopRatedPlayersCard />
+
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+          <div className="flex items-center justify-between border-b px-5 py-4">
+
+            <div className="flex items-center gap-3">
+
+              <CalendarDays className="h-5 w-5 text-emerald-600" />
+
+              <h2 className="text-lg font-bold">
+
+                Upcoming Tournaments
+
+              </h2>
+
+            </div>
+
+            <Link
+              to="/tournaments"
+              className="text-sm font-semibold text-blue-800 hover:text-blue-600"
+            >
+              View all
+            </Link>
+
+          </div>
+
+          <div className="divide-y">
+
+            {upcomingTournaments.length === 0 ? (
+              <p className="px-5 py-4 text-sm text-slate-500">
+                No upcoming tournaments.
+              </p>
+            ) : (
+              upcomingTournaments.map((tournament) => (
+                <Link
+                  key={tournament.id}
+                  to={`/tournaments/${tournament.id}/viewer`}
+                  className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">
+                      {tournament.settings.name}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {new Date(
+                        tournament.settings.date
+                      ).toLocaleDateString()}
+                      {" "}·{" "}
+                      {tournament.settings.playerCount} players
+                    </p>
+                  </div>
+
+                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+                </Link>
+              ))
+            )}
+
+          </div>
+
+        </div>
+
+        </div>
+
+        <QuickActions
+          isAdmin
+          isClubLeader={false}
+          isPlayer={false}
+        />
+
+      </div>
+
+    );
+  }
+
+  if (!isMemberDashboard) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-8">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
+            KiwiTTR
+          </p>
+          <h1 className="mt-2 text-5xl font-black tracking-tight">
+            Dashboard
+          </h1>
+          <p className="mt-3 text-lg text-slate-500">
+            Sign in with a linked player account to view your dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
 
     <div className="mx-auto max-w-7xl space-y-10">
-
-      {/* Header */}
 
       <div>
 
@@ -82,248 +496,369 @@ export default function Dashboard() {
 
         <p className="mt-3 text-lg text-slate-500">
 
-          Welcome back. Here's what's happening today.
+          Your player snapshot and club activity.
 
         </p>
 
       </div>
 
-      {/* Stats */}
+      {!player && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+          Your account is not linked to a player profile yet. Link a player profile to show personal rating, rank and match stats here.
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
 
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
+        <StatCard
+          icon={<User className="h-8 w-8 text-blue-700" />}
+          label="Rating"
+          value={
+            player
+              ? player.rating
+              : "-"
+          }
+          caption="Current TTR rating"
+        />
 
-          <div className="flex items-center justify-between">
+        <StatCard
+          icon={<Medal className="h-8 w-8 text-amber-500" />}
+          label="Club Rank"
+          value={
+            clubRank
+              ? `#${clubRank}`
+              : "-"
+          }
+          caption={
+            club
+              ? `Within ${club.shortName || club.name}`
+              : "No club assigned"
+          }
+        />
 
-            <Users className="h-8 w-8 text-blue-700" />
+        <StatCard
+          icon={<Trophy className="h-8 w-8 text-green-600" />}
+          label="Record"
+          value={
+            player
+              ? `${player.wins}-${player.losses}`
+              : "-"
+          }
+          caption={
+            winRate !== null
+              ? `${winRate}% win rate`
+              : "No match record yet"
+          }
+        />
 
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-
-              Players
-
-            </span>
-
-          </div>
-
-          <h2 className="mt-6 text-5xl font-black">
-
-            {activePlayers}
-
-          </h2>
-
-          <p className="mt-2 text-slate-500">
-
-            Active Players
-
-          </p>
-
-        </div>
-
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
-
-          <div className="flex items-center justify-between">
-
-            <Building2 className="h-8 w-8 text-indigo-600" />
-
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-
-              Clubs
-
-            </span>
-
-          </div>
-
-          <h2 className="mt-6 text-5xl font-black">
-
-            {clubs}
-
-          </h2>
-
-          <p className="mt-2 text-slate-500">
-
-            Registered Clubs
-
-          </p>
-
-        </div>
-
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
-
-          <div className="flex items-center justify-between">
-
-            <CalendarDays className="h-8 w-8 text-emerald-600" />
-
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-
-              Events
-
-            </span>
-
-          </div>
-
-          <h2 className="mt-6 text-5xl font-black">
-
-            {events}
-
-          </h2>
-
-          <p className="mt-2 text-slate-500">
-
-            Total Events
-
-          </p>
-
-        </div>
-
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
-
-          <div className="flex items-center justify-between">
-
-            <ShieldCheck className="h-8 w-8 text-green-600" />
-
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-
-              Status
-
-            </span>
-
-          </div>
-
-          <h2 className="mt-6 text-2xl font-bold">
-
-            {loading
-              ? "Checking..."
-              : session
-              ? "Online"
-              : "Offline"}
-
-          </h2>
-
-          <p className="mt-2 text-slate-500 truncate">
-
-            {session?.user.email ?? "Not signed in"}
-
-          </p>
-
-        </div>
+        <StatCard
+          icon={<Users className="h-8 w-8 text-indigo-600" />}
+          label="Club Players"
+          value={clubPlayers.length}
+          caption="Active club roster"
+        />
 
       </div>
 
-      {/* Rankings */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-        <div className="flex items-center justify-between border-b px-8 py-5">
+          <div className="flex items-center justify-between border-b px-8 py-5">
+
+            <div className="flex items-center gap-3">
+
+              <Trophy className="h-6 w-6 text-amber-500" />
+
+              <h2 className="text-2xl font-bold">
+
+                Club Top 5
+
+              </h2>
+
+            </div>
+
+            <Link
+              to="/rankings"
+              className="text-sm font-semibold text-blue-800 hover:text-blue-600"
+            >
+              View Rankings
+            </Link>
+
+          </div>
+
+          <div className="divide-y">
+
+            {topClubPlayers.length === 0 ? (
+              <p className="p-8 text-slate-500">
+                No ranked players found for this club.
+              </p>
+            ) : (
+              topClubPlayers.map((clubPlayer, index) => (
+                <Link
+                  key={clubPlayer.id}
+                  to={`/players/${clubPlayer.id}`}
+                  className="flex items-center gap-4 px-8 py-4 transition hover:bg-slate-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-900">
+                    {index + 1}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">
+                      {getPlayerName(clubPlayer)}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {clubPlayer.matchesPlayed} matches
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-lg font-black">
+                      {clubPlayer.rating}
+                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      TTR
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
+
+          </div>
+
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
 
           <div className="flex items-center gap-3">
 
-            <Trophy className="h-6 w-6 text-amber-500" />
+            <Building2 className="h-6 w-6 text-indigo-600" />
 
             <h2 className="text-2xl font-bold">
 
-              Top Rated Players
+              Club Info
 
             </h2>
 
           </div>
 
-        </div>
+          {club ? (
+            <div className="mt-6 space-y-5">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+                  Club
+                </p>
+                <p className="mt-1 text-2xl font-black">
+                  {club.name}
+                </p>
+              </div>
 
-        <div className="p-8">
+              <InfoRow
+                label="Email"
+                value={club.email || "-"}
+              />
 
-          <TopRatedPlayersCard />
+              <InfoRow
+                label="Phone"
+                value={club.phone || "-"}
+              />
 
-        </div>
+              <InfoRow
+                label="Address"
+                value={club.address || "-"}
+              />
 
-      </div>
-
-      {/* Quick Actions */}
-
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8">
-
-        <h2 className="text-2xl font-bold mb-6">
-
-          Quick Actions
-
-        </h2>
-
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-
-          <Link
-            to="/matches"
-            className="group rounded-2xl bg-blue-900 p-6 text-white transition hover:bg-blue-800"
-          >
-
-            <ClipboardPen className="mb-5 h-8 w-8" />
-
-            <h3 className="text-xl font-semibold">
-
-              Record Match
-
-            </h3>
-
-            <div className="mt-6 flex items-center gap-2 text-blue-200 group-hover:text-white">
-
-              Open
-
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-
+              <Link
+                to={`/clubs/${club.id}`}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-semibold text-white transition hover:bg-blue-800"
+              >
+                View Club
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-
-          </Link>
-
-          <Link
-            to="/players"
-            className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-blue-300 hover:shadow-md"
-          >
-
-            <Users className="mb-5 h-8 w-8 text-blue-700" />
-
-            <h3 className="text-xl font-semibold">
-
-              Players
-
-            </h3>
-
-          </Link>
-
-          <Link
-            to="/rankings"
-            className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-blue-300 hover:shadow-md"
-          >
-
-            <Trophy className="mb-5 h-8 w-8 text-amber-500" />
-
-            <h3 className="text-xl font-semibold">
-
-              Rankings
-
-            </h3>
-
-          </Link>
-
-          <Link
-            to="/events"
-            className="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-blue-300 hover:shadow-md"
-          >
-
-            <CalendarDays className="mb-5 h-8 w-8 text-emerald-600" />
-
-            <h3 className="text-xl font-semibold">
-
-              Events
-
-            </h3>
-
-          </Link>
+          ) : (
+            <p className="mt-6 text-slate-500">
+              No club is assigned to this account yet.
+            </p>
+          )}
 
         </div>
 
       </div>
+
+      <QuickActions
+        isAdmin={false}
+        isClubLeader={isClubLeader}
+        isPlayer={isPlayer}
+      />
 
     </div>
 
   );
 
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  caption,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  caption: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        {icon}
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {label}
+        </span>
+      </div>
+      <h2 className="mt-6 text-4xl font-black">
+        {value}
+      </h2>
+      <p className="mt-2 text-slate-500">
+        {caption}
+      </p>
+    </div>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 text-slate-700">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuickActions({
+  isAdmin,
+  isClubLeader,
+  isPlayer,
+}: {
+  isAdmin: boolean;
+  isClubLeader: boolean;
+  isPlayer: boolean;
+}) {
+  const actions = [
+    ...(isAdmin
+      ? [
+          {
+            to: "/players",
+            icon: <Users className="h-5 w-5 text-blue-700" />,
+            title: "Manage Players",
+          },
+          {
+            to: "/clubs",
+            icon: <Building2 className="h-5 w-5 text-indigo-600" />,
+            title: "Manage Clubs",
+          },
+          {
+            to: "/events",
+            icon: <CalendarDays className="h-5 w-5 text-emerald-600" />,
+            title: "Events",
+          },
+          {
+            to: "/tournaments",
+            icon: <Trophy className="h-5 w-5 text-amber-500" />,
+            title: "Tournaments",
+          },
+          {
+            to: "/settings/users",
+            icon: <ShieldCheck className="h-5 w-5 text-green-600" />,
+            title: "User Access",
+          },
+          {
+            to: "/matches",
+            icon: <ClipboardPen className="h-5 w-5 text-blue-700" />,
+            title: "Record Match",
+          },
+        ]
+      : []),
+    ...(!isAdmin && isClubLeader
+      ? [
+          {
+            to: "/tournaments/new",
+            icon: <Trophy className="h-5 w-5 text-amber-500" />,
+            title: "New Tournament",
+          },
+          {
+            to: "/tournaments",
+            icon: <Trophy className="h-5 w-5 text-blue-700" />,
+            title: "Tournaments",
+          },
+          {
+            to: "/events",
+            icon: <CalendarDays className="h-5 w-5 text-emerald-600" />,
+            title: "Events",
+          },
+          {
+            to: "/players",
+            icon: <Users className="h-5 w-5 text-blue-700" />,
+            title: "Club Players",
+          },
+          {
+            to: "/settings/club",
+            icon: <Settings className="h-5 w-5 text-slate-600" />,
+            title: "Club Settings",
+          },
+        ]
+      : []),
+    ...(isPlayer
+      ? [
+          {
+            to: "/my-profile",
+            icon: <User className="h-5 w-5 text-blue-700" />,
+            title: "My Profile",
+          },
+        ]
+      : []),
+    {
+      to: "/rankings",
+      icon: <Medal className="h-5 w-5 text-amber-500" />,
+      title: "Rankings",
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="mb-5 text-xl font-bold">
+        Quick Actions
+      </h2>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {actions.map((action) => (
+          <Link
+            key={action.to}
+            to={action.to}
+            className="group flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              {action.icon}
+              <span className="truncate font-semibold">
+                {action.title}
+              </span>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-700" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -1,0 +1,519 @@
+import {
+  ArrowLeft,
+  Building2,
+  Calculator,
+  CalendarDays,
+  ClipboardPen,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Medal,
+  Podium,
+  Settings,
+  Shield,
+  Swords,
+  Trophy,
+  User,
+  UserPlus,
+  Users,
+  Wrench,
+} from "lucide-react";
+
+import {
+  Link,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import IconLogo from "../../assets/KIWITTR - Logo.svg?react";
+
+import { useAuth } from "../../context/AuthContext";
+import { useProfile } from "../../context/ProfileContext";
+import useRole from "../../hooks/useRole";
+import { supabase } from "../../lib/supabase";
+
+type Panel =
+  | "home"
+  | "competition"
+  | "match-centre"
+  | "tools"
+  | "account";
+
+type MobileNavItem = {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+};
+
+export default function MobileBottomNav() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { session, loading } = useAuth();
+  const { profile } = useProfile();
+
+  const {
+    isAdmin,
+    isClubLeader,
+  } = useRole();
+
+  const [activePanel, setActivePanel] =
+    useState<Panel | null>(null);
+
+  const [panelOpen, setPanelOpen] =
+    useState(false);
+
+  const closeTimerRef =
+    useRef<number | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const openPanel = useCallback((panel: Panel) => {
+    clearCloseTimer();
+    setActivePanel(panel);
+    setPanelOpen(true);
+  }, [clearCloseTimer]);
+
+  const closePanel = useCallback(() => {
+    clearCloseTimer();
+    setPanelOpen(false);
+
+    closeTimerRef.current = window.setTimeout(
+      () => {
+        setActivePanel(null);
+        closeTimerRef.current = null;
+      },
+      250
+    );
+  }, [clearCloseTimer]);
+
+  useEffect(() => {
+    const routeCloseTimer =
+      window.setTimeout(closePanel, 0);
+
+    return () => {
+      window.clearTimeout(routeCloseTimer);
+    };
+  }, [closePanel, location.pathname]);
+
+  useEffect(() => {
+    return clearCloseTimer;
+  }, [clearCloseTimer]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    closePanel();
+    navigate("/login");
+  }
+
+  function initials() {
+    const first =
+      profile?.first_name?.trim()?.[0] ?? "";
+
+    const last =
+      profile?.last_name?.trim()?.[0] ?? "";
+
+    const value =
+      `${first}${last}`.toUpperCase();
+
+    if (value.length > 0) {
+      return value;
+    }
+
+    return (
+      session?.user.email?.charAt(0).toUpperCase()
+      ?? "?"
+    );
+  }
+
+  function displayName() {
+    const first =
+      profile?.first_name?.trim() ?? "";
+
+    const last =
+      profile?.last_name?.trim() ?? "";
+
+    const name =
+      `${first} ${last}`.trim();
+
+    if (name.length > 0) {
+      return name;
+    }
+
+    return session?.user.email ?? "Unknown User";
+  }
+
+  function roleName() {
+    switch (profile?.role) {
+      case "admin":
+        return "Administrator";
+
+      case "club_admin":
+        return "Club Admin";
+
+      case "player":
+        return "Player";
+
+      default:
+        return "Member";
+    }
+  }
+
+  const competitionItems: MobileNavItem[] = [
+    {
+      to: "/rankings",
+      label: "Rankings",
+      icon: <Podium className="h-5 w-5" />,
+    },
+    {
+      to: "/clubs",
+      label: "Clubs",
+      icon: <Building2 className="h-5 w-5" />,
+    },
+    {
+      to: "/events",
+      label: "Events",
+      icon: <CalendarDays className="h-5 w-5" />,
+    },
+    {
+      to: "/tournaments",
+      label: "Tournaments",
+      icon: <Trophy className="h-5 w-5" />,
+    },
+  ];
+
+  if (isAdmin || isClubLeader) {
+    competitionItems.push({
+      to: "/players",
+      label: "Player Management",
+      icon: <Users className="h-5 w-5" />,
+    });
+  }
+
+  const matchCentreItems: MobileNavItem[] =
+    isAdmin || isClubLeader
+      ? [
+          {
+            to: "/matches",
+            label: "Record Match",
+            icon: <ClipboardPen className="h-5 w-5" />,
+          },
+        ]
+      : [];
+
+  const toolItems: MobileNavItem[] = [
+    {
+      to: "/simulator",
+      label: "TTR Calculator",
+      icon: <Calculator className="h-5 w-5" />,
+    },
+  ];
+
+  if (isAdmin) {
+    toolItems.push({
+      to: "/settings",
+      label: "Settings",
+      icon: <Settings className="h-5 w-5" />,
+    });
+  }
+
+  function renderPanelTitle() {
+    switch (activePanel) {
+      case "home":
+        return "KiwiTTR";
+
+      case "competition":
+        return "Competition";
+
+      case "match-centre":
+        return "Match Centre";
+
+      case "tools":
+        return "Tools";
+
+      case "account":
+        return "Account";
+
+      default:
+        return "";
+    }
+  }
+
+  function renderLinks(
+    items: MobileNavItem[]
+  ) {
+    return (
+      <div className="grid gap-2">
+        {items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition ${
+                isActive
+                  ? "bg-blue-900 text-white"
+                  : "text-slate-700 hover:bg-slate-100"
+              }`
+            }
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
+    );
+  }
+
+  function renderAccountPanel() {
+    if (loading) {
+      return (
+        <p className="px-4 py-3 text-sm text-slate-500">
+          Loading...
+        </p>
+      );
+    }
+
+    if (!session) {
+      return (
+        <div className="grid gap-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="font-semibold">Welcome</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Sign in to access your profile, ratings and competitions.
+            </p>
+          </div>
+
+          <Link
+            to="/login"
+            className="flex items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-medium text-white transition hover:bg-blue-800"
+          >
+            <LogIn className="h-5 w-5" />
+            Sign In
+          </Link>
+
+          <Link
+            to="/register"
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <UserPlus className="h-5 w-5" />
+            Create Account
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
+              {initials()}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">
+                {displayName()}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-slate-500">
+                {session.user.email}
+              </p>
+              <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-medium text-blue-800">
+                <Shield className="h-3 w-3" />
+                {roleName()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+        >
+          <LogOut className="h-5 w-5" />
+          Sign Out
+        </button>
+      </div>
+    );
+  }
+
+  function renderPanelContent() {
+    switch (activePanel) {
+      case "home":
+        return renderLinks([
+          {
+            to: "/",
+            label: "Dashboard",
+            icon: <LayoutDashboard className="h-5 w-5" />,
+          },
+        ]);
+
+      case "competition":
+        return renderLinks(competitionItems);
+
+      case "match-centre":
+        if (matchCentreItems.length > 0) {
+          return renderLinks(matchCentreItems);
+        }
+
+        return (
+          <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+            Match centre is available for admins and club admins.
+          </p>
+        );
+
+      case "tools":
+        return renderLinks(toolItems);
+
+      case "account":
+        return renderAccountPanel();
+
+      default:
+        return null;
+    }
+  }
+
+  function navButton(
+    panel: Panel,
+    label: string,
+    icon: React.ReactNode
+  ) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (panel === "home") {
+            closePanel();
+            navigate("/");
+            return;
+          }
+
+          openPanel(panel);
+        }}
+        aria-label={label}
+        className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
+      >
+        {icon}
+      </button>
+    );
+  }
+
+  function routeButton(
+    to: string,
+    label: string,
+    icon: React.ReactNode
+  ) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          closePanel();
+          navigate(to);
+        }}
+        aria-label={label}
+        className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
+      >
+        {icon}
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
+      <div
+        aria-hidden={!panelOpen}
+        className={`absolute inset-x-0 bottom-0 transform-gpu border-t border-slate-200 bg-white px-4 pb-4 pt-3 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] transition-all duration-300 ease-out ${
+          panelOpen
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-full opacity-0"
+        }`}
+      >
+        <div className="mb-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={closePanel}
+            aria-label="Back to navigation"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+
+          <h2 className="truncate text-base font-bold">
+            {renderPanelTitle()}
+          </h2>
+        </div>
+
+        <div className="max-h-[52vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+          {renderPanelContent()}
+        </div>
+      </div>
+
+      <nav
+        aria-hidden={panelOpen}
+        className={`border-t border-slate-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] transition-all duration-300 ease-out ${
+          panelOpen
+            ? "pointer-events-none translate-y-3 opacity-0"
+            : "translate-y-0 opacity-100"
+        }`}
+      >
+        <div className="mx-auto grid max-w-lg grid-cols-6 items-center justify-items-center gap-1">
+          {navButton(
+            "home",
+            "KiwiTTR",
+            <IconLogo className="h-9 w-9" />
+          )}
+
+          {routeButton(
+            "/my-profile",
+            "My Profile",
+            <User className="h-6 w-6" />
+          )}
+
+          {navButton(
+            "competition",
+            "Competition",
+            <Medal className="h-6 w-6" />
+          )}
+
+          {navButton(
+            "match-centre",
+            "Match Centre",
+            <Swords className="h-6 w-6" />
+          )}
+
+          {navButton(
+            "tools",
+            "Tools",
+            <Wrench className="h-6 w-6" />
+          )}
+
+          {navButton(
+            "account",
+            "Account",
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-900 text-xs font-bold text-white">
+              {session ? (
+                initials()
+              ) : (
+                <LogIn className="h-5 w-5" />
+              )}
+            </div>
+          )}
+        </div>
+      </nav>
+    </div>
+  );
+}

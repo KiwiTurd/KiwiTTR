@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  ClipboardPen,
+  Plus,
+} from "lucide-react";
+
 import type { Event } from "../../types/event";
 import type { MatchSet } from "../../types/match";
 import type { Player } from "../../types/player";
@@ -11,6 +16,8 @@ import { notify } from "../../services/notificationService";
 
 import SetScoreInput from "./SetScoreInput";
 
+const MIN_SETS_TO_WIN = 2;
+
 export default function MatchForm() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -21,8 +28,8 @@ export default function MatchForm() {
 
   const [sets, setSets] = useState<MatchSet[]>([
     {
-      player1Score: 11,
-      player2Score: 8,
+      player1Score: 0,
+      player2Score: 0,
     },
   ]);
 
@@ -70,6 +77,16 @@ export default function MatchForm() {
     ]);
   }
 
+  function removeSet(index: number) {
+    if (sets.length === 1) {
+      return;
+    }
+
+    setSets(
+      sets.filter((_, setIndex) => setIndex !== index)
+    );
+  }
+
   const summary = useMemo(() => {
     let player1Sets = 0;
     let player2Sets = 0;
@@ -108,6 +125,20 @@ export default function MatchForm() {
     };
   }, [sets, player1Id, player2Id, players]);
 
+  const hasMinimumSetsWon =
+    Math.max(
+      summary.player1Sets,
+      summary.player2Sets
+    ) >= MIN_SETS_TO_WIN;
+
+  const canRecordMatch =
+    Boolean(eventId) &&
+    Boolean(player1Id) &&
+    Boolean(player2Id) &&
+    player1Id !== player2Id &&
+    summary.player1Sets !== summary.player2Sets &&
+    hasMinimumSetsWon;
+
   async function handleRecordMatch() {
     if (!eventId) {
       notify.timeout("Please select an event.");
@@ -126,6 +157,13 @@ export default function MatchForm() {
 
     if (summary.player1Sets === summary.player2Sets) {
       notify.timeout("The match is tied.");
+      return;
+    }
+
+    if (!hasMinimumSetsWon) {
+      notify.timeout(
+        `A player must win at least ${MIN_SETS_TO_WIN} sets before the match can be recorded.`
+      );
       return;
     }
 
@@ -156,8 +194,8 @@ export default function MatchForm() {
 
       setSets([
         {
-          player1Score: 11,
-          player2Score: 8,
+          player1Score: 0,
+          player2Score: 0,
         },
       ]);
 
@@ -175,112 +213,182 @@ export default function MatchForm() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow p-8 space-y-6">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-      <div>
-        <label className="block font-semibold mb-2">
-          Event
-        </label>
+      <div className="flex items-center gap-3 border-b px-8 py-5">
 
-        <select
-          value={eventId}
-          onChange={(e) => setEventId(e.target.value)}
-          className="border rounded-lg p-3 w-full"
-        >
-          <option value="">Select Event</option>
+        <ClipboardPen className="h-6 w-6 text-blue-700" />
 
-          {events.map((event) => (
-            <option key={event.id} value={event.id}>
-              {event.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block font-semibold mb-2">
-          Player 1
-        </label>
-
-        <select
-          value={player1Id}
-          onChange={(e) => setPlayer1Id(e.target.value)}
-          className="border rounded-lg p-3 w-full"
-        >
-          <option value="">Select Player</option>
-
-          {players.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.firstName} {player.lastName} ({player.rating})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block font-semibold mb-2">
-          Player 2
-        </label>
-
-        <select
-          value={player2Id}
-          onChange={(e) => setPlayer2Id(e.target.value)}
-          className="border rounded-lg p-3 w-full"
-        >
-          <option value="">Select Player</option>
-
-          {players.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.firstName} {player.lastName} ({player.rating})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <hr />
-
-      {sets.map((set, index) => (
-        <SetScoreInput
-          key={index}
-          index={index}
-          player1Score={set.player1Score}
-          player2Score={set.player2Score}
-          onPlayer1Change={(value) =>
-            updateSet(index, value, set.player2Score)
-          }
-          onPlayer2Change={(value) =>
-            updateSet(index, set.player1Score, value)
-          }
-        />
-      ))}
-
-      <button
-        onClick={addSet}
-        className="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-lg transition"
-      >
-        + Add Set
-      </button>
-
-      <div className="bg-slate-100 rounded-lg p-5">
-        <h2 className="text-xl font-bold mb-3">
-          Live Match Summary
+        <h2 className="text-2xl font-bold">
+          Record Match
         </h2>
 
-        <p>
-          Score: <strong>{summary.player1Sets} - {summary.player2Sets}</strong>
-        </p>
-
-        <p>
-          Winner: <strong>{summary.winner || "-"}</strong>
-        </p>
       </div>
 
-      <button
-        onClick={handleRecordMatch}
-        className="w-full bg-blue-900 hover:bg-blue-800 text-white py-3 rounded-lg transition"
-      >
-        Record Match
-      </button>
+      <div className="space-y-6 p-8">
+
+        <div className="grid gap-4 lg:grid-cols-3">
+
+          <div>
+            <label className="mb-2 block font-semibold">
+              Event
+            </label>
+
+            <select
+              value={eventId}
+              onChange={(e) => setEventId(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">Select Event</option>
+
+              {events.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block font-semibold">
+              Player 1
+            </label>
+
+            <select
+              value={player1Id}
+              onChange={(e) => setPlayer1Id(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">Select Player</option>
+
+              {players.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.firstName} {player.lastName} ({player.rating})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block font-semibold">
+              Player 2
+            </label>
+
+            <select
+              value={player2Id}
+              onChange={(e) => setPlayer2Id(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">Select Player</option>
+
+              {players.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.firstName} {player.lastName} ({player.rating})
+                </option>
+              ))}
+            </select>
+          </div>
+
+        </div>
+
+        <div className="border-t pt-6">
+
+          <div className="mb-3 grid grid-cols-[minmax(72px,1fr)_96px_96px_44px] gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <span>Set</span>
+            <span className="text-center">P1</span>
+            <span className="text-center">P2</span>
+            <span />
+          </div>
+
+          <div className="space-y-3">
+            {sets.map((set, index) => (
+              <SetScoreInput
+                key={index}
+                index={index}
+                player1Score={set.player1Score}
+                player2Score={set.player2Score}
+                onPlayer1Change={(value) =>
+                  updateSet(index, value, set.player2Score)
+                }
+                onPlayer2Change={(value) =>
+                  updateSet(index, set.player1Score, value)
+                }
+                onRemove={() => removeSet(index)}
+                canRemove={sets.length > 1}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={addSet}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 font-medium text-slate-900 transition hover:bg-slate-200"
+          >
+            <Plus className="h-4 w-4" />
+            Add Set
+          </button>
+
+        </div>
+
+        <div className="grid gap-4 rounded-xl bg-slate-100 p-5 md:grid-cols-3 md:items-center">
+
+          <div>
+            <h3 className="text-lg font-bold">
+              Live Match Summary
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Review the score before recording.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-slate-500">
+              Score
+            </p>
+            <p className="text-2xl font-black">
+              {summary.player1Sets} - {summary.player2Sets}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-slate-500">
+              Winner
+            </p>
+            <p className="truncate text-xl font-bold">
+              {summary.winner || "-"}
+            </p>
+          </div>
+
+        </div>
+
+        {!hasMinimumSetsWon && (
+          <p className="text-sm font-medium text-slate-500">
+            A player must win at least {MIN_SETS_TO_WIN} sets before this match can be recorded.
+          </p>
+        )}
+
+        <button
+          onClick={handleRecordMatch}
+          disabled={!canRecordMatch}
+          className="
+            w-full
+            rounded-xl
+            bg-blue-900
+            py-3
+            font-semibold
+            text-white
+            transition
+
+            hover:bg-blue-800
+
+            disabled:cursor-not-allowed
+            disabled:bg-slate-400
+            disabled:hover:bg-slate-400
+          "
+        >
+          Record Match
+        </button>
+
+      </div>
 
     </div>
   );

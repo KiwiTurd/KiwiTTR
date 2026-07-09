@@ -1,7 +1,7 @@
 export type UserRole =
   | "admin"
-  | "club_leader"
-  | "member";
+  | "club_admin"
+  | "player";
 
 export type UserStatus =
   | "active"

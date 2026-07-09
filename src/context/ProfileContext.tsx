@@ -12,8 +12,9 @@ export type Profile = {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  role: "player" | "club_leader" | "admin";
+  role: "player" | "club_admin" | "admin";
   club_id: string | null;
+  player_id: string | null;
 };
 
 type ProfileContextType = {

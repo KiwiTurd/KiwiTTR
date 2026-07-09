@@ -2,7 +2,7 @@ import { supabase } from "../../lib/supabase";
 
 export type UserProfile = {
   id: string;
-  role: "admin" | "club_leader" | "player";
+  role: "admin" | "club_admin" | "player";
   first_name: string | null;
   last_name: string | null;
   club_id: string | null;

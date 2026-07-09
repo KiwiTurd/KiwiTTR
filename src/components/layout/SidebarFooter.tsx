@@ -82,8 +82,8 @@ export default function SidebarFooter() {
       case "admin":
         return "Administrator";
 
-      case "club_leader":
-        return "Club Leader";
+      case "club_admin":
+        return "Club Admin";
 
       case "player":
         return "Player";
@@ -281,7 +281,7 @@ export default function SidebarFooter() {
                   "
                 >
 
-                  ?
+                  <LogIn className="h-5 w-5" />
 
                 </div>
 

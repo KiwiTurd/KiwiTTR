@@ -11,6 +11,9 @@ type PlayerRow = {
   first_name: string;
   last_name: string;
 
+  mobile: string | null;
+  email: string | null;
+
   rating: number;
   highest_rating: number;
 
@@ -28,6 +31,12 @@ type PlayerRow = {
   created_at: string;
 };
 
+type PlayerSearchRow = PlayerRow & {
+  clubs?: {
+    name: string | null;
+  } | null;
+};
+
 export interface PlayerSearchResult
   extends Player {
   clubName: string;
@@ -43,6 +52,9 @@ function fromRow(row: PlayerRow): Player {
 
     firstName: row.first_name,
     lastName: row.last_name,
+
+    mobile: row.mobile ?? "",
+    email: row.email ?? "",
 
     rating: row.rating,
     highestRating: row.highest_rating,
@@ -75,6 +87,9 @@ function toRow(player: Player) {
 
     first_name: player.firstName,
     last_name: player.lastName,
+
+    mobile: player.mobile,
+    email: player.email,
 
     rating: player.rating,
     highest_rating: player.highestRating,
@@ -156,7 +171,7 @@ export async function getPlayerSearchList(): Promise<
     throw error;
   }
 
-  return (data as any[]).map((row) => ({
+  return (data as PlayerSearchRow[]).map((row) => ({
     ...fromRow(row),
     clubName: row.clubs?.name ?? "",
   }));

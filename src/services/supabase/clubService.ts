@@ -9,6 +9,8 @@ type ClubRow = {
   phone: string | null;
   email: string | null;
   website: string | null;
+  notice: string | null;
+  header_image_url: string | null;
   created_at: string;
 };
 
@@ -21,6 +23,8 @@ function fromRow(row: ClubRow): Club {
     phone: row.phone ?? "",
     email: row.email ?? "",
     website: row.website ?? "",
+    notice: row.notice ?? "",
+    headerImageUrl: row.header_image_url ?? "",
     createdAt: row.created_at,
   };
 }
@@ -34,6 +38,8 @@ function toRow(club: Club) {
     phone: club.phone,
     email: club.email,
     website: club.website,
+    notice: club.notice,
+    header_image_url: club.headerImageUrl,
     created_at: club.createdAt,
   };
 }

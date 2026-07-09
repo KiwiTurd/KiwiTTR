@@ -11,6 +11,7 @@ import {
   Calculator,
   Settings,
   Medal,
+  Podium,
   Wrench,
   Swords,
 } from "lucide-react";
@@ -44,7 +45,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-200 flex flex-col shadow-sm z-40 transition-all duration-300 ${
+      className={`fixed left-0 top-0 hidden h-screen bg-white border-r border-slate-200 md:flex flex-col shadow-sm z-40 transition-all duration-300 ${
         collapsed
           ? "w-20"
           : "w-72"
@@ -53,7 +54,7 @@ export default function Sidebar() {
       <SidebarHeader />
 
       {!collapsed && (
-        <div className="px-4 py-5 border-b">
+        <div className="border-b px-4 py-5">
           <GlobalSearch />
         </div>
       )}
@@ -61,54 +62,77 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-4 py-4">
 
         <SidebarLink
+          to="/my-profile"
+          label="My Profile"
+          icon={
+            <User className="h-5 w-5" />
+          }
+          collapsed={collapsed}
+        />
+
+        <SidebarLink
           to="/"
           label="Dashboard"
-          icon={<LayoutDashboard className="w-5 h-5" />}
+          icon={
+            <LayoutDashboard className="h-5 w-5" />
+          }
           collapsed={collapsed}
         />
 
         <SidebarSection
           title="Competition"
-          icon={<Medal className="w-4 h-4" />}
+          icon={<Medal className="h-4 w-4" />}
           open={competitionOpen}
           onToggle={() =>
-            setCompetitionOpen(!competitionOpen)
+            setCompetitionOpen(
+              !competitionOpen
+            )
           }
         >
 
           <SidebarLink
             to="/rankings"
             label="Rankings"
-            icon={<Trophy className="w-4 h-4" />}
-            collapsed={collapsed}
-          />
-
-          <SidebarLink
-            to="/my-profile"
-            label="My Profile"
-            icon={<User className="w-4 h-4" />}
+            icon={
+              <Podium className="h-4 w-4" />
+            }
             collapsed={collapsed}
           />
 
           <SidebarLink
             to="/clubs"
             label="Clubs"
-            icon={<Building2 className="w-4 h-4" />}
+            icon={
+              <Building2 className="h-4 w-4" />
+            }
             collapsed={collapsed}
           />
 
           <SidebarLink
             to="/events"
             label="Events"
-            icon={<CalendarDays className="w-4 h-4" />}
+            icon={
+              <CalendarDays className="h-4 w-4" />
+            }
             collapsed={collapsed}
           />
 
-          {isAdmin && (
+          <SidebarLink
+            to="/tournaments"
+            label="Tournaments"
+            icon={
+              <Trophy className="h-4 w-4" />
+            }
+            collapsed={collapsed}
+          />
+
+          {(isAdmin || isClubLeader) && (
             <SidebarLink
               to="/players"
               label="Player Management"
-              icon={<Users className="w-4 h-4" />}
+              icon={
+                <Users className="h-4 w-4" />
+              }
               collapsed={collapsed}
             />
           )}
@@ -119,17 +143,23 @@ export default function Sidebar() {
 
           <SidebarSection
             title="Match Centre"
-            icon={<Swords className="w-4 h-4" />}
+            icon={
+              <Swords className="h-4 w-4" />
+            }
             open={matchCentreOpen}
             onToggle={() =>
-              setMatchCentreOpen(!matchCentreOpen)
+              setMatchCentreOpen(
+                !matchCentreOpen
+              )
             }
           >
 
             <SidebarLink
               to="/matches"
               label="Record Match"
-              icon={<ClipboardPen className="w-4 h-4" />}
+              icon={
+                <ClipboardPen className="h-4 w-4" />
+              }
               collapsed={collapsed}
             />
 
@@ -139,7 +169,9 @@ export default function Sidebar() {
 
         <SidebarSection
           title="Tools"
-          icon={<Wrench className="w-4 h-4" />}
+          icon={
+            <Wrench className="h-4 w-4" />
+          }
           open={toolsOpen}
           onToggle={() =>
             setToolsOpen(!toolsOpen)
@@ -149,7 +181,9 @@ export default function Sidebar() {
           <SidebarLink
             to="/simulator"
             label="TTR Calculator"
-            icon={<Calculator className="w-4 h-4" />}
+            icon={
+              <Calculator className="h-4 w-4" />
+            }
             collapsed={collapsed}
           />
 
@@ -157,7 +191,9 @@ export default function Sidebar() {
             <SidebarLink
               to="/settings"
               label="Settings"
-              icon={<Settings className="w-4 h-4" />}
+              icon={
+                <Settings className="h-4 w-4" />
+              }
               collapsed={collapsed}
             />
           )}

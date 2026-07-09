@@ -1,4 +1,17 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  Pencil,
+  Search,
+  ShieldCheck,
+  UserCog,
+  Users,
+} from "lucide-react";
 
 import type { Profile } from "../types/profile";
 import type { Club } from "../types/club";
@@ -28,6 +41,15 @@ export default function UserManagement() {
   const [players, setPlayers] = useState<Player[]>([]);
 
   const [loading, setLoading] = useState(true);
+
+  const [clubFilter, setClubFilter] =
+    useState("");
+
+  const [roleFilter, setRoleFilter] =
+    useState("");
+
+  const [profileSearch, setProfileSearch] =
+    useState("");
 
   const [selectedProfile, setSelectedProfile] =
     useState<Profile | null>(null);
@@ -70,9 +92,9 @@ export default function UserManagement() {
     }
   }
 
-  function getClubName(
+  const getClubName = useCallback((
     clubId: string | null
-  ) {
+  ) => {
 
     if (!clubId) {
       return "-";
@@ -84,11 +106,11 @@ export default function UserManagement() {
       )?.name ?? "-"
     );
 
-  }
+  }, [clubs]);
 
-  function getPlayerName(
+  const getPlayerName = useCallback((
     playerId: string | null
-  ) {
+  ) => {
 
     if (!playerId) {
       return "-";
@@ -104,7 +126,7 @@ export default function UserManagement() {
 
     return `${player.firstName} ${player.lastName}`;
 
-  }
+  }, [players]);
 
   function getStatusBadge(
     status: Profile["status"]
@@ -137,15 +159,67 @@ export default function UserManagement() {
       case "admin":
         return "👑 Admin";
 
-      case "club_leader":
-        return "🏓 Club Leader";
+      case "club_admin":
+        return "Club Admin";
+
+      case "player":
+        return "Player";
 
       default:
-        return "👤 Member";
+        return "Player";
 
     }
 
   }
+
+  const filteredProfiles = useMemo(() => {
+    const query =
+      profileSearch.trim().toLowerCase();
+
+    return profiles.filter((profile) => {
+      const clubName =
+        getClubName(profile.clubId);
+
+      const playerName =
+        getPlayerName(profile.playerId);
+
+      const searchable = [
+        profile.firstName,
+        profile.lastName,
+        profile.email,
+        getRoleDisplay(profile.role),
+        clubName,
+        playerName,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesClub =
+        !clubFilter ||
+        profile.clubId === clubFilter;
+
+      const matchesRole =
+        !roleFilter ||
+        profile.role === roleFilter;
+
+      const matchesSearch =
+        !query ||
+        searchable.includes(query);
+
+      return (
+        matchesClub &&
+        matchesRole &&
+        matchesSearch
+      );
+    });
+  }, [
+    profiles,
+    getClubName,
+    getPlayerName,
+    clubFilter,
+    roleFilter,
+    profileSearch,
+  ]);
 
   async function handleSave(
     profile: Profile
@@ -166,7 +240,9 @@ export default function UserManagement() {
       console.error(error);
 
       notify.fault(
-        "Failed to save user."
+        error instanceof Error
+          ? error.message
+          : "Failed to save user."
       );
 
     }
@@ -221,15 +297,155 @@ export default function UserManagement() {
 
   return (
 
-    <div className="max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-8">
 
-      <h1 className="text-4xl font-bold mb-8">
-        User Management
-      </h1>
+      <div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+        <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
+          KiwiTTR
+        </p>
 
-        <table className="w-full">
+        <h1 className="mt-2 text-5xl font-black tracking-tight">
+          User Management
+        </h1>
+
+        <p className="mt-3 text-lg text-slate-500">
+          Manage account access, roles, clubs and linked player profiles.
+        </p>
+
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Users className="h-5 w-5 text-blue-700" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Users
+            </p>
+            <p className="text-2xl font-black">
+              {profiles.length}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <ShieldCheck className="h-5 w-5 text-green-600" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Active
+            </p>
+            <p className="text-2xl font-black">
+              {
+                profiles.filter(
+                  (profile) =>
+                    profile.status === "active"
+                ).length
+              }
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <UserCog className="h-5 w-5 text-indigo-600" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Admins
+            </p>
+            <p className="text-2xl font-black">
+              {
+                profiles.filter(
+                  (profile) =>
+                    profile.role === "admin"
+                ).length
+              }
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+
+        <div className="grid gap-3 md:grid-cols-[minmax(180px,240px)_minmax(160px,220px)_1fr]">
+
+          <select
+            value={clubFilter}
+            onChange={(e) =>
+              setClubFilter(e.target.value)
+            }
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="">
+              All Clubs
+            </option>
+
+            {clubs.map((club) => (
+              <option
+                key={club.id}
+                value={club.id}
+              >
+                {club.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={roleFilter}
+            onChange={(e) =>
+              setRoleFilter(e.target.value)
+            }
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="">
+              All Roles
+            </option>
+            <option value="admin">
+              Admin
+            </option>
+            <option value="club_admin">
+              Club Admin
+            </option>
+            <option value="player">
+              Player
+            </option>
+          </select>
+
+          <div className="relative">
+
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+            <input
+              type="search"
+              value={profileSearch}
+              onChange={(e) =>
+                setProfileSearch(e.target.value)
+              }
+              placeholder="Search profiles"
+              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            />
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+        <div className="flex items-center gap-3 border-b px-8 py-5">
+
+          <UserCog className="h-6 w-6 text-blue-700" />
+
+          <h2 className="text-2xl font-bold">
+            Users
+          </h2>
+
+        </div>
+
+        <div className="overflow-x-auto">
+
+        <table className="w-full min-w-[980px]">
 
           <thead className="bg-slate-100">
 
@@ -274,7 +490,7 @@ export default function UserManagement() {
 
                 <td
                   colSpan={7}
-                  className="text-center py-10"
+                  className="py-10 text-center text-slate-500"
                 >
                   Loading users...
                 </td>
@@ -283,14 +499,29 @@ export default function UserManagement() {
 
             ) : (
 
-              profiles.map((profile) => (
+              filteredProfiles.length === 0 ? (
+
+                <tr>
+
+                  <td
+                    colSpan={7}
+                    className="py-10 text-center text-slate-500"
+                  >
+                    No users match your filters.
+                  </td>
+
+                </tr>
+
+              ) : (
+
+              filteredProfiles.map((profile) => (
 
                 <tr
                   key={profile.id}
-                  className="border-t hover:bg-slate-50"
+                  className="border-t transition hover:bg-slate-50"
                 >
 
-                  <td className="p-4">
+                  <td className="p-4 font-semibold">
 
                     {profile.firstName ||
                     profile.lastName
@@ -301,7 +532,9 @@ export default function UserManagement() {
 
                   <td>
 
-                    {profile.email || "-"}
+                    <span className="text-slate-600">
+                      {profile.email || "-"}
+                    </span>
 
                   </td>
 
@@ -315,9 +548,11 @@ export default function UserManagement() {
 
                   <td>
 
-                    {getRoleDisplay(
-                      profile.role
-                    )}
+                    <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                      {getRoleDisplay(
+                        profile.role
+                      )}
+                    </span>
 
                   </td>
 
@@ -353,8 +588,9 @@ export default function UserManagement() {
                           );
 
                         }}
-                        className="text-blue-700 hover:underline"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900"
                       >
+                        <Pencil className="h-4 w-4" />
                         Edit
                       </button>
 
@@ -367,8 +603,8 @@ export default function UserManagement() {
                         className={
                           profile.status ===
                           "active"
-                            ? "text-red-600 hover:underline"
-                            : "text-green-600 hover:underline"
+                            ? "rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                            : "rounded-xl border border-green-200 px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-50"
                         }
                       >
                         {profile.status ===
@@ -385,14 +621,19 @@ export default function UserManagement() {
 
               ))
 
+              )
+
             )}
 
           </tbody>
 
         </table>
 
+        </div>
+
       </div>
-            <EditUserModal
+
+      <EditUserModal
         profile={selectedProfile}
         clubs={clubs}
         players={players}

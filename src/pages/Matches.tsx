@@ -3,11 +3,23 @@ import MatchHistory from "../components/matches/MatchHistory";
 
 export default function Matches() {
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-8">
 
-      <h1 className="text-4xl font-bold mb-8">
-        Match Centre
-      </h1>
+      <div>
+
+        <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
+          KiwiTTR
+        </p>
+
+        <h1 className="mt-2 text-5xl font-black tracking-tight">
+          Match Centre
+        </h1>
+
+        <p className="mt-3 text-lg text-slate-500">
+          Record match results and review the latest outcomes.
+        </p>
+
+      </div>
 
       <MatchForm />
 

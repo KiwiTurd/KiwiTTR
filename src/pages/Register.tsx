@@ -108,7 +108,24 @@ export default function Register() {
 
             <div className="flex justify-center">
 
-              <FullLogo className="h-12 w-auto" />
+              <Link
+                to="/"
+                aria-label="Go to dashboard"
+                className="
+                  rounded-lg
+                  transition
+
+                  hover:opacity-80
+
+                  focus:outline-none
+                  focus:ring-4
+                  focus:ring-blue-100
+                "
+              >
+
+                <FullLogo className="h-12 w-auto" />
+
+              </Link>
 
             </div>
 

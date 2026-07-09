@@ -24,6 +24,20 @@ type ProfileRow = {
   created_at: string;
 };
 
+function normalizeRole(
+  role: string
+): Profile["role"] {
+  if (
+    role === "admin" ||
+    role === "club_admin" ||
+    role === "player"
+  ) {
+    return role;
+  }
+
+  return "player";
+}
+
 function fromRow(row: ProfileRow): Profile {
   return {
     id: row.id,
@@ -33,7 +47,7 @@ function fromRow(row: ProfileRow): Profile {
 
     email: row.email ?? "",
 
-    role: row.role as Profile["role"],
+    role: normalizeRole(row.role),
     status: row.status as Profile["status"],
 
     clubId: row.club_id,
@@ -58,6 +72,26 @@ function toRow(profile: Profile) {
     club_id: profile.clubId,
     player_id: profile.playerId,
   };
+}
+
+function normalizeName(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function profileMatchesPlayerName(
+  profile: Profile,
+  player: Awaited<ReturnType<typeof getPlayer>>
+) {
+  if (!player) {
+    return true;
+  }
+
+  return (
+    normalizeName(profile.firstName) ===
+      normalizeName(player.firstName) &&
+    normalizeName(profile.lastName) ===
+      normalizeName(player.lastName)
+  );
 }
 
 export async function getProfiles(): Promise<Profile[]> {
@@ -109,6 +143,22 @@ export async function saveProfile(
 ): Promise<void> {
 
   const existing = await getProfile(profile.id);
+
+  const selectedPlayer = profile.playerId
+    ? await getPlayer(profile.playerId)
+    : null;
+
+  if (
+    profile.playerId &&
+    !profileMatchesPlayerName(
+      profile,
+      selectedPlayer
+    )
+  ) {
+    throw new Error(
+      "A profile can only be linked to a player with the same first and last name."
+    );
+  }
 
   //
   // 1. Unlink this profile's old player
@@ -169,13 +219,9 @@ export async function saveProfile(
     //
     // 4. Link the selected player
     //
-    const newPlayer = await getPlayer(
-      profile.playerId
-    );
-
-    if (newPlayer) {
-      newPlayer.profileId = profile.id;
-      await updatePlayer(newPlayer);
+    if (selectedPlayer) {
+      selectedPlayer.profileId = profile.id;
+      await updatePlayer(selectedPlayer);
     }
   }
 

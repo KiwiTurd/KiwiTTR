@@ -7,6 +7,9 @@ export interface Player {
   firstName: string;
   lastName: string;
 
+  mobile: string;
+  email: string;
+
   clubId: string;
 
   rating: number;

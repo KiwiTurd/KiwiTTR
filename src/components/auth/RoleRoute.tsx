@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useProfile } from "../../context/ProfileContext";
 
-type Role = "admin" | "club_leader" | "player";
+type Role = "admin" | "club_admin" | "player";
 
 type Props = {
   allowedRoles: Role[];

@@ -3,6 +3,8 @@ import {
   PanelLeftClose,
 } from "lucide-react";
 
+import { Link } from "react-router-dom";
+
 import { useSidebar } from "../../context/SidebarContext";
 
 import FullLogo from "../../assets/KIWITTR - Logo Full.svg?react";
@@ -23,9 +25,15 @@ export default function SidebarHeader() {
 
         <div className="flex flex-col items-center justify-center py-5 gap-4">
 
-          <IconLogo
-            className="h-10 w-10"
-          />
+          <Link
+            to="/"
+            aria-label="Go to dashboard"
+            className="rounded-lg transition hover:opacity-80 focus:outline-none focus:ring-4 focus:ring-blue-100"
+          >
+            <IconLogo
+              className="h-10 w-10"
+            />
+          </Link>
 
           <button
             onClick={toggle}
@@ -48,9 +56,15 @@ export default function SidebarHeader() {
 
         <div className="h-20 px-4 flex items-center justify-between">
 
-          <FullLogo
-            className="h-9 w-auto"
-          />
+          <Link
+            to="/"
+            aria-label="Go to dashboard"
+            className="rounded-lg transition hover:opacity-80 focus:outline-none focus:ring-4 focus:ring-blue-100"
+          >
+            <FullLogo
+              className="h-9 w-auto"
+            />
+          </Link>
 
           <button
             onClick={toggle}

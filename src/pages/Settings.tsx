@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import {
+  Building2,
   ChevronRight,
   Database,
   Settings2,
@@ -11,7 +12,10 @@ import useRole from "../hooks/useRole";
 
 export default function Settings() {
 
-  const { isAdmin } = useRole();
+  const {
+    isAdmin,
+    isClubLeader,
+  } = useRole();
 
   return (
 
@@ -46,6 +50,93 @@ export default function Settings() {
       {/* Cards */}
 
       <div className="space-y-4">
+
+        {(isAdmin || isClubLeader) && (
+
+          <Link
+            to="/settings/club"
+            className="
+              group
+              block
+
+              rounded-2xl
+
+              border
+              border-slate-200
+
+              bg-white
+
+              px-6
+              py-5
+
+              shadow-sm
+
+              transition-all
+
+              duration-200
+
+              hover:-translate-y-0.5
+              hover:border-blue-200
+              hover:shadow-md
+            "
+          >
+
+            <div className="flex items-center">
+
+              <div
+                className="
+                  flex
+                  h-12
+                  w-12
+                  items-center
+                  justify-center
+
+                  rounded-xl
+
+                  bg-indigo-100
+
+                  text-indigo-700
+                "
+              >
+
+                <Building2 className="h-6 w-6" />
+
+              </div>
+
+              <div className="ml-5 flex-1">
+
+                <h2 className="text-xl font-bold">
+
+                  Club Settings
+
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+
+                  Update club info, notices and the public header image.
+
+                </p>
+
+              </div>
+
+              <ChevronRight
+                className="
+                  h-5
+                  w-5
+
+                  text-slate-400
+
+                  transition-transform
+
+                  group-hover:translate-x-1
+                "
+              />
+
+            </div>
+
+          </Link>
+
+        )}
 
         {isAdmin && (
 
@@ -109,7 +200,7 @@ export default function Settings() {
 
                 <p className="mt-1 text-sm text-slate-500">
 
-                  Manage users, assign club leaders and update permissions.
+                  Manage users, assign club admins and update permissions.
 
                 </p>
 

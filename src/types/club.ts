@@ -13,5 +13,9 @@ export interface Club {
 
   website: string;
 
+  notice: string;
+
+  headerImageUrl: string;
+
   createdAt: string;
 }

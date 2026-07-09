@@ -11,6 +11,7 @@ import { router } from "./router";
 import { AuthProvider } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
 import { SidebarProvider } from "./context/SidebarContext";
+import { TournamentProvider } from "./context/TournamentContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -19,19 +20,23 @@ createRoot(document.getElementById("root")!).render(
 
       <ProfileProvider>
 
-        <SidebarProvider>
+        <TournamentProvider>
 
-          <RouterProvider router={router} />
+          <SidebarProvider>
 
-          <Toaster
-            position="bottom-right"
-            richColors
-            closeButton
-            expand
-            duration={4000}
-          />
+            <RouterProvider router={router} />
 
-        </SidebarProvider>
+            <Toaster
+              position="bottom-right"
+              richColors
+              closeButton
+              expand
+              duration={4000}
+            />
+
+          </SidebarProvider>
+
+        </TournamentProvider>
 
       </ProfileProvider>
 
