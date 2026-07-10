@@ -8,6 +8,7 @@ import { Link, useParams } from "react-router-dom";
 
 import {
   ArrowLeft,
+  ArrowRight,
   BadgeCheck,
   Building2,
   Mail,
@@ -48,10 +49,14 @@ import RecentMatchCard from "../components/player/RecentMatchCard";
 
 import { notify } from "../services/notificationService";
 import useRole from "../hooks/useRole";
+import { useTournament } from "../context/TournamentContext";
+import { getTeamGames } from "../services/teams/teamGameService";
 
 export default function PlayerProfile() {
 
   const { id } = useParams();
+  const { savedTournaments } =
+    useTournament();
 
   const {
     profileId,
@@ -75,6 +80,11 @@ export default function PlayerProfile() {
   const [events, setEvents] =
     useState<Event[]>([]);
 
+  const [teamGames, setTeamGames] =
+    useState<
+      Awaited<ReturnType<typeof getTeamGames>>
+    >([]);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -83,6 +93,11 @@ export default function PlayerProfile() {
 
   const [saving, setSaving] =
     useState(false);
+
+  const [
+    recentMatchPage,
+    setRecentMatchPage,
+  ] = useState(0);
 
   const [editFirstName, setEditFirstName] =
     useState("");
@@ -111,6 +126,7 @@ export default function PlayerProfile() {
         clubList,
         matchList,
         eventList,
+        teamGameList,
 
       ] = await Promise.all([
 
@@ -119,6 +135,7 @@ export default function PlayerProfile() {
         getClubs(),
         getPlayerMatches(id),
         getEvents(),
+        getTeamGames(),
 
       ]);
 
@@ -147,6 +164,8 @@ export default function PlayerProfile() {
       setMatches(matchList);
 
       setEvents(eventList);
+
+      setTeamGames(teamGameList);
 
     }
 
@@ -178,6 +197,13 @@ export default function PlayerProfile() {
     };
 
   }, [loadData]);
+
+  useEffect(() => {
+    setRecentMatchPage(0);
+  }, [
+    id,
+    matches.length,
+  ]);
 
   const winPercentage = useMemo(() => {
 
@@ -314,6 +340,31 @@ export default function PlayerProfile() {
 
   const showHeadToHead =
     Boolean(headToHead && linkedPlayer);
+
+  const recentMatchPageSize = 5;
+  const recentMatchPageCount = Math.max(
+    1,
+    Math.ceil(
+      matches.length / recentMatchPageSize
+    )
+  );
+  const recentMatchStart =
+    (recentMatchPage % recentMatchPageCount) *
+    recentMatchPageSize;
+  const visibleRecentMatches = matches.slice(
+    recentMatchStart,
+    recentMatchStart + recentMatchPageSize
+  );
+  const recentMatchEnd = Math.min(
+    recentMatchStart + recentMatchPageSize,
+    matches.length
+  );
+
+  function cycleRecentMatches() {
+    setRecentMatchPage(
+      (page) => (page + 1) % recentMatchPageCount
+    );
+  }
 
   function openEdit() {
     if (!player || !isOwnPlayer) {
@@ -915,15 +966,36 @@ return (
 
         <div className="border-b px-6 py-4">
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
 
-            <Trophy className="h-6 w-6 text-amber-500" />
+            <div className="flex items-center gap-3">
 
-            <h2 className="text-xl font-bold">
+              <Trophy className="h-6 w-6 text-amber-500" />
 
-              Recent Matches
+              <h2 className="text-xl font-bold">
 
-            </h2>
+                Recent Matches
+
+              </h2>
+
+            </div>
+
+            {matches.length > recentMatchPageSize && (
+
+              <button
+                type="button"
+                onClick={cycleRecentMatches}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50"
+              >
+                {recentMatchStart + 1}-{recentMatchEnd} of{" "}
+                {matches.length}
+                <span className="inline-flex items-center gap-1">
+                  Next 5
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </button>
+
+            )}
 
           </div>
 
@@ -949,7 +1021,7 @@ return (
 
             <div className="space-y-4">
 
-              {matches.map((match) => {
+              {visibleRecentMatches.map((match) => {
 
                 const opponentId =
                   match.player1Id === player.id
@@ -966,6 +1038,26 @@ return (
                     (e) => e.id === match.eventId
                   );
 
+                const tournament =
+                  savedTournaments.find(
+                    (item) =>
+                      item.id === match.eventId
+                  );
+
+                const teamGame =
+                  teamGames.find(
+                    (item) =>
+                      item.id === match.eventId
+                  );
+
+                const eventHref = tournament
+                  ? `/tournaments/${tournament.id}/viewer`
+                  : teamGame
+                    ? `/team-games/${teamGame.id}/live`
+                    : event
+                      ? `/events/${event.id}`
+                      : undefined;
+
                 return (
 
                   <RecentMatchCard
@@ -974,6 +1066,7 @@ return (
                     player={player}
                     opponent={opponent}
                     event={event}
+                    eventHref={eventHref}
                   />
 
                 );

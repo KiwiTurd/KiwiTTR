@@ -570,6 +570,15 @@ export default function TournamentCentre() {
       : statusFilter === "past"
         ? "Past Tournaments"
         : "Upcoming Tournaments";
+  const liveTournamentCount =
+    savedTournaments.filter(
+      tournament => tournamentState(tournament).isLive
+    ).length;
+  const upcomingTournamentCount =
+    savedTournaments.filter(
+      tournament =>
+        tournamentState(tournament).isUpcoming
+    ).length;
 
   function renderTournamentSection(
     title: string,
@@ -932,71 +941,70 @@ export default function TournamentCentre() {
 
       {/* Header */}
 
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+            <Trophy className="h-4 w-4" />
+            Tournament Centre
+          </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+          <h1 className="mt-4 text-5xl font-black tracking-tight">
+            Tournaments
+          </h1>
 
-          <Trophy className="h-4 w-4" />
-
-          Tournament Centre
-
+          <p className="mt-3 text-lg text-slate-500">
+            Create, manage and run KiwiTTR tournaments.
+          </p>
         </div>
 
-        <h1 className="mt-4 text-5xl font-black tracking-tight">
-
-          Tournaments
-
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-
-          Create, manage and run KiwiTTR tournaments.
-
-        </p>
-
+        {canCreateTournament && (
+          <Link
+            to="/tournaments/new"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+          >
+            <Plus className="h-5 w-5" />
+            Create Tournament
+          </Link>
+        )}
       </div>
 
-      {/* New Tournament */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Trophy className="h-5 w-5 text-blue-700" />
+          <div>
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Tournaments
+            </p>
+            <p className="text-xl font-black">
+              {savedTournaments.length}
+            </p>
+          </div>
+        </div>
 
-      {canCreateTournament && (
-        <Link
-          to="/tournaments/new"
-          className="
-            group
-            flex
-            items-center
-            justify-center
-            gap-4
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Eye className="h-5 w-5 text-green-600" />
+          <div>
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Live
+            </p>
+            <p className="text-xl font-black">
+              {liveTournamentCount}
+            </p>
+          </div>
+        </div>
 
-            rounded-3xl
-
-            border-2
-            border-dashed
-            border-blue-300
-
-            bg-white
-
-            py-16
-
-            shadow-sm
-
-            transition
-
-            hover:border-blue-700
-            hover:bg-blue-50
-          "
-        >
-
-          <Plus className="h-8 w-8 text-blue-800" />
-
-          <span className="text-2xl font-bold text-blue-900">
-
-            Create Tournament
-
-          </span>
-
-        </Link>
-      )}
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <CalendarDays className="h-5 w-5 text-amber-600" />
+          <div>
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Upcoming
+            </p>
+            <p className="text-xl font-black">
+              {upcomingTournamentCount}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
 

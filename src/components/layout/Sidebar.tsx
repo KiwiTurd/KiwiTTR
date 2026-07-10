@@ -13,7 +13,8 @@ import {
   Medal,
   Podium,
   Wrench,
-  Swords,
+  Paperclip,
+  UsersRound,
 } from "lucide-react";
 
 import { useSidebar } from "../../context/SidebarContext";
@@ -134,10 +135,10 @@ export default function Sidebar() {
 
           {(isAdmin || isClubLeader) && (
             <SidebarLink
-              to="/players"
-              label="Player Management"
+              to="/team-games"
+              label="Team Games"
               icon={
-                <Users className="h-4 w-4" />
+                <UsersRound className="h-4 w-4" />
               }
               collapsed={collapsed}
             />
@@ -148,9 +149,9 @@ export default function Sidebar() {
         {(isAdmin || isClubLeader) && (
 
           <SidebarSection
-            title="Match Centre"
+            title="Management"
             icon={
-              <Swords className="h-4 w-4" />
+              <Paperclip className="h-4 w-4" />
             }
             open={matchCentreOpen}
             onToggle={() =>
@@ -165,6 +166,15 @@ export default function Sidebar() {
               label="Record Match"
               icon={
                 <ClipboardPen className="h-4 w-4" />
+              }
+              collapsed={collapsed}
+            />
+
+            <SidebarLink
+              to="/players"
+              label="Player Management"
+              icon={
+                <Users className="h-4 w-4" />
               }
               collapsed={collapsed}
             />

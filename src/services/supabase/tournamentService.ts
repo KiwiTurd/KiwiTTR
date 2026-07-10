@@ -1,6 +1,10 @@
 import { supabase } from "../../lib/supabase";
 import { buildMatch } from "../matchEngine";
 import {
+  removeRecordedTtrMatchesAndReplay,
+  replayTtrMatchesFrom,
+} from "../teams/teamSubmission";
+import {
   getPlayer,
   updatePlayer,
 } from "./playerService";
@@ -608,6 +612,21 @@ export async function saveTournamentRecord(
   tournament: TournamentState
 ): Promise<SavedTournament> {
   const baseRow = toTournamentRow(tournament);
+  const existingTournamentId = tournament.id;
+
+  if (existingTournamentId) {
+    const removedRatings =
+      await removeTournamentRecordedRatings(
+        existingTournamentId
+      );
+
+    if (
+      removedRatings > 0 &&
+      baseRow.status === "completed"
+    ) {
+      baseRow.status = "active";
+    }
+  }
 
   const { data, error } = await supabase
     .from("tournaments")
@@ -971,6 +990,10 @@ export async function updateTournamentMetadata(
 export async function cancelTournament(
   tournamentId: string
 ): Promise<SavedTournament> {
+  await removeTournamentRecordedRatings(
+    tournamentId
+  );
+
   const { error } = await supabase
     .from("tournaments")
     .update({
@@ -978,7 +1001,7 @@ export async function cancelTournament(
       allow_sign_up: false,
     })
     .eq("id", tournamentId)
-    .not("status", "eq", "completed");
+    .not("status", "eq", "cancelled");
 
   if (error) {
     throw error;
@@ -996,11 +1019,14 @@ export async function cancelTournament(
 export async function deleteTournament(
   tournamentId: string
 ) {
+  await removeTournamentRecordedRatings(
+    tournamentId
+  );
+
   const { error } = await supabase
     .from("tournaments")
     .delete()
-    .eq("id", tournamentId)
-    .not("status", "eq", "completed");
+    .eq("id", tournamentId);
 
   if (error) {
     throw error;
@@ -1151,6 +1177,68 @@ async function insertNormalMatchSets(
   }
 }
 
+function tournamentMatchPlayedAt(
+  tournament: TournamentRow,
+  match: TournamentMatchRow,
+  index: number
+) {
+  const date = new Date(
+    `${tournament.tournament_date}T00:00:00`
+  );
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+
+  const stageOffset =
+    match.stage === "knockout" ? 5000 : 0;
+  const roundOffset =
+    (match.round_number ?? 0) * 1000;
+  const positionOffset =
+    match.position ?? index + 1;
+
+  date.setMilliseconds(
+    stageOffset + roundOffset + positionOffset
+  );
+
+  return date.toISOString();
+}
+
+async function getRecordedTournamentMatchIds(
+  tournamentId: string
+) {
+  const { data, error } = await supabase
+    .from("tournament_matches")
+    .select("recorded_match_id")
+    .eq("tournament_id", tournamentId)
+    .not("recorded_match_id", "is", null);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as Array<{
+    recorded_match_id: string | null;
+  }>)
+    .map(row => row.recorded_match_id)
+    .filter(Boolean) as string[];
+}
+
+async function removeTournamentRecordedRatings(
+  tournamentId: string
+) {
+  const recordedMatchIds =
+    await getRecordedTournamentMatchIds(
+      tournamentId
+    );
+
+  await removeRecordedTtrMatchesAndReplay(
+    recordedMatchIds
+  );
+
+  return recordedMatchIds.length;
+}
+
 async function addRatingHistoryRows(
   result: ReturnType<typeof buildMatch>
 ) {
@@ -1251,8 +1339,12 @@ export async function finishTournamentAndRecordRatings(
 
   const eventId =
     await ensureTournamentEvent(tournament);
+  const recordedPlayedAt: string[] = [];
 
-  for (const tournamentMatch of matchesToRecord) {
+  for (const [
+    index,
+    tournamentMatch,
+  ] of matchesToRecord.entries()) {
     if (
       !tournamentMatch.player_one_id ||
       !tournamentMatch.player_two_id
@@ -1321,6 +1413,12 @@ export async function finishTournamentAndRecordRatings(
       playerTwo,
       sets
     );
+    result.match.playedAt =
+      tournamentMatchPlayedAt(
+        tournament,
+        tournamentMatch,
+        index
+      );
 
     const selectedWinnerId =
       tournamentMatch.winner_id === tournamentMatch.player_one_id
@@ -1346,6 +1444,7 @@ export async function finishTournamentAndRecordRatings(
       sets
     );
     await addRatingHistoryRows(result);
+    recordedPlayedAt.push(result.match.playedAt);
 
     await throwIfError(
       await supabase
@@ -1354,6 +1453,12 @@ export async function finishTournamentAndRecordRatings(
           recorded_match_id: result.match.id,
         })
         .eq("id", tournamentMatch.id)
+    );
+  }
+
+  if (recordedPlayedAt.length > 0) {
+    await replayTtrMatchesFrom(
+      recordedPlayedAt.sort()[0]
     );
   }
 

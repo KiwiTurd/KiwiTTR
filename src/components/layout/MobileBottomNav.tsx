@@ -8,14 +8,16 @@ import {
   LogIn,
   LogOut,
   Medal,
+  Paperclip,
   Podium,
+  Search,
   Settings,
   Shield,
-  Swords,
   Trophy,
   User,
   UserPlus,
   Users,
+  UsersRound,
   Wrench,
 } from "lucide-react";
 
@@ -39,12 +41,14 @@ import { useAuth } from "../../context/AuthContext";
 import { useProfile } from "../../context/ProfileContext";
 import useRole from "../../hooks/useRole";
 import { supabase } from "../../lib/supabase";
+import GlobalSearch from "./GlobalSearch";
 
 type Panel =
   | "home"
   | "competition"
   | "match-centre"
   | "tools"
+  | "search"
   | "account";
 
 type MobileNavItem = {
@@ -178,17 +182,17 @@ export default function MobileBottomNav() {
     {
       to: "/rankings",
       label: "Rankings",
-      icon: <Podium className="h-5 w-5" />,
+      icon: <Podium className="h-6 w-6" />,
     },
     {
       to: "/clubs",
       label: "Clubs",
-      icon: <Building2 className="h-5 w-5" />,
+      icon: <Building2 className="h-6 w-6" />,
     },
     {
       to: "/events",
       label: "Events",
-      icon: <CalendarDays className="h-5 w-5" />,
+      icon: <CalendarDays className="h-6 w-6" />,
     },
   ];
 
@@ -196,15 +200,15 @@ export default function MobileBottomNav() {
     competitionItems.push({
       to: "/tournaments",
       label: "Tournaments",
-      icon: <Trophy className="h-5 w-5" />,
+      icon: <Trophy className="h-6 w-6" />,
     });
   }
 
   if (isAdmin || isClubLeader) {
     competitionItems.push({
-      to: "/players",
-      label: "Player Management",
-      icon: <Users className="h-5 w-5" />,
+      to: "/team-games",
+      label: "Team Games",
+      icon: <UsersRound className="h-6 w-6" />,
     });
   }
 
@@ -214,7 +218,12 @@ export default function MobileBottomNav() {
           {
             to: "/matches",
             label: "Record Match",
-            icon: <ClipboardPen className="h-5 w-5" />,
+            icon: <ClipboardPen className="h-6 w-6" />,
+          },
+          {
+            to: "/players",
+            label: "Player Management",
+            icon: <Users className="h-6 w-6" />,
           },
         ]
       : [];
@@ -223,7 +232,7 @@ export default function MobileBottomNav() {
     {
       to: "/simulator",
       label: "TTR Calculator",
-      icon: <Calculator className="h-5 w-5" />,
+      icon: <Calculator className="h-6 w-6" />,
     },
   ];
 
@@ -231,7 +240,7 @@ export default function MobileBottomNav() {
     toolItems.push({
       to: "/settings",
       label: "Settings",
-      icon: <Settings className="h-5 w-5" />,
+      icon: <Settings className="h-6 w-6" />,
     });
   }
 
@@ -244,10 +253,13 @@ export default function MobileBottomNav() {
         return "Competition";
 
       case "match-centre":
-        return "Match Centre";
+        return "Management";
 
       case "tools":
         return "Tools";
+
+      case "search":
+        return "Search";
 
       case "account":
         return "Account";
@@ -305,7 +317,7 @@ export default function MobileBottomNav() {
             to="/login"
             className="flex items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-medium text-white transition hover:bg-blue-800"
           >
-            <LogIn className="h-5 w-5" />
+            <LogIn className="h-6 w-6" />
             Sign In
           </Link>
 
@@ -313,7 +325,7 @@ export default function MobileBottomNav() {
             to="/register"
             className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            <UserPlus className="h-5 w-5" />
+            <UserPlus className="h-6 w-6" />
             Create Account
           </Link>
         </div>
@@ -347,7 +359,7 @@ export default function MobileBottomNav() {
           onClick={handleLogout}
           className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="h-6 w-6" />
           Sign Out
         </button>
       </div>
@@ -361,7 +373,7 @@ export default function MobileBottomNav() {
           {
             to: "/",
             label: "Dashboard",
-            icon: <LayoutDashboard className="h-5 w-5" />,
+            icon: <LayoutDashboard className="h-6 w-6" />,
           },
         ]);
 
@@ -381,6 +393,13 @@ export default function MobileBottomNav() {
 
       case "tools":
         return renderLinks(toolItems);
+
+      case "search":
+        return (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <GlobalSearch />
+          </div>
+        );
 
       case "account":
         return renderAccountPanel();
@@ -408,7 +427,7 @@ export default function MobileBottomNav() {
           openPanel(panel);
         }}
         aria-label={label}
-        className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
+        className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14"
       >
         {icon}
       </button>
@@ -428,7 +447,7 @@ export default function MobileBottomNav() {
           navigate(to);
         }}
         aria-label={label}
-        className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
+        className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14"
       >
         {icon}
       </button>
@@ -450,9 +469,9 @@ export default function MobileBottomNav() {
             type="button"
             onClick={closePanel}
             aria-label="Back to navigation"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-6 w-6" />
           </button>
 
           <h2 className="truncate text-base font-bold">
@@ -473,47 +492,60 @@ export default function MobileBottomNav() {
             : "translate-y-0 opacity-100"
         }`}
       >
-        <div className="mx-auto flex max-w-lg items-center justify-center gap-1">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-0.5">
           {navButton(
             "home",
             "KiwiTTR",
-            <IconLogo className="h-9 w-9" />
+            <IconLogo className="h-10 w-10" />
+          )}
+
+          {session && (
+            <div
+              aria-hidden="true"
+              className="mx-1 h-8 w-px shrink-0 bg-slate-200"
+            />
+          )}
+
+          {navButton(
+            "search",
+            "Search",
+            <Search className="h-7 w-7" />
           )}
 
           {session && (
             routeButton(
               "/my-profile",
               "My Profile",
-              <User className="h-6 w-6" />
+              <User className="h-7 w-7" />
             )
           )}
 
           {navButton(
             "competition",
             "Competition",
-            <Medal className="h-6 w-6" />
+            <Medal className="h-7 w-7" />
           )}
 
           {navButton(
             "match-centre",
-            "Match Centre",
-            <Swords className="h-6 w-6" />
+            "Management",
+            <Paperclip className="h-7 w-7" />
           )}
 
           {navButton(
             "tools",
             "Tools",
-            <Wrench className="h-6 w-6" />
+            <Wrench className="h-7 w-7" />
           )}
 
           {navButton(
             "account",
             "Account",
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-900 text-xs font-bold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
               {session ? (
                 initials()
               ) : (
-                <LogIn className="h-5 w-5" />
+                <LogIn className="h-7 w-7" />
               )}
             </div>
           )}

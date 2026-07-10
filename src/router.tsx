@@ -17,6 +17,11 @@ import NewTournament from "./pages/NewTournament";
 import TournamentPlayerSelection from "./pages/TournamentPlayerSelection";
 import TournamentLive from "./pages/TournamentLive";
 import TournamentViewer from "./pages/TournamentViewer";
+import TeamGames from "./pages/TeamGames";
+import TeamMatchType from "./pages/TeamMatchType";
+import NewTeamGameEvent from "./pages/NewTeamGameEvent";
+import TeamGameLive from "./pages/TeamGameLive";
+import TeamGameManage from "./pages/TeamGameManage";
 
 import PlayerManagement from "./pages/PlayerManagement";
 import PlayerProfile from "./pages/PlayerProfile";
@@ -25,6 +30,7 @@ import MyProfile from "./pages/MyProfile";
 import Matches from "./pages/Matches";
 
 import Simulator from "./pages/Simulator";
+import FlappyBat from "./pages/FlappyBat";
 
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
@@ -163,11 +169,57 @@ export const router = createBrowserRouter([
         element: <TournamentViewer />,
       },
 
+      {
+        path: "team-games",
+        element: (
+          <ProtectedRoute>
+            <TeamGames />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: "team-games/new",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <TeamMatchType />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "team-games/new/:format",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <NewTeamGameEvent />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "team-games/:id/live",
+        element: <TeamGameLive />,
+      },
+
+      {
+        path: "team-games/:id/manage",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <TeamGameManage />
+          </RoleRoute>
+        ),
+      },
+
       // Tools
 
       {
         path: "simulator",
         element: <Simulator />,
+      },
+
+      {
+        path: "flappy-bat",
+        element: <FlappyBat />,
       },
 
       // Admin Pages

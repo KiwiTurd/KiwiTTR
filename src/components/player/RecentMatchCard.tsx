@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import type { Match } from "../../types/match";
 import type { Player } from "../../types/player";
@@ -9,6 +10,7 @@ interface Props {
   player: Player;
   opponent: Player | undefined;
   event: Event | undefined;
+  eventHref?: string;
 }
 
 export default function RecentMatchCard({
@@ -16,6 +18,7 @@ export default function RecentMatchCard({
   player,
   opponent,
   event,
+  eventHref,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
 
@@ -34,24 +37,30 @@ export default function RecentMatchCard({
     : match.loserRatingChange;
 
   return (
-    <div className="border rounded-xl overflow-hidden">
+    <div className="overflow-hidden rounded-lg border">
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex justify-between items-center p-5 hover:bg-slate-50 transition"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
       >
 
-        <div className="text-left">
+        <div className="min-w-0 text-left">
 
-          <p className="font-semibold">
+          <p
+            className={`text-sm font-semibold ${
+              won ? "text-green-700" : "text-red-700"
+            }`}
+          >
 
-            {expanded ? "▼" : "▶"}{" "}
+            <span className="text-slate-400">
+              {expanded ? "▼" : "▶"}
+            </span>{" "}
 
-            {won ? "🟢 Victory" : "🔴 Defeat"}
+            {won ? "Victory" : "Defeat"}
 
           </p>
 
-          <p className="text-slate-500 text-sm">
+          <p className="truncate text-xs text-slate-500">
 
             vs {opponent
               ? `${opponent.firstName} ${opponent.lastName}`
@@ -61,10 +70,10 @@ export default function RecentMatchCard({
 
         </div>
 
-        <div className="text-right">
+        <div className="shrink-0 text-right">
 
           <p
-            className={`font-bold ${
+            className={`text-sm font-bold ${
               ratingChange >= 0
                 ? "text-green-600"
                 : "text-red-600"
@@ -75,7 +84,8 @@ export default function RecentMatchCard({
           </p>
 
           <p className="text-xs text-slate-500">
-            {new Date(match.playedAt).toLocaleDateString()}
+            {new Date(match.playedAt)
+              .toLocaleDateString()}
           </p>
 
         </div>
@@ -84,23 +94,32 @@ export default function RecentMatchCard({
 
       {expanded && (
 
-        <div className="border-t bg-slate-50 p-5 space-y-5">
+        <div className="space-y-3 border-t bg-slate-50 px-4 py-3 text-sm">
 
           <div>
 
-            <h3 className="font-semibold mb-2">
+            <h3 className="mb-1 text-xs font-semibold uppercase text-slate-500">
               Event
             </h3>
 
-            <p>
-              {event?.name ?? "Unknown Event"}
-            </p>
+            {eventHref ? (
+              <Link
+                to={eventHref}
+                className="font-semibold text-blue-700 underline-offset-4 hover:underline"
+              >
+                {event?.name ?? "Unknown Event"}
+              </Link>
+            ) : (
+              <p>
+                {event?.name ?? "Unknown Event"}
+              </p>
+            )}
 
           </div>
 
           <div>
 
-            <h3 className="font-semibold mb-2">
+            <h3 className="mb-1 text-xs font-semibold uppercase text-slate-500">
               Rating
             </h3>
 
@@ -126,17 +145,17 @@ export default function RecentMatchCard({
 
           <div>
 
-            <h3 className="font-semibold mb-3">
+            <h3 className="mb-2 text-xs font-semibold uppercase text-slate-500">
               Set Scores
             </h3>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
 
               {match.sets.map((set, index) => (
 
                 <div
                   key={index}
-                  className="flex justify-between border rounded-lg bg-white px-4 py-2"
+                  className="flex justify-between rounded-md border bg-white px-3 py-1.5"
                 >
 
                   <span>

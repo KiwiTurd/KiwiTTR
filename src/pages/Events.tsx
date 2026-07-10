@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Link } from "react-router-dom";
@@ -10,14 +11,20 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
-  Eye,
+  Monitor,
+  LockKeyhole,
   Plus,
   Search,
+  SlidersHorizontal,
+  Swords,
   Trophy,
+  Tv,
+  UsersRound,
 } from "lucide-react";
 
 import type { Event } from "../types/event";
 import type { Club } from "../types/club";
+import type { SavedTournament } from "../types/tournament";
 
 import {
   addEvent,
@@ -31,6 +38,36 @@ import {
 import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
+import {
+  type TeamGameStatus,
+} from "../services/teams/teamEngine";
+import { getTeamGames } from "../services/teams/teamGameService";
+
+type EventStatusFilter =
+  | "all"
+  | "past"
+  | "live"
+  | "upcoming";
+
+type EventTypeFilter =
+  | "all"
+  | "match"
+  | "tournament"
+  | "team";
+
+type EventFeedItem = {
+  id: string;
+  name: string;
+  date: string;
+  club: Club | undefined;
+  clubName?: string;
+  type: Exclude<EventTypeFilter, "all">;
+  status: Exclude<EventStatusFilter, "all">;
+  to: string;
+  meta: string;
+  countLabel?: string;
+  countValue?: number;
+};
 
 export default function Events() {
   const { savedTournaments } =
@@ -47,6 +84,10 @@ export default function Events() {
 
   const [clubs, setClubs] =
     useState<Club[]>([]);
+  const [teamGames, setTeamGames] =
+    useState<
+      Awaited<ReturnType<typeof getTeamGames>>
+    >([]);
 
   const [name, setName] =
     useState("");
@@ -60,13 +101,32 @@ export default function Events() {
   const [search, setSearch] =
     useState("");
 
+  const [clubFilter, setClubFilter] =
+    useState("");
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<EventStatusFilter>("all");
+
+  const [typeFilter, setTypeFilter] =
+    useState<EventTypeFilter>("all");
+
+  const eventListRef =
+    useRef<HTMLDivElement | null>(null);
+
   const [loading, setLoading] =
     useState(true);
 
   const [saving, setSaving] =
     useState(false);
 
-  const canCreateEvent =
+  const [
+    standardEventOpen,
+    setStandardEventOpen,
+  ] = useState(false);
+
+  const canCreateStandardEvent =
     isAdmin ||
     (isClubLeader && Boolean(userClubId));
 
@@ -74,11 +134,18 @@ export default function Events() {
     try {
       setLoading(true);
 
-      const [eventData, clubData] =
+      const [
+        eventData,
+        clubData,
+        teamGameData,
+      ] =
         await Promise.all([
           getEvents(),
           getClubs(),
+          getTeamGames(),
         ]);
+
+      setTeamGames(teamGameData);
 
       if (isAdmin) {
         setEvents(eventData);
@@ -179,51 +246,94 @@ export default function Events() {
     );
   }
 
-  const eventCards = useMemo(() => {
-    return events.map((event) => ({
-      event,
-      club: clubs.find((c) => c.id === event.clubId),
-    }));
-  }, [events, clubs]);
+  const today =
+    new Date().toISOString().slice(0, 10);
 
-  const filteredEventCards = useMemo(() => {
-    const query =
-      search.trim().toLowerCase();
-
-    if (!query) {
-      return eventCards;
+  const dateStatus = useCallback((
+    date: string
+  ): EventFeedItem["status"] => {
+    if (date < today) {
+      return "past";
     }
 
-    return eventCards.filter(({ event, club }) => {
-      const searchable = [
-        event.name,
-        event.date,
-        club?.name,
-        club?.shortName,
-      ]
-        .join(" ")
-        .toLowerCase();
+    if (date === today) {
+      return "live";
+    }
 
-      return searchable.includes(query);
-    });
-  }, [eventCards, search]);
+    return "upcoming";
+  }, [today]);
+
+  const tournamentMatchStats = useCallback((
+    tournament: SavedTournament
+  ) => {
+    const matches = [
+      ...tournament.matches,
+      ...tournament.knockout,
+    ];
+    const total = matches.length;
+    const completed =
+      matches.filter((match) => match.completed)
+        .length;
+
+    return {
+      total,
+      completed,
+      live:
+        tournament.knockout.filter(
+          (match) =>
+            !match.completed &&
+            match.playerOne &&
+            match.playerTwo
+        ).length,
+    };
+  }, []);
+
+  const tournamentStatus = useCallback((
+    tournament: SavedTournament
+  ): EventFeedItem["status"] => {
+    const stats =
+      tournamentMatchStats(tournament);
+    const finished =
+      tournament.status === "completed" ||
+      tournament.status === "cancelled";
+    const live =
+      !finished &&
+      stats.total > 0 &&
+      stats.completed < stats.total;
+
+    if (live) {
+      return "live";
+    }
+
+    if (
+      finished ||
+      tournament.settings.date < today
+    ) {
+      return "past";
+    }
+
+    return "upcoming";
+  }, [today, tournamentMatchStats]);
+
+  const teamEventStatus = useCallback((
+    status: TeamGameStatus
+  ): EventFeedItem["status"] => {
+    if (status === "live") {
+      return "live";
+    }
+
+    if (status === "completed") {
+      return "past";
+    }
+
+    return "upcoming";
+  }, []);
 
   const tournamentCards = useMemo(() => {
-    const today =
-      new Date().toISOString().slice(0, 10);
-
     return savedTournaments
       .map((tournament) => {
-        const liveMatches =
-          tournament.knockout.filter(
-            (match) =>
-              !match.completed &&
-              match.playerOne &&
-              match.playerTwo
-          ).length;
-        const totalMatches =
-          tournament.matches.length +
-          tournament.knockout.length;
+        const stats =
+          tournamentMatchStats(tournament);
 
         return {
           tournament,
@@ -231,8 +341,8 @@ export default function Events() {
             (club) =>
               club.id === tournament.settings.clubId
           ),
-          liveMatches,
-          totalMatches,
+          liveMatches: stats.live,
+          totalMatches: stats.total,
         };
       })
       .filter(({ tournament, totalMatches }) => {
@@ -243,18 +353,187 @@ export default function Events() {
           tournament.status !== "cancelled"
         );
       });
-  }, [clubs, savedTournaments]);
+  }, [
+    clubs,
+    savedTournaments,
+    today,
+    tournamentMatchStats,
+  ]);
+
+  const eventFeedItems = useMemo(() => {
+    const matchItems: EventFeedItem[] =
+      events.map((event) => {
+        const club = clubs.find(
+          (c) => c.id === event.clubId
+        );
+
+        return {
+          id: `match-${event.id}`,
+          name: event.name,
+          date: event.date,
+          club,
+          clubName: club?.name,
+          type: "match",
+          status: dateStatus(event.date),
+          to: `/events/${event.id}`,
+          meta: "Match Event",
+        };
+      });
+
+    const tournamentItems: EventFeedItem[] =
+      savedTournaments.map((tournament) => {
+        const club = clubs.find(
+          (c) =>
+            c.id === tournament.settings.clubId
+        );
+        const stats =
+          tournamentMatchStats(tournament);
+
+        return {
+          id: `tournament-${tournament.id}`,
+          name:
+            tournament.settings.name ||
+            "Untitled Tournament",
+          date: tournament.settings.date,
+          club,
+          clubName: club?.name,
+          type: "tournament",
+          status: tournamentStatus(tournament),
+          to: `/tournaments/${tournament.id}/viewer`,
+          meta: "Tournament",
+          countLabel:
+            stats.total > 0
+              ? "Matches"
+              : "Players",
+          countValue:
+            stats.total > 0
+              ? stats.total
+              : tournament.players.length,
+        };
+      });
+
+    const teamItems: EventFeedItem[] =
+      teamGames.map((game) => ({
+        id: `team-${game.id}`,
+        name: game.name,
+        date: game.date,
+        club: undefined,
+        clubName: game.clubName,
+        type: "team",
+        status: teamEventStatus(game.status),
+        to: `/team-games/${game.id}/live`,
+        meta: "Teams Event",
+        countLabel: "Matches",
+        countValue: game.totalMatches,
+      }));
+
+    return [
+      ...matchItems,
+      ...tournamentItems,
+      ...teamItems,
+    ];
+  }, [
+    clubs,
+    events,
+    savedTournaments,
+    teamGames,
+    dateStatus,
+    teamEventStatus,
+    tournamentMatchStats,
+    tournamentStatus,
+  ]);
+
+  const filteredEventItems = useMemo(() => {
+    const query =
+      search.trim().toLowerCase();
+
+    return eventFeedItems
+      .filter((item) => {
+        if (
+          clubFilter &&
+          item.club?.id !== clubFilter
+        ) {
+          return false;
+        }
+
+        if (
+          statusFilter !== "all" &&
+          item.status !== statusFilter
+        ) {
+          return false;
+        }
+
+        if (
+          typeFilter !== "all" &&
+          item.type !== typeFilter
+        ) {
+          return false;
+        }
+
+        if (!query) {
+          return true;
+        }
+
+        const searchable = [
+          item.name,
+          item.date,
+          item.meta,
+          item.status,
+          item.clubName,
+          item.club?.shortName,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchable.includes(query);
+      })
+      .sort((a, b) => {
+        const aTime =
+          new Date(a.date).getTime();
+        const bTime =
+          new Date(b.date).getTime();
+
+        if (statusFilter === "past") {
+          return bTime - aTime;
+        }
+
+        return aTime - bTime;
+      });
+  }, [
+    clubFilter,
+    eventFeedItems,
+    search,
+    statusFilter,
+    typeFilter,
+  ]);
 
   const upcomingEvents = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    return eventFeedItems.filter(
+      (item) => item.status === "upcoming"
+    ).length;
+  }, [eventFeedItems]);
 
-    return events.filter((event) => {
-      const date = new Date(event.date);
-      date.setHours(0, 0, 0, 0);
-      return date >= today;
-    }).length;
-  }, [events]);
+  const liveViewerEvents = useMemo(() => {
+    return eventFeedItems.filter(
+      (item) => item.status === "live"
+    ).length;
+  }, [eventFeedItems]);
+
+  const applyStatusShortcut = useCallback((
+    nextStatus: EventStatusFilter
+  ) => {
+    setSearch("");
+    setClubFilter("");
+    setStatusFilter(nextStatus);
+    setTypeFilter("all");
+
+    window.setTimeout(() => {
+      eventListRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }, []);
 
   return (
       <div className="mx-auto max-w-7xl space-y-8">
@@ -284,25 +563,37 @@ export default function Events() {
               Events
             </p>
             <p className="text-xl font-black">
-              {events.length}
+              {eventFeedItems.length}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <Trophy className="h-5 w-5 text-amber-500" />
+        <button
+          type="button"
+          onClick={() =>
+            applyStatusShortcut("live")
+          }
+          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-amber-300 hover:bg-amber-50/40 focus:outline-none focus:ring-4 focus:ring-amber-100"
+        >
+          <Tv className="h-5 w-5 text-amber-500" />
           <div>
             <p className="text-xs font-semibold uppercase text-slate-500">
               Live Viewers
             </p>
             <p className="text-xl font-black">
-              {tournamentCards.length}
+              {liveViewerEvents}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <Building2 className="h-5 w-5 text-indigo-600" />
+        <button
+          type="button"
+          onClick={() =>
+            applyStatusShortcut("upcoming")
+          }
+          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50/40 focus:outline-none focus:ring-4 focus:ring-indigo-100"
+        >
+          <ArrowRight className="h-5 w-5 text-indigo-600" />
           <div>
             <p className="text-xs font-semibold uppercase text-slate-500">
               Upcoming
@@ -311,7 +602,7 @@ export default function Events() {
               {upcomingEvents}
             </p>
           </div>
-        </div>
+        </button>
 
       </div>
 
@@ -320,7 +611,7 @@ export default function Events() {
         <div className="space-y-4">
 
           <div className="flex items-center gap-3">
-            <Eye className="h-6 w-6 text-green-600" />
+            <Tv className="h-6 w-6 text-green-600" />
             <h2 className="text-2xl font-bold">
               Tournament Viewers
             </h2>
@@ -381,93 +672,197 @@ export default function Events() {
 
       )}
 
-      {canCreateEvent && (
+      {canCreateStandardEvent && (
 
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="space-y-4">
 
-          <div className="flex items-center gap-3 border-b px-5 py-4">
-            <Plus className="h-5 w-5 text-blue-700" />
+          <div className="flex items-center gap-3">
+            <Monitor className="h-6 w-6 text-blue-700" />
             <h2 className="text-xl font-bold">
-              Create Event
+              Event Types
             </h2>
           </div>
 
-          <div className="p-5">
-            <div
-              className={`grid gap-4 ${
-                isAdmin
-                  ? "md:grid-cols-3"
-                  : "md:grid-cols-2"
-              }`}
+          <div className="grid gap-3 md:grid-cols-3">
+
+            <Link
+              to="/tournaments"
+              className="group flex min-h-32 flex-col justify-between rounded-xl border border-amber-200 bg-white p-5 shadow-sm transition hover:border-amber-400 hover:bg-amber-50/50"
             >
-              <input
-                placeholder="Event Name"
-                value={name}
-                onChange={(e) =>
-                  setName(e.target.value)
-                }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-              />
-
-              {isAdmin ? (
-                <select
-                  value={clubId}
-                  onChange={(e) =>
-                    setClubId(e.target.value)
-                  }
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">
-                    Select Club
-                  </option>
-
-                  {clubs.map((club) => (
-                    <option
-                      key={club.id}
-                      value={club.id}
-                    >
-                      {club.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-sm text-slate-500">
-                    Club
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-amber-600">
+                    Tournament
                   </p>
-                  <p className="font-semibold">
-                    {userClubId
-                      ? getClubName(userClubId)
-                      : "-"}
-                  </p>
+                  <h3 className="mt-2 text-lg font-black">
+                    Tournament
+                  </h3>
                 </div>
-              )}
+                <Trophy className="h-6 w-6 text-amber-500" />
+              </div>
 
-              <input
-                type="date"
-                value={eventDate}
-                onChange={(e) =>
-                  setEventDate(e.target.value)
-                }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-              />
-            </div>
+              <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-blue-700">
+                Open tournaments
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              </div>
+            </Link>
 
             <button
-              onClick={handleAddEvent}
-              disabled={saving}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              type="button"
+              onClick={() =>
+                setStandardEventOpen((open) => !open)
+              }
+              className={`group flex min-h-32 flex-col justify-between rounded-xl border bg-white p-5 text-left shadow-sm transition ${
+                standardEventOpen
+                  ? "border-blue-400 bg-blue-50/60"
+                  : "border-blue-200 hover:border-blue-400 hover:bg-blue-50/50"
+              }`}
             >
-              <Plus className="h-5 w-5" />
-              {saving ? "Creating..." : "Create Event"}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-blue-700">
+                    Match Event
+                  </p>
+                  <h3 className="mt-2 text-lg font-black">
+                    Standard Match Event
+                  </h3>
+                </div>
+                <Swords className="h-6 w-6 text-blue-700" />
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-blue-700">
+                {standardEventOpen
+                  ? "Hide creator"
+                  : "Create event"}
+                <ArrowRight className={`h-4 w-4 transition ${
+                  standardEventOpen
+                    ? "rotate-90"
+                    : "group-hover:translate-x-1"
+                }`} />
+              </div>
             </button>
+
+            <Link
+              to="/team-games"
+              className="group flex min-h-32 flex-col justify-between rounded-xl border border-emerald-200 bg-white p-5 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/50"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-emerald-700">
+                    Teams
+                  </p>
+                  <h3 className="mt-2 text-lg font-black">
+                    Team Game
+                  </h3>
+                </div>
+                <UsersRound className="h-6 w-6 text-emerald-600" />
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-blue-700">
+                Open team games
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              </div>
+            </Link>
+
           </div>
+
+          {standardEventOpen && (
+
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+
+              <div className="flex items-center gap-3 border-b px-5 py-4">
+                <Plus className="h-5 w-5 text-blue-700" />
+                <h2 className="text-xl font-bold">
+                  Standard Match Event
+                </h2>
+              </div>
+
+              <div className="p-5">
+                <div
+                  className={`grid gap-4 ${
+                    isAdmin
+                      ? "md:grid-cols-3"
+                      : "md:grid-cols-2"
+                  }`}
+                >
+                  <input
+                    placeholder="Event Name"
+                    value={name}
+                    onChange={(e) =>
+                      setName(e.target.value)
+                    }
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                  />
+
+                  {isAdmin ? (
+                    <select
+                      value={clubId}
+                      onChange={(e) =>
+                        setClubId(e.target.value)
+                      }
+                      className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                    >
+                      <option value="">
+                        Select Club
+                      </option>
+
+                      {clubs.map((club) => (
+                        <option
+                          key={club.id}
+                          value={club.id}
+                        >
+                          {club.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <p className="text-sm text-slate-500">
+                        Locked Club
+                      </p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <LockKeyhole className="h-4 w-4 text-slate-400" />
+                        <p className="font-semibold">
+                          {userClubId
+                            ? getClubName(userClubId)
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) =>
+                      setEventDate(e.target.value)
+                    }
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+
+                <button
+                  onClick={handleAddEvent}
+                  disabled={saving}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  <Plus className="h-5 w-5" />
+                  {saving ? "Creating..." : "Create Event"}
+                </button>
+              </div>
+
+            </div>
+
+          )}
 
         </div>
 
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div
+        ref={eventListRef}
+        className="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      >
 
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -483,6 +878,95 @@ export default function Events() {
           />
         </div>
 
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="block">
+            <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+              <Building2 className="h-4 w-4" />
+              Club
+            </span>
+            <select
+              value={clubFilter}
+              onChange={(event) =>
+                setClubFilter(event.target.value)
+              }
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">
+                All Clubs
+              </option>
+
+              {clubs.map((club) => (
+                <option
+                  key={club.id}
+                  value={club.id}
+                >
+                  {club.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+              <CalendarDays className="h-4 w-4" />
+              Status
+            </span>
+            <select
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(
+                  event.target
+                    .value as EventStatusFilter
+                )
+              }
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="all">
+                Past, Live, or Upcoming
+              </option>
+              <option value="upcoming">
+                Upcoming
+              </option>
+              <option value="live">
+                Live
+              </option>
+              <option value="past">
+                Past
+              </option>
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+              <SlidersHorizontal className="h-4 w-4" />
+              Event Type
+            </span>
+            <select
+              value={typeFilter}
+              onChange={(event) =>
+                setTypeFilter(
+                  event.target
+                    .value as EventTypeFilter
+                )
+              }
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="all">
+                All Event Types
+              </option>
+              <option value="match">
+                Match Event
+              </option>
+              <option value="tournament">
+                Tournaments
+              </option>
+              <option value="team">
+                Teams Event
+              </option>
+            </select>
+          </label>
+        </div>
+
       </div>
 
       {loading ? (
@@ -491,16 +975,16 @@ export default function Events() {
           Loading events...
         </div>
 
-      ) : eventCards.length === 0 ? (
+      ) : eventFeedItems.length === 0 ? (
 
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
           No events yet.
         </div>
 
-      ) : filteredEventCards.length === 0 ? (
+      ) : filteredEventItems.length === 0 ? (
 
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-          No events match your search.
+          No events match your filters.
         </div>
 
       ) : (
@@ -509,27 +993,70 @@ export default function Events() {
 
           <div className="divide-y">
 
-            {filteredEventCards.map(({ event, club }) => (
+            {filteredEventItems.map((item) => (
 
               <Link
-                key={event.id}
-                to={`/events/${event.id}`}
+                key={item.id}
+                to={item.to}
                 className="group flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
               >
                 <div className="min-w-0">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        item.type === "tournament"
+                          ? "bg-amber-100 text-amber-700"
+                          : item.type === "team"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {item.meta}
+                    </span>
+
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        item.status === "live"
+                          ? "bg-green-100 text-green-700"
+                          : item.status === "upcoming"
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {item.status === "live"
+                        ? "Live"
+                        : item.status === "upcoming"
+                          ? "Upcoming"
+                          : "Past"}
+                    </span>
+                  </div>
+
                   <h2 className="truncate text-base font-medium">
-                    {event.name}
+                    {item.name}
                   </h2>
 
                   <p className="text-sm text-slate-500">
-                    {club?.name ?? "-"} ·{" "}
-                    {new Date(event.date).toLocaleDateString()}
+                    {item.clubName ?? "-"} ·{" "}
+                    {new Date(item.date).toLocaleDateString()}
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2 text-sm font-semibold text-blue-700">
-                  Open
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                <div className="flex shrink-0 items-center gap-4">
+                  {item.countLabel && (
+                    <div className="hidden text-right sm:block">
+                      <div className="text-xs font-semibold text-slate-500">
+                        {item.countLabel}
+                      </div>
+                      <div className="text-lg font-black text-slate-800">
+                        {item.countValue}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
+                    Open
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
                 </div>
               </Link>
 

@@ -125,6 +125,19 @@ export async function addMatch(
   }
 }
 
+export async function updateMatch(
+  match: Match
+): Promise<void> {
+  const { error } = await supabase
+    .from("matches")
+    .update(toRow(match))
+    .eq("id", match.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function deleteMatch(
   id: string
 ): Promise<void> {

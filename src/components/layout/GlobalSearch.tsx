@@ -44,6 +44,10 @@ export default function GlobalSearch() {
 
     const search = query.toLowerCase();
 
+    if (search.trim() === "flappy bat") {
+      return [];
+    }
+
     const playerResults = players
       .filter((player) =>
         `${player.firstName} ${player.lastName}`
@@ -86,6 +90,21 @@ export default function GlobalSearch() {
     ].slice(0, 10);
   }, [query, players, clubs, events]);
 
+  function handleKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (
+      event.key !== "Enter" ||
+      query.trim().toLowerCase() !== "flappy bat"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    setQuery("");
+    navigate("/flappy-bat");
+  }
+
   return (
     <div className="relative">
 
@@ -94,6 +113,7 @@ export default function GlobalSearch() {
         placeholder="Search..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleKeyDown}
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
       />
 
