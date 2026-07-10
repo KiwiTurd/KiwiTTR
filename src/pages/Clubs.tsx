@@ -181,7 +181,7 @@ export default function Clubs() {
   }, [clubCards]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10">
+    <div className="mx-auto w-full max-w-7xl space-y-10 overflow-x-hidden">
 
       <div>
 
@@ -352,14 +352,14 @@ export default function Clubs() {
 
       ) : (
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid min-w-0 gap-6 md:grid-cols-2 xl:grid-cols-3">
 
           {filteredClubCards.map(({ club, playerCount, highestRated }) => (
 
             <Link
               key={club.id}
               to={`/clubs/${club.id}`}
-              className="group block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+              className="group block min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md sm:p-6"
             >
 
               {club.headerImageUrl && (
@@ -377,7 +377,7 @@ export default function Clubs() {
 
                 <div className="min-w-0">
 
-                  <h2 className="truncate text-2xl font-bold">
+                  <h2 className="truncate text-xl font-bold sm:text-2xl">
                     {club.name}
                   </h2>
 
@@ -395,11 +395,11 @@ export default function Clubs() {
 
                 {club.address && (
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
 
                     <MapPin className="h-4 w-4 shrink-0" />
 
-                    <span className="truncate">
+                    <span className="min-w-0 flex-1 truncate">
                       {club.address}
                     </span>
 
@@ -409,11 +409,11 @@ export default function Clubs() {
 
                 {club.email && (
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
 
                     <Mail className="h-4 w-4 shrink-0" />
 
-                    <span className="truncate">
+                    <span className="min-w-0 flex-1 truncate">
                       {club.email}
                     </span>
 
@@ -423,11 +423,11 @@ export default function Clubs() {
 
                 {club.phone && (
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
 
                     <Phone className="h-4 w-4 shrink-0" />
 
-                    <span className="truncate">
+                    <span className="min-w-0 flex-1 truncate">
                       {club.phone}
                     </span>
 
@@ -448,12 +448,12 @@ export default function Clubs() {
                         "noopener,noreferrer"
                       );
                     }}
-                    className="flex max-w-full items-center gap-2 text-left hover:text-blue-700"
+                    className="flex w-full min-w-0 max-w-full items-center gap-2 text-left hover:text-blue-700"
                   >
 
                     <Globe className="h-4 w-4 shrink-0" />
 
-                    <span className="truncate">
+                    <span className="min-w-0 flex-1 truncate">
                       {club.website}
                     </span>
 
@@ -463,7 +463,7 @@ export default function Clubs() {
 
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
 
                 <div className="rounded-xl bg-slate-50 p-4">
 
