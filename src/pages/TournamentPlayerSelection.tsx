@@ -314,7 +314,7 @@ const hasValidPlayerTotal =
 
         </div>
 
-        <h1 className="mt-4 text-5xl font-black">
+        <h1 className="mt-4 text-5xl font-normal">
 
           Select Players
 

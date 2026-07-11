@@ -14,7 +14,6 @@ import {
   Mail,
   Pencil,
   Phone,
-  ShieldCheck,
   Star,
   Trophy,
   TrendingUp,
@@ -444,7 +443,7 @@ export default function PlayerProfile() {
 
       <div className="max-w-7xl mx-auto">
 
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-4xl font-normal">
 
           Loading...
 
@@ -462,7 +461,7 @@ export default function PlayerProfile() {
 
       <div className="max-w-7xl mx-auto space-y-8">
 
-        <h1 className="text-5xl font-black">
+        <h1 className="text-5xl font-normal">
 
           Player Not Found
 
@@ -545,34 +544,11 @@ return (
 
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center">
 
-            <div
-              className="
-                flex
-                h-16
-                w-16
-                items-center
-                justify-center
+            <div className="player-profile-header">
 
-                rounded-full
-
-                bg-blue-900
-
-                text-xl
-                font-black
-                text-white
-              "
-            >
-
-              {player.firstName.charAt(0)}
-              {player.lastName.charAt(0)}
-
-            </div>
-
-            <div>
-
-              <h1 className="text-3xl font-black tracking-tight">
+              <h1 className="text-3xl font-normal tracking-tight">
 
                 {player.firstName} {player.lastName}
 
@@ -615,32 +591,6 @@ return (
                   {player.isActive
                     ? "Active"
                     : "Inactive"}
-
-                </div>
-
-                <div
-                  className="
-                    inline-flex
-                    items-center
-                    gap-2
-
-                    rounded-full
-
-                    bg-blue-100
-
-                    px-3
-                    py-1.5
-
-                    text-sm
-                    font-semibold
-
-                    text-blue-800
-                  "
-                >
-
-                  <ShieldCheck className="h-4 w-4" />
-
-                  Reliability {player.ratingReliability}
 
                 </div>
 
@@ -1202,22 +1152,6 @@ return (
               <span className="text-xl font-bold">
 
                 {player.highestRating}
-
-              </span>
-
-            </div>
-
-            <div className="flex items-center justify-between">
-
-              <span className="text-slate-500">
-
-                Rating Reliability
-
-              </span>
-
-              <span className="text-xl font-bold">
-
-                {player.ratingReliability}
 
               </span>
 

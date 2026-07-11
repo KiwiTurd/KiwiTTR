@@ -941,14 +941,14 @@ export default function TournamentCentre() {
 
       {/* Header */}
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <div className="tournament-page-header flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
+        <div className="tournament-page-header-copy">
           <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
             <Trophy className="h-4 w-4" />
             Tournament Centre
           </div>
 
-          <h1 className="mt-4 text-5xl font-black tracking-tight">
+          <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
             Tournaments
           </h1>
 
@@ -960,7 +960,7 @@ export default function TournamentCentre() {
         {canCreateTournament && (
           <Link
             to="/tournaments/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
           >
             <Plus className="h-5 w-5" />
             Create Tournament

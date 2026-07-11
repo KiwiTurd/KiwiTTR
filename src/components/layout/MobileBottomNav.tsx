@@ -49,6 +49,7 @@ type Panel =
   | "match-centre"
   | "tools"
   | "search"
+  | "profile"
   | "account";
 
 type MobileNavItem = {
@@ -180,6 +181,11 @@ export default function MobileBottomNav() {
 
   const competitionItems: MobileNavItem[] = [
     {
+      to: "/dashboard",
+      label: "Dashboard",
+      icon: <LayoutDashboard className="h-6 w-6" />,
+    },
+    {
       to: "/rankings",
       label: "Rankings",
       icon: <Podium className="h-6 w-6" />,
@@ -234,15 +240,12 @@ export default function MobileBottomNav() {
       label: "TTR Calculator",
       icon: <Calculator className="h-6 w-6" />,
     },
-  ];
-
-  if (isAdmin) {
-    toolItems.push({
+    {
       to: "/settings",
       label: "Settings",
       icon: <Settings className="h-6 w-6" />,
-    });
-  }
+    },
+  ];
 
   function renderPanelTitle() {
     switch (activePanel) {
@@ -260,6 +263,9 @@ export default function MobileBottomNav() {
 
       case "search":
         return "Search";
+
+      case "profile":
+        return "Profile";
 
       case "account":
         return "Account";
@@ -372,7 +378,7 @@ export default function MobileBottomNav() {
         return renderLinks([
           {
             to: "/",
-            label: "Dashboard",
+            label: "Home",
             icon: <LayoutDashboard className="h-6 w-6" />,
           },
         ]);
@@ -401,6 +407,20 @@ export default function MobileBottomNav() {
           </div>
         );
 
+      case "profile":
+        return renderLinks([
+          {
+            to: "/dashboard",
+            label: "Dashboard",
+            icon: <LayoutDashboard className="h-6 w-6" />,
+          },
+          {
+            to: "/my-profile",
+            label: "My Profile",
+            icon: <User className="h-6 w-6" />,
+          },
+        ]);
+
       case "account":
         return renderAccountPanel();
 
@@ -425,26 +445,6 @@ export default function MobileBottomNav() {
           }
 
           openPanel(panel);
-        }}
-        aria-label={label}
-        className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14"
-      >
-        {icon}
-      </button>
-    );
-  }
-
-  function routeButton(
-    to: string,
-    label: string,
-    icon: React.ReactNode
-  ) {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          closePanel();
-          navigate(to);
         }}
         aria-label={label}
         className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14"
@@ -519,9 +519,9 @@ export default function MobileBottomNav() {
           )}
 
           {session && (
-            routeButton(
-              "/my-profile",
-              "My Profile",
+            navButton(
+              "profile",
+              "Profile",
               <User className="h-7 w-7" />
             )
           )}

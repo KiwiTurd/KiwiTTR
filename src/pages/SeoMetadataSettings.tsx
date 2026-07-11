@@ -136,7 +136,7 @@ export default function SeoMetadataSettings() {
         <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
           <Search className="h-4 w-4" /> SEO
         </div>
-        <h1 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">SEO Metadata</h1>
+        <h1 className="mt-4 text-4xl font-normal tracking-tight text-slate-900 md:text-5xl">SEO Metadata</h1>
         <p className="mt-3 max-w-3xl text-lg text-slate-500">
           Edit how each KiwiTTR page appears in search and social previews. Initial copy has been generated for every listed page.
         </p>

@@ -128,3 +128,37 @@
     @apply font-sans;
     }
 }
+
+@layer components {
+  main :where(header, div):has(> h1) {
+    @apply border-b border-slate-300 pb-6;
+  }
+
+  main .player-profile-header:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .home-hero-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .club-profile-header:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .tournament-page-header-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .team-games-page-header-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .clubs-page-header-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .players-page-header-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+}

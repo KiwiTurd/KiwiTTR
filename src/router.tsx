@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "./pages/AppLayout";
 
 import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
 
 import Clubs from "./pages/Clubs";
 import ClubProfile from "./pages/ClubProfile";
@@ -35,6 +36,7 @@ import About from "./pages/About";
 import HowWeCalculate from "./pages/HowWeCalculate";
 import SeoMetadataSettings from "./pages/SeoMetadataSettings";
 import NoticeSettings from "./pages/NoticeSettings";
+import HomepageSettingsPage from "./pages/HomepageSettings";
 
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
@@ -64,10 +66,15 @@ export const router = createBrowserRouter([
     path: "/",
     element: <AppLayout />,
     children: [
-      // Dashboard
+      // Public home and dashboard
 
       {
         index: true,
+        element: <Home />,
+      },
+
+      {
+        path: "dashboard",
         element: <Dashboard />,
       },
 
@@ -260,11 +267,7 @@ export const router = createBrowserRouter([
 
       {
         path: "settings",
-        element: (
-          <RoleRoute allowedRoles={["admin", "club_admin"]}>
-            <Settings />
-          </RoleRoute>
-        ),
+        element: <Settings />,
       },
 
       {
@@ -299,6 +302,15 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <NoticeSettings />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "settings/homepage",
+        element: (
+          <AdminRoute>
+            <HomepageSettingsPage />
           </AdminRoute>
         ),
       },

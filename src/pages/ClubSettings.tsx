@@ -6,8 +6,11 @@ import {
 } from "react";
 
 import {
+  ArrowLeft,
   Building2,
+  ChevronRight,
   Image,
+  MapPin,
   Save,
   Upload,
 } from "lucide-react";
@@ -59,6 +62,9 @@ export default function ClubSettings() {
     useState(true);
 
   const [saving, setSaving] =
+    useState(false);
+
+  const [editorOpen, setEditorOpen] =
     useState(false);
 
   const loadData = useCallback(async () => {
@@ -139,11 +145,12 @@ export default function ClubSettings() {
     });
   }
 
-  async function handleClubChange(clubId: string) {
+  function handleClubChange(clubId: string) {
     setSelectedClubId(clubId);
     setEditedClub(
       clubs.find((club) => club.id === clubId) ?? null
     );
+    setEditorOpen(true);
   }
 
   async function handleImageUpload(
@@ -204,7 +211,7 @@ export default function ClubSettings() {
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl">
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-4xl font-normal">
           Loading...
         </h1>
       </div>
@@ -215,50 +222,78 @@ export default function ClubSettings() {
     <div className="mx-auto max-w-7xl space-y-8">
 
       <div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
-          KiwiTTR
-        </p>
-
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
           Club Settings
         </h1>
 
         <p className="mt-3 text-lg text-slate-500">
-          Update club information, notices and the public header image.
+          {editorOpen
+            ? "Update club information, notices and the public header image."
+            : "Select a club to open its settings and public information."}
         </p>
       </div>
 
-      {isAdmin && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <label className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Club
-          </label>
-
-          <select
-            value={selectedClubId}
-            onChange={(event) =>
-              void handleClubChange(event.target.value)
-            }
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-          >
+      {!editorOpen ? (
+        clubs.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
+            No club is available for this account.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {clubs.map((club) => (
-              <option
+              <button
+                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
                 key={club.id}
-                value={club.id}
+                onClick={() => handleClubChange(club.id)}
+                type="button"
               >
-                {club.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+                <div
+                  className="h-28 bg-slate-800"
+                  style={{
+                    backgroundImage: club.headerImageUrl
+                      ? `linear-gradient(rgba(15,23,42,0.20), rgba(15,23,42,0.60)), url(${club.headerImageUrl})`
+                      : "linear-gradient(135deg, #1e3a8a, #0f172a)",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                  }}
+                />
 
-      {!editedClub ? (
+                <div className="flex items-center gap-4 p-5">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-lg font-bold text-slate-900">
+                      {club.name}
+                    </h2>
+                    <p className="mt-1 flex items-center gap-1 truncate text-sm text-slate-500">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      {club.address || "No address added"}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-700" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )
+      ) : !editedClub ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
           No club is available for this account.
         </div>
       ) : (
         <>
+          <div>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm"
+              onClick={() => setEditorOpen(false)}
+              type="button"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              All clubs
+            </button>
+          </div>
+
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div
               className="relative flex min-h-64 items-end bg-slate-900 p-8 text-white"
@@ -431,7 +466,7 @@ export default function ClubSettings() {
         </>
       )}
 
-      {selectedClub && (
+      {editorOpen && selectedClub && (
         <p className="text-sm text-slate-500">
           Editing {selectedClub.name}
         </p>

@@ -97,7 +97,7 @@ export default function Login() {
 
     notify.welcomeBack();
 
-    navigate("/");
+    navigate("/dashboard");
 
   }
 
@@ -154,7 +154,7 @@ export default function Login() {
 
             <div className="mt-8 text-center">
 
-              <h1 className="text-3xl font-black tracking-tight">
+              <h1 className="text-3xl font-normal tracking-tight">
 
                 Welcome back
 

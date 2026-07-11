@@ -76,7 +76,7 @@ export default function Sidebar() {
         )}
 
         <SidebarLink
-          to="/"
+          to="/dashboard"
           label="Dashboard"
           icon={
             <LayoutDashboard className="h-5 w-5" />
@@ -203,16 +203,14 @@ export default function Sidebar() {
             collapsed={collapsed}
           />
 
-          {isAdmin && (
-            <SidebarLink
-              to="/settings"
-              label="Settings"
-              icon={
-                <Settings className="h-4 w-4" />
-              }
-              collapsed={collapsed}
-            />
-          )}
+          <SidebarLink
+            to="/settings"
+            label="Settings"
+            icon={
+              <Settings className="h-4 w-4" />
+            }
+            collapsed={collapsed}
+          />
 
         </SidebarSection>
 

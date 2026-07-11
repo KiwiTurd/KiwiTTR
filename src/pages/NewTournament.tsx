@@ -364,7 +364,7 @@ useEffect(() => {
 
             </div>
 
-            <h1 className="mt-4 text-5xl font-black">
+            <h1 className="mt-4 text-5xl font-normal">
 
               New Tournament
 

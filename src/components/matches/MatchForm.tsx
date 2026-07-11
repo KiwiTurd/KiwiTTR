@@ -33,6 +33,7 @@ export default function MatchForm() {
       player2Score: 0,
     },
   ]);
+  const [savedSets, setSavedSets] = useFormDraftState<boolean[]>("matches.new.savedSets", [false]);
 
   useEffect(() => {
     void loadData();
@@ -76,6 +77,7 @@ export default function MatchForm() {
         player2Score: 0,
       },
     ]);
+    setSavedSets([...savedSets, false]);
   }
 
   function removeSet(index: number) {
@@ -83,8 +85,39 @@ export default function MatchForm() {
       return;
     }
 
-    setSets(
-      sets.filter((_, setIndex) => setIndex !== index)
+    setSets(sets.filter((_, setIndex) => setIndex !== index));
+    setSavedSets(
+      sets
+        .map((_, setIndex) => Boolean(savedSets[setIndex]))
+        .filter((_, setIndex) => setIndex !== index)
+    );
+  }
+
+  function saveSet(index: number) {
+    const set = sets[index];
+    const highScore = Math.max(set.player1Score, set.player2Score);
+    const lowScore = Math.min(set.player1Score, set.player2Score);
+    const gap = highScore - lowScore;
+    const validStandardSet = highScore === 11 && gap >= 2;
+    const validDeuceSet = highScore > 11 && gap === 2;
+
+    if (!validStandardSet && !validDeuceSet) {
+      notify.timeout("A set is first to 11 and must be won by at least 2 points.");
+      return;
+    }
+
+    setSavedSets(
+      Array.from({ length: sets.length }, (_, setIndex) =>
+        setIndex === index ? true : Boolean(savedSets[setIndex])
+      )
+    );
+  }
+
+  function editSet(index: number) {
+    setSavedSets(
+      Array.from({ length: sets.length }, (_, setIndex) =>
+        setIndex === index ? false : Boolean(savedSets[setIndex])
+      )
     );
   }
 
@@ -92,7 +125,8 @@ export default function MatchForm() {
     let player1Sets = 0;
     let player2Sets = 0;
 
-    sets.forEach((set) => {
+    sets.forEach((set, index) => {
+      if (!savedSets[index]) return;
       const max = Math.max(set.player1Score, set.player2Score);
       const min = Math.min(set.player1Score, set.player2Score);
 
@@ -124,7 +158,10 @@ export default function MatchForm() {
       player2Sets,
       winner,
     };
-  }, [sets, player1Id, player2Id, players]);
+  }, [sets, savedSets, player1Id, player2Id, players]);
+
+  const allSetsSaved =
+    sets.length > 0 && sets.every((_, index) => Boolean(savedSets[index]));
 
   const hasMinimumSetsWon =
     Math.max(
@@ -138,7 +175,8 @@ export default function MatchForm() {
     Boolean(player2Id) &&
     player1Id !== player2Id &&
     summary.player1Sets !== summary.player2Sets &&
-    hasMinimumSetsWon;
+    hasMinimumSetsWon &&
+    allSetsSaved;
 
   async function handleRecordMatch() {
     if (!eventId) {
@@ -153,6 +191,11 @@ export default function MatchForm() {
 
     if (player1Id === player2Id) {
       notify.fault("A player cannot play themselves.");
+      return;
+    }
+
+    if (!allSetsSaved) {
+      notify.timeout("Save every set before recording the match.");
       return;
     }
 
@@ -199,6 +242,7 @@ export default function MatchForm() {
           player2Score: 0,
         },
       ]);
+      setSavedSets([false]);
 
       await loadData();
 
@@ -216,29 +260,29 @@ export default function MatchForm() {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-      <div className="flex items-center gap-3 border-b px-8 py-5">
+      <div className="flex items-center gap-2.5 border-b px-4 py-3 sm:px-5">
 
-        <ClipboardPen className="h-6 w-6 text-blue-700" />
+        <ClipboardPen className="h-5 w-5 text-blue-700" />
 
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-lg font-semibold">
           Record Match
         </h2>
 
       </div>
 
-      <div className="space-y-6 p-8">
+      <div className="space-y-4 p-4 sm:p-5">
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-3">
 
           <div>
-            <label className="mb-2 block font-semibold">
+            <label className="mb-1 block text-sm font-medium">
               Event
             </label>
 
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">Select Event</option>
 
@@ -251,14 +295,14 @@ export default function MatchForm() {
           </div>
 
           <div>
-            <label className="mb-2 block font-semibold">
+            <label className="mb-1 block text-sm font-medium">
               Player 1
             </label>
 
             <select
               value={player1Id}
               onChange={(e) => setPlayer1Id(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">Select Player</option>
 
@@ -271,14 +315,14 @@ export default function MatchForm() {
           </div>
 
           <div>
-            <label className="mb-2 block font-semibold">
+            <label className="mb-1 block text-sm font-medium">
               Player 2
             </label>
 
             <select
               value={player2Id}
               onChange={(e) => setPlayer2Id(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">Select Player</option>
 
@@ -292,16 +336,17 @@ export default function MatchForm() {
 
         </div>
 
-        <div className="border-t pt-6">
+        <div className="border-t pt-4">
 
-          <div className="mb-3 grid grid-cols-[minmax(72px,1fr)_96px_96px_44px] gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="mb-1 grid grid-cols-[minmax(44px,1fr)_56px_56px_36px_36px] gap-1.5 px-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:grid-cols-[minmax(72px,1fr)_96px_96px_40px_40px]">
             <span>Set</span>
             <span className="text-center">P1</span>
             <span className="text-center">P2</span>
             <span />
+            <span />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             {sets.map((set, index) => (
               <SetScoreInput
                 key={index}
@@ -316,13 +361,16 @@ export default function MatchForm() {
                 }
                 onRemove={() => removeSet(index)}
                 canRemove={sets.length > 1}
+                saved={Boolean(savedSets[index])}
+                onSave={() => saveSet(index)}
+                onEdit={() => editSet(index)}
               />
             ))}
           </div>
 
           <button
             onClick={addSet}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 font-medium text-slate-900 transition hover:bg-slate-200"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-900 transition hover:bg-slate-200"
           >
             <Plus className="h-4 w-4" />
             Add Set
@@ -330,31 +378,31 @@ export default function MatchForm() {
 
         </div>
 
-        <div className="grid gap-4 rounded-xl bg-slate-100 p-5 md:grid-cols-3 md:items-center">
+        <div className="grid gap-2 rounded-lg bg-slate-100 px-4 py-3 md:grid-cols-3 md:items-center">
 
           <div>
-            <h3 className="text-lg font-bold">
+            <h3 className="text-sm font-semibold">
               Live Match Summary
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-xs text-slate-500">
               Review the score before recording.
             </p>
           </div>
 
           <div>
-            <p className="text-sm text-slate-500">
+            <p className="text-xs text-slate-500">
               Score
             </p>
-            <p className="text-2xl font-black">
+            <p className="text-lg font-bold">
               {summary.player1Sets} - {summary.player2Sets}
             </p>
           </div>
 
           <div>
-            <p className="text-sm text-slate-500">
+            <p className="text-xs text-slate-500">
               Winner
             </p>
-            <p className="truncate text-xl font-bold">
+            <p className="truncate text-base font-semibold">
               {summary.winner || "-"}
             </p>
           </div>
@@ -374,7 +422,8 @@ export default function MatchForm() {
             w-full
             rounded-xl
             bg-blue-900
-            py-3
+            py-2
+            text-sm
             font-semibold
             text-white
             transition

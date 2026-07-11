@@ -222,7 +222,7 @@ export default function TeamGameLive() {
           Live {formatLabel} Viewer
         </p>
 
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight">
           {game.name}
         </h1>
 

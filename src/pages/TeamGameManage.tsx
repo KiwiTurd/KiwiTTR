@@ -697,7 +697,7 @@ export default function TeamGameManage() {
         <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-emerald-700">
           {formatLabel} Match Builder
         </p>
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight">
           {game.name}
         </h1>
         <p className="mt-3 text-lg text-slate-500">

@@ -69,7 +69,7 @@ export default function EventProfile() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-3xl font-normal">
           Loading...
         </h1>
       </div>
@@ -80,7 +80,7 @@ export default function EventProfile() {
     return (
       <div className="max-w-6xl mx-auto">
 
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-4xl font-normal">
           Event Not Found
         </h1>
 
@@ -147,7 +147,7 @@ export default function EventProfile() {
           Event
         </div>
 
-        <h1 className="mt-4 text-4xl font-black tracking-tight">
+        <h1 className="mt-4 text-4xl font-normal tracking-tight">
           {event.name}
         </h1>
 

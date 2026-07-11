@@ -231,13 +231,7 @@ export default function Dashboard() {
 
         <div>
 
-          <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
-
-            KiwiTTR
-
-          </p>
-
-          <h1 className="mt-2 text-5xl font-black tracking-tight">
+          <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
 
             Dashboard
 
@@ -474,10 +468,7 @@ export default function Dashboard() {
     return (
       <div className="mx-auto max-w-7xl space-y-8">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
-            KiwiTTR
-          </p>
-          <h1 className="mt-2 text-5xl font-black tracking-tight">
+          <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
             Dashboard
           </h1>
           <p className="mt-3 text-lg text-slate-500">
@@ -494,13 +485,7 @@ export default function Dashboard() {
 
       <div>
 
-        <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
-
-          KiwiTTR
-
-        </p>
-
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
 
           Dashboard
 
@@ -880,7 +865,7 @@ function SignedOutDashboard() {
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-4xl flex-col items-center justify-center px-4 text-center">
       <FullLogo className="h-20 w-auto" />
 
-      <h1 className="mt-8 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+      <h1 className="mt-8 text-4xl font-normal tracking-tight text-slate-950 md:text-5xl">
         Welcome to KiwiTTR
       </h1>
 

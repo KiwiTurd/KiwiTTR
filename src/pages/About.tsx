@@ -34,7 +34,7 @@ export default function About() {
             <MapPin className="h-4 w-4" />
             Made for table tennis in Aotearoa
           </div>
-          <h1 className="mt-5 text-4xl font-black tracking-tight md:text-6xl">
+          <h1 className="mt-5 text-4xl font-normal tracking-tight md:text-6xl">
             A clearer picture of table tennis performance in New Zealand.
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">

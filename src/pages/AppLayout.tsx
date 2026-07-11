@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
-import Sidebar from "../components/layout/Sidebar";
 import MobileBottomNav from "../components/layout/MobileBottomNav";
 import DesktopFooter from "../components/layout/DesktopFooter";
 import SeoMetadataManager from "../components/layout/SeoMetadataManager";
 import DashboardNotice from "../components/dashboard/DashboardNotice";
-
+import DesktopHeader from "../components/layout/DesktopHeader";
+import Sidebar from "../components/layout/Sidebar";
 import { useSidebar } from "../context/SidebarContext";
 
 export type AppLayoutOutletContext = {
@@ -22,7 +22,7 @@ export type AppLayoutOutletContext = {
 
 export default function AppLayout() {
 
-  const { collapsed } = useSidebar();
+  const { collapsed, navigationLayout } = useSidebar();
   const { pathname } = useLocation();
   const [noticeDraft, setNoticeDraft] = useState({
     title: "",
@@ -31,17 +31,19 @@ export default function AppLayout() {
 
   return (
 
-    <div className="h-screen bg-slate-100 overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-100">
 
       <SeoMetadataManager />
 
-      <Sidebar />
+      {navigationLayout === "header" ? <DesktopHeader /> : <Sidebar />}
 
       <div
-        className={`h-screen overflow-y-auto flex flex-col transition-all duration-300 ${
-          collapsed
-            ? "md:ml-20"
-            : "md:ml-72"
+        className={`flex min-h-0 flex-1 flex-col overflow-y-auto transition-[margin] duration-300 ${
+          navigationLayout === "sidebar"
+            ? collapsed
+              ? "md:ml-20"
+              : "md:ml-72"
+            : ""
         }`}
       >
 
@@ -57,7 +59,7 @@ export default function AppLayout() {
 
       <MobileBottomNav />
 
-      {pathname === "/" && <DashboardNotice />}
+      {pathname === "/dashboard" && <DashboardNotice />}
 
     </div>
 

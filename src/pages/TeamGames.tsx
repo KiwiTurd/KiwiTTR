@@ -133,13 +133,9 @@ export default function TeamGames() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">
-            KiwiTTR
-          </p>
-
-          <h1 className="mt-2 text-5xl font-black tracking-tight">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
+        <div className="team-games-page-header-copy">
+          <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
             Team Games
           </h1>
 
@@ -150,7 +146,7 @@ export default function TeamGames() {
 
         <Link
           to="/team-games/new"
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
         >
           <Plus className="h-5 w-5" />
           Create Event

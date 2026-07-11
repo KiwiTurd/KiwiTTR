@@ -235,7 +235,7 @@ export default function TournamentViewer() {
 
         <div className="rounded-3xl border bg-white p-10 text-center shadow-sm">
           <Trophy className="mx-auto h-12 w-12 text-slate-300" />
-          <h1 className="mt-5 text-3xl font-black">
+          <h1 className="mt-5 text-3xl font-normal">
             No live tournament draw yet
           </h1>
           <p className="mt-3 text-slate-500">
@@ -263,7 +263,7 @@ export default function TournamentViewer() {
             Live Tournament Viewer
           </div>
 
-          <h1 className="mt-4 text-5xl font-black">
+          <h1 className="mt-4 text-5xl font-normal">
             {tournament.settings.name || "Tournament"}
           </h1>
 

@@ -15,7 +15,7 @@ export default function HowWeCalculate() {
           <Calculator className="h-4 w-4" />
           Rating methodology
         </div>
-        <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-900 md:text-6xl">
+        <h1 className="mt-4 text-4xl font-normal tracking-tight text-slate-900 md:text-6xl">
           How we calculate KiwiTTR ratings
         </h1>
         <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">

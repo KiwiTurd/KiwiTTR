@@ -8,12 +8,16 @@ import {
 type SidebarContextType = {
   collapsed: boolean;
   toggle: () => void;
+  navigationLayout: "sidebar" | "header";
+  setNavigationLayout: (layout: "sidebar" | "header") => void;
 };
 
 const SidebarContext =
   createContext<SidebarContextType>({
     collapsed: false,
     toggle: () => {},
+    navigationLayout: "sidebar",
+    setNavigationLayout: () => {},
   });
 
 export function SidebarProvider({
@@ -24,6 +28,8 @@ export function SidebarProvider({
 
   const [collapsed, setCollapsed] =
     useState(false);
+  const [navigationLayout, setNavigationLayout] =
+    useState<"sidebar" | "header">("sidebar");
 
   useEffect(() => {
 
@@ -34,6 +40,13 @@ export function SidebarProvider({
 
     if (saved !== null) {
       setCollapsed(saved === "true");
+    }
+
+    const savedLayout =
+      localStorage.getItem("navigation-layout");
+
+    if (savedLayout === "header") {
+      setNavigationLayout("header");
     }
 
   }, []);
@@ -47,6 +60,13 @@ export function SidebarProvider({
 
   }, [collapsed]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "navigation-layout",
+      navigationLayout
+    );
+  }, [navigationLayout]);
+
   function toggle() {
     setCollapsed((c) => !c);
   }
@@ -56,6 +76,8 @@ export function SidebarProvider({
       value={{
         collapsed,
         toggle,
+        navigationLayout,
+        setNavigationLayout,
       }}
     >
       {children}

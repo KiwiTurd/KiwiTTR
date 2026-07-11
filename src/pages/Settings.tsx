@@ -6,11 +6,15 @@ import {
   Database,
   Search,
   Megaphone,
+  LayoutPanelTop,
+  PanelLeft,
+  Home,
   Settings2,
   Shield,
 } from "lucide-react";
 
 import useRole from "../hooks/useRole";
+import { useSidebar } from "../context/SidebarContext";
 
 export default function Settings() {
 
@@ -18,6 +22,11 @@ export default function Settings() {
     isAdmin,
     isClubLeader,
   } = useRole();
+
+  const {
+    navigationLayout,
+    setNavigationLayout,
+  } = useSidebar();
 
   return (
 
@@ -31,11 +40,11 @@ export default function Settings() {
 
           <Settings2 className="h-4 w-4" />
 
-          System
+          Preferences
 
         </div>
 
-        <h1 className="mt-4 text-5xl font-black tracking-tight">
+        <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
 
           Settings
 
@@ -43,7 +52,7 @@ export default function Settings() {
 
         <p className="mt-3 text-lg text-slate-500">
 
-          Configure KiwiTTR and manage administrative functions.
+          Choose your navigation layout and access the settings available to your account.
 
         </p>
 
@@ -52,6 +61,51 @@ export default function Settings() {
       {/* Cards */}
 
       <div className="space-y-4">
+
+        <section className="hidden rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm md:block">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-xl font-bold">Desktop Navigation</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Choose how the main navigation is displayed on this device.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5">
+              <button
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${
+                  navigationLayout === "sidebar"
+                    ? "bg-white text-blue-900 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+                onClick={() => setNavigationLayout("sidebar")}
+                type="button"
+              >
+                <PanelLeft className="h-5 w-5" />
+                <span>
+                  <span className="block text-sm font-bold">Sidebar</span>
+                  <span className="block text-xs opacity-70">Default</span>
+                </span>
+              </button>
+
+              <button
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${
+                  navigationLayout === "header"
+                    ? "bg-white text-blue-900 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+                onClick={() => setNavigationLayout("header")}
+                type="button"
+              >
+                <LayoutPanelTop className="h-5 w-5" />
+                <span>
+                  <span className="block text-sm font-bold">Top Header</span>
+                  <span className="block text-xs opacity-70">Dropdowns</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
 
         {(isAdmin || isClubLeader) && (
 
@@ -430,6 +484,24 @@ export default function Settings() {
           </div>
 
         </div>
+
+        {isAdmin && (
+          <Link
+            to="/settings/homepage"
+            className="group block rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                <Home className="h-6 w-6" />
+              </div>
+              <div className="ml-5 flex-1">
+                <h2 className="text-xl font-bold">Home Page</h2>
+                <p className="mt-1 text-sm text-slate-500">Edit the public homepage hero text, buttons and background image.</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
+            </div>
+          </Link>
+        )}
 
       </div>
 

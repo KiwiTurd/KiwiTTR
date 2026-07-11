@@ -55,6 +55,7 @@ export default function Clubs() {
   const [search, setSearch] = useState("");
 
   const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -114,6 +115,7 @@ export default function Clubs() {
       setPhone("");
       setEmail("");
       setWebsite("");
+      setCreateOpen(false);
 
       notify.clubCreated(club.name);
 
@@ -184,21 +186,30 @@ export default function Clubs() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-10 overflow-x-hidden">
 
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
 
-        <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
+        <div className="clubs-page-header-copy">
 
-          KiwiTTR
-
-        </p>
-
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
           Clubs
         </h1>
 
         <p className="mt-3 text-lg text-slate-500">
           Browse clubs, contacts and active player communities.
         </p>
+
+        </div>
+
+        {isAdmin && (
+          <button
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
+            onClick={() => setCreateOpen((current) => !current)}
+            type="button"
+          >
+            <Plus className={`h-5 w-5 transition-transform duration-300 ${createOpen ? "rotate-45" : ""}`} />
+            {createOpen ? "Close" : "Create Club"}
+          </button>
+        )}
 
       </div>
 
@@ -245,6 +256,10 @@ export default function Clubs() {
       </div>
 
       {isAdmin && (
+
+        <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${createOpen ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"}`}>
+
+        <div className="overflow-hidden">
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -316,6 +331,10 @@ export default function Clubs() {
           </button>
 
           </div>
+
+        </div>
+
+        </div>
 
         </div>
 

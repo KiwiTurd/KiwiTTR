@@ -35,7 +35,7 @@ export default function MyProfile() {
         );
 
         setTimeout(() => {
-          navigate("/");
+          navigate("/dashboard");
         }, 2500);
 
         return;
@@ -49,7 +49,7 @@ export default function MyProfile() {
         "Unable to load your profile."
       );
 
-      navigate("/");
+      navigate("/dashboard");
     }
   }
 
@@ -58,7 +58,7 @@ export default function MyProfile() {
 
       <div className="text-center">
 
-        <h1 className="text-3xl font-bold mb-3">
+        <h1 className="text-3xl font-normal mb-3">
           Loading Your Profile...
         </h1>
 

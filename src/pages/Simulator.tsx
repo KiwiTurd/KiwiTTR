@@ -75,7 +75,7 @@ export default function Simulator() {
 
         </div>
 
-        <h1 className="mt-4 text-5xl font-black tracking-tight">
+        <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
 
           TTR Calculator
 

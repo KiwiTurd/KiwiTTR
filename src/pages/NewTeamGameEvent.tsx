@@ -934,7 +934,7 @@ export default function NewTeamGameEvent() {
                 ? `Edit ${formatLabel} Setup`
                 : `${formatLabel} Setup`}
             </div>
-            <h1 className="mt-4 text-5xl font-black">
+            <h1 className="mt-4 text-5xl font-normal">
               {formatLabel}
             </h1>
             <p className="mt-3 text-lg text-slate-500">

@@ -7,7 +7,8 @@ export type SeoPageDefinition = {
 };
 
 export const SEO_PAGES: SeoPageDefinition[] = [
-  { path: "/", label: "Dashboard", title: "KiwiTTR | NZ Table Tennis Ratings", description: "Follow New Zealand table tennis ratings, player results, clubs and events with KiwiTTR's transparent national rating platform.", keywords: ["NZ table tennis", "NZ rankings", "KiwiTTR"] },
+  { path: "/", label: "Home", title: "KiwiTTR | NZ Table Tennis Rankings and Ratings", description: "Discover KiwiTTR, the transparent New Zealand table tennis rating platform for players, clubs, events, results and NZ rankings.", keywords: ["NZ table tennis", "NZ rankings", "KiwiTTR"] },
+  { path: "/dashboard", label: "Dashboard", title: "Dashboard | KiwiTTR", description: "View your KiwiTTR player snapshot, club activity, ratings, events and competition tools from your personal dashboard.", keywords: ["KiwiTTR dashboard", "player rating", "club activity"] },
   { path: "/rankings", label: "Rankings", title: "NZ Table Tennis Rankings | KiwiTTR", description: "Explore current NZ table tennis rankings, compare player ratings and follow performance across New Zealand clubs and competitions.", keywords: ["NZ rankings", "table tennis rankings", "player ratings"] },
   { path: "/clubs", label: "Clubs", title: "New Zealand Table Tennis Clubs | KiwiTTR", description: "Discover table tennis clubs across New Zealand, view club players, ratings, contact details and recent competitive activity.", keywords: ["table tennis clubs NZ", "NZ clubs", "KiwiTTR clubs"] },
   { path: "/clubs/:id", label: "Club profile", title: "Table Tennis Club Profile | KiwiTTR", description: "View this New Zealand table tennis club's players, ratings, location, contact information and latest KiwiTTR activity.", keywords: ["NZ table tennis club", "club rankings", "club players"] },

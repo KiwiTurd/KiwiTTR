@@ -287,7 +287,7 @@ export default function TournamentLive() {
   if (!tournament.settings.name) {
     return (
       <div className="mx-auto max-w-3xl rounded-3xl border bg-white p-10 text-center shadow-sm">
-        <h1 className="text-3xl font-black">
+        <h1 className="text-3xl font-normal">
           No tournament selected
         </h1>
         <p className="mt-3 text-slate-500">
@@ -312,7 +312,7 @@ export default function TournamentLive() {
   ) {
     return (
       <div className="mx-auto max-w-3xl rounded-3xl border bg-white p-10 text-center shadow-sm">
-        <h1 className="text-3xl font-black">
+        <h1 className="text-3xl font-normal">
           Tournament unavailable
         </h1>
         <p className="mt-3 text-slate-500">
@@ -336,7 +336,7 @@ export default function TournamentLive() {
             <Circle className="h-3 w-3 fill-current" />
             Live Tournament
           </div>
-          <h1 className="mt-4 text-5xl font-black">
+          <h1 className="mt-4 text-5xl font-normal">
             {tournament.settings.name || "Tournament"}
           </h1>
           <p className="mt-3 text-lg text-slate-500">

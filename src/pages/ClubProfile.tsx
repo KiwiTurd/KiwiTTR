@@ -187,7 +187,7 @@ export default function ClubProfile() {
     return (
       <div className="max-w-6xl mx-auto">
 
-        <h1 className="text-4xl font-bold mb-4">
+        <h1 className="text-4xl font-normal mb-4">
           Club Not Found
         </h1>
 
@@ -224,13 +224,13 @@ export default function ClubProfile() {
         }}
       >
         <div className="mt-auto flex w-full flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+          <div className="club-profile-header">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold backdrop-blur">
               <Building2 className="h-4 w-4" />
               {club.shortName || "Club"}
             </div>
 
-            <h1 className="mt-4 max-w-4xl text-5xl font-black tracking-tight">
+            <h1 className="mt-4 max-w-4xl text-5xl font-normal tracking-tight text-white">
               {club.name}
             </h1>
 

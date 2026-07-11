@@ -59,7 +59,7 @@ export default function TeamMatchType() {
         <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-emerald-700">
           Create Team Event
         </p>
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
           Team Match Type
         </h1>
         <p className="mt-3 text-lg text-slate-500">

@@ -16,7 +16,7 @@ export default function PageHeader({
 
       <div>
 
-        <h1 className="text-5xl font-bold">
+        <h1 className="text-5xl font-normal">
           {title}
         </h1>
 

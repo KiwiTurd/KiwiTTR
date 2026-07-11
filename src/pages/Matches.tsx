@@ -10,11 +10,7 @@ export default function Matches() {
 
       <div>
 
-        <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">
-          KiwiTTR
-        </p>
-
-        <h1 className="mt-2 text-5xl font-black tracking-tight">
+        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
           Management
         </h1>
 
