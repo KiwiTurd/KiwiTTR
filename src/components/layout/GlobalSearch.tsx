@@ -9,7 +9,11 @@ import { getPlayers } from "../../services/supabase/playerService";
 import { getClubs } from "../../services/supabase/clubService";
 import { getEvents } from "../../services/supabase/eventService";
 
-export default function GlobalSearch() {
+export default function GlobalSearch({
+  resultsPlacement = "down",
+}: {
+  resultsPlacement?: "up" | "down";
+}) {
   const navigate = useNavigate();
 
   const [query, setQuery] = useState("");
@@ -118,7 +122,13 @@ export default function GlobalSearch() {
       />
 
       {results.length > 0 && (
-        <div className="absolute left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 overflow-hidden">
+        <div
+          className={`absolute left-0 right-0 z-50 max-h-[45vh] overflow-y-auto rounded-lg border bg-white shadow-lg ${
+            resultsPlacement === "up"
+              ? "bottom-full mb-2"
+              : "mt-2"
+          }`}
+        >
 
           {results.map((result) => (
             <button

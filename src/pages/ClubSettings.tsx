@@ -20,6 +20,7 @@ import {
 } from "../services/supabase/clubService";
 
 import useRole from "../hooks/useRole";
+import useFormDraftState, { hasFormDraft } from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 
 function readImageFile(file: File) {
@@ -49,10 +50,10 @@ export default function ClubSettings() {
     useState<Club[]>([]);
 
   const [selectedClubId, setSelectedClubId] =
-    useState("");
+    useFormDraftState("settings.club.selectedClubId", "");
 
   const [editedClub, setEditedClub] =
-    useState<Club | null>(null);
+    useFormDraftState<Club | null>("settings.club.editedClub", null);
 
   const [loading, setLoading] =
     useState(true);
@@ -80,12 +81,14 @@ export default function ClubSettings() {
           ? userClubId
           : selectedClubId || visibleClubs[0]?.id || "";
 
-      setSelectedClubId(nextClubId);
-      setEditedClub(
-        visibleClubs.find(
-          (club) => club.id === nextClubId
-        ) ?? null
-      );
+      if (!hasFormDraft("settings.club.editedClub")) {
+        setSelectedClubId(nextClubId);
+        setEditedClub(
+          visibleClubs.find(
+            (club) => club.id === nextClubId
+          ) ?? null
+        );
+      }
     } catch (error) {
       console.error(error);
       notify.fault("Unable to load club settings.");

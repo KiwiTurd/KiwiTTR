@@ -15,6 +15,7 @@ import { recordMatch } from "../../services/recordMatch";
 import { notify } from "../../services/notificationService";
 
 import SetScoreInput from "./SetScoreInput";
+import useFormDraftState from "../../hooks/useFormDraftState";
 
 const MIN_SETS_TO_WIN = 2;
 
@@ -22,11 +23,11 @@ export default function MatchForm() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
 
-  const [eventId, setEventId] = useState("");
-  const [player1Id, setPlayer1Id] = useState("");
-  const [player2Id, setPlayer2Id] = useState("");
+  const [eventId, setEventId] = useFormDraftState("matches.new.eventId", "");
+  const [player1Id, setPlayer1Id] = useFormDraftState("matches.new.player1Id", "");
+  const [player2Id, setPlayer2Id] = useFormDraftState("matches.new.player2Id", "");
 
-  const [sets, setSets] = useState<MatchSet[]>([
+  const [sets, setSets] = useFormDraftState<MatchSet[]>("matches.new.sets", [
     {
       player1Score: 0,
       player2Score: 0,

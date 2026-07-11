@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import useRole from "../hooks/useRole";
+import useFormDraftState, { clearFormDraft } from "../hooks/useFormDraftState";
 import type { Club } from "../types/club";
 import type { Player } from "../types/player";
 import { getClubs } from "../services/supabase/clubService";
@@ -71,6 +72,7 @@ export default function NewTeamGameEvent() {
         : "classic-6";
   const formatLabel =
     classicTeamFormatLabel(teamFormat);
+  const draftPrefix = `team-game.${editId ?? teamFormat}`;
   const {
     isAdmin,
     isClubLeader,
@@ -82,53 +84,53 @@ export default function NewTeamGameEvent() {
   const [players, setPlayers] =
     useState<Player[]>([]);
   const [name, setName] =
-    useState("");
+    useFormDraftState(`${draftPrefix}.name`, "");
   const [
     eventDescription,
     setEventDescription,
-  ] = useState("");
+  ] = useFormDraftState(`${draftPrefix}.description`, "");
   const [date, setDate] =
-    useState("");
+    useFormDraftState(`${draftPrefix}.date`, "");
   const [startTime, setStartTime] =
-    useState("");
+    useFormDraftState(`${draftPrefix}.startTime`, "");
   const [
     locationClubId,
     setLocationClubId,
-  ] = useState("");
+  ] = useFormDraftState(`${draftPrefix}.locationClubId`, "");
   const [
     customPlayersPerTeam,
     setCustomPlayersPerTeam,
-  ] = useState(4);
+  ] = useFormDraftState(`${draftPrefix}.playersPerTeam`, 4);
   const [
     customOrdering,
     setCustomOrdering,
-  ] = useState<CustomTeamSettings["ordering"]>(
+  ] = useFormDraftState<CustomTeamSettings["ordering"]>(`${draftPrefix}.ordering`,
     "ttr-auto"
   );
   const [
     customEventLevel,
     setCustomEventLevel,
-  ] = useState<CustomTeamSettings["eventLevel"]>(
+  ] = useFormDraftState<CustomTeamSettings["eventLevel"]>(`${draftPrefix}.eventLevel`,
     "social"
   );
   const [
     customMatchMode,
     setCustomMatchMode,
-  ] = useState<CustomTeamSettings["matchMode"]>(
+  ] = useFormDraftState<CustomTeamSettings["matchMode"]>(`${draftPrefix}.matchMode`,
     "play-through"
   );
   const [
     customTotalGames,
     setCustomTotalGames,
-  ] = useState(5);
+  ] = useFormDraftState(`${draftPrefix}.totalGames`, 5);
   const [
     customDoublesIncluded,
     setCustomDoublesIncluded,
-  ] = useState(false);
+  ] = useFormDraftState(`${draftPrefix}.doublesIncluded`, false);
   const [
     customDoublesGames,
     setCustomDoublesGames,
-  ] = useState(0);
+  ] = useFormDraftState(`${draftPrefix}.doublesGames`, 0);
   const customSettings: CustomTeamSettings | undefined =
     isCustomFormat
       ? {
@@ -156,41 +158,41 @@ export default function NewTeamGameEvent() {
   const [
     homeClubId,
     setHomeClubId,
-  ] = useState("");
+  ] = useFormDraftState(`${draftPrefix}.homeClubId`, "");
   const [
     awayClubId,
     setAwayClubId,
-  ] = useState("");
+  ] = useFormDraftState(`${draftPrefix}.awayClubId`, "");
   const [
     homeClubSub,
     setHomeClubSub,
-  ] = useState(false);
+  ] = useFormDraftState(`${draftPrefix}.homeClubSub`, false);
   const [
     awayClubSub,
     setAwayClubSub,
-  ] = useState(false);
+  ] = useFormDraftState(`${draftPrefix}.awayClubSub`, false);
   const [
     homePlayerIds,
     setHomePlayerIds,
-  ] = useState<string[]>(
+  ] = useFormDraftState<string[]>(`${draftPrefix}.homePlayerIds`,
     Array(playerCount).fill("")
   );
   const [
     awayPlayerIds,
     setAwayPlayerIds,
-  ] = useState<string[]>(
+  ] = useFormDraftState<string[]>(`${draftPrefix}.awayPlayerIds`,
     Array(playerCount).fill("")
   );
   const [
     homeDoubles,
     setHomeDoubles,
-  ] = useState<Classic6Team["doubles"]>(
+  ] = useFormDraftState<Classic6Team["doubles"]>(`${draftPrefix}.homeDoubles`,
     emptyDoubles
   );
   const [
     awayDoubles,
     setAwayDoubles,
-  ] = useState<Classic6Team["doubles"]>(
+  ] = useFormDraftState<Classic6Team["doubles"]>(`${draftPrefix}.awayDoubles`,
     emptyDoubles
   );
   const [loadingDraft, setLoadingDraft] =
@@ -784,6 +786,7 @@ export default function NewTeamGameEvent() {
           });
 
       notify.eventCreated(draft.name);
+      clearFormDraft(draftPrefix);
       navigate(`/team-games/${draft.id}/manage`);
     } catch (error) {
       console.error(error);

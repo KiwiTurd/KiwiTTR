@@ -397,7 +397,7 @@ export default function MobileBottomNav() {
       case "search":
         return (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <GlobalSearch />
+            <GlobalSearch resultsPlacement="up" />
           </div>
         );
 
@@ -479,7 +479,13 @@ export default function MobileBottomNav() {
           </h2>
         </div>
 
-        <div className="max-h-[52vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+        <div
+          className={`max-h-[52vh] pb-[env(safe-area-inset-bottom)] ${
+            activePanel === "search"
+              ? "overflow-visible"
+              : "overflow-y-auto"
+          }`}
+        >
           {renderPanelContent()}
         </div>
       </div>

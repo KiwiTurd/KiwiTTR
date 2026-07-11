@@ -30,6 +30,7 @@ import {
 import { getPlayers } from "../services/supabase/playerService";
 
 import useRole from "../hooks/useRole";
+import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 
 function externalUrl(url: string) {
@@ -44,12 +45,12 @@ export default function Clubs() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
 
-  const [name, setName] = useState("");
-  const [shortName, setShortName] = useState("");
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [website, setWebsite] = useState("");
+  const [name, setName] = useFormDraftState("clubs.new.name", "");
+  const [shortName, setShortName] = useFormDraftState("clubs.new.shortName", "");
+  const [address, setAddress] = useFormDraftState("clubs.new.address", "");
+  const [phone, setPhone] = useFormDraftState("clubs.new.phone", "");
+  const [email, setEmail] = useFormDraftState("clubs.new.email", "");
+  const [website, setWebsite] = useFormDraftState("clubs.new.website", "");
 
   const [search, setSearch] = useState("");
 

@@ -16,13 +16,15 @@ import {
 import { notify } from "../services/notificationService";
 
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
+import SeoMetadataManager from "../components/layout/SeoMetadataManager";
+import useFormDraftState from "../hooks/useFormDraftState";
 
 export default function Login() {
 
   const navigate = useNavigate();
 
   const [email, setEmail] =
-    useState("");
+    useFormDraftState("auth.login.email", "");
 
   const [password, setPassword] =
     useState("");
@@ -112,6 +114,10 @@ export default function Login() {
   }
 
   return (
+
+    <>
+
+    <SeoMetadataManager />
 
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
 
@@ -348,6 +354,8 @@ export default function Login() {
       </div>
 
     </div>
+
+    </>
 
   );
 

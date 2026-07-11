@@ -28,6 +28,7 @@ import {
 } from "../services/supabase/clubService";
 
 import useRole from "../hooks/useRole";
+import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 
 type InitialRatingMode =
@@ -52,19 +53,19 @@ export default function PlayerManagement() {
     useState<Club[]>([]);
 
   const [firstName, setFirstName] =
-    useState("");
+    useFormDraftState("players.new.firstName", "");
 
   const [lastName, setLastName] =
-    useState("");
+    useFormDraftState("players.new.lastName", "");
 
   const [clubId, setClubId] =
-    useState("");
+    useFormDraftState("players.new.clubId", "");
 
   const [initialRatingMode, setInitialRatingMode] =
-    useState<InitialRatingMode>("club_average");
+    useFormDraftState<InitialRatingMode>("players.new.ratingMode", "club_average");
 
   const [customRating, setCustomRating] =
-    useState(1500);
+    useFormDraftState("players.new.customRating", 1500);
 
   const [clubFilter, setClubFilter] =
     useState("");

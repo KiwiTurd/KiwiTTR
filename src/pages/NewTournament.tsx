@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import useRole from "../hooks/useRole";
+import useFormDraftState, { clearFormDraft } from "../hooks/useFormDraftState";
 
 import type { Club } from "../types/club";
 
@@ -38,57 +39,57 @@ const [clubs, setClubs] =
   useState<Club[]>([]);
 
 const [name, setName] =
-  useState("");
+  useFormDraftState("tournament.new.name", "");
 
 const [
   eventDescription,
   setEventDescription,
-] = useState("");
+] = useFormDraftState("tournament.new.description", "");
 
 const [clubId, setClubId] =
-  useState("");
+  useFormDraftState("tournament.new.clubId", "");
 
 const [date, setDate] =
-  useState("");
+  useFormDraftState("tournament.new.date", "");
 
 const [
   playerLimitEnabled,
   setPlayerLimitEnabled,
-] = useState(false);
+] = useFormDraftState("tournament.new.playerLimitEnabled", false);
 
 const [playerCount, setPlayerCount] =
-  useState("32");
+  useFormDraftState("tournament.new.playerCount", "32");
 
 const [format, setFormat] =
-  useState<"knockout" | "pools" | "doubles">(
+  useFormDraftState<"knockout" | "pools" | "doubles">("tournament.new.format",
     "pools"
   );
 
 const [poolSize, setPoolSize] =
-  useState(4);
+  useFormDraftState("tournament.new.poolSize", 4);
 
 const [
   playersProgressing,
   setPlayersProgressing,
-] = useState(2);
+] = useFormDraftState("tournament.new.playersProgressing", 2);
 
 const [seedByTTR, setSeedByTTR] =
-  useState(true);
+  useFormDraftState("tournament.new.seedByTTR", true);
 
 const [socialPlay, setSocialPlay] =
-  useState(false);
+  useFormDraftState("tournament.new.socialPlay", false);
 
 const [allowSignUp, setAllowSignUp] =
-  useState(false);
+  useFormDraftState("tournament.new.allowSignUp", false);
 
 const [signUpClosesAt, setSignUpClosesAt] =
-  useState("");
+  useFormDraftState("tournament.new.signUpClosesAt", "");
 
 const [ttrLimitEnabled, setTtrLimitEnabled] =
-  useState(false);
+  useFormDraftState("tournament.new.ttrLimitEnabled", false);
 
 const [ttrLimit, setTtrLimit] =
-  useState("2000");
+  useFormDraftState("tournament.new.ttrLimit", "2000");
 
 const selectedClub = useMemo(() => {
   return clubs.find(
@@ -320,6 +321,7 @@ useEffect(() => {
         notify.edgeBall(
           "Tournament is open for sign ups."
         );
+        clearFormDraft("tournament.new");
         navigate("/tournaments");
       } catch (error) {
         console.error(error);
@@ -333,6 +335,7 @@ useEffect(() => {
 
     startTournament(settings);
 
+    clearFormDraft("tournament.new");
     navigate(
       "/tournaments/players"
     );

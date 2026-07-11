@@ -11,15 +11,17 @@ import {
 import { supabase } from "../lib/supabase";
 
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
+import SeoMetadataManager from "../components/layout/SeoMetadataManager";
+import useFormDraftState from "../hooks/useFormDraftState";
 
 export default function Register() {
 
   const navigate = useNavigate();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useFormDraftState("auth.register.firstName", "");
+  const [lastName, setLastName] = useFormDraftState("auth.register.lastName", "");
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useFormDraftState("auth.register.email", "");
 
   const [password, setPassword] = useState("");
 
@@ -95,6 +97,10 @@ export default function Register() {
   }
 
   return (
+
+    <>
+
+    <SeoMetadataManager />
 
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
 
@@ -393,6 +399,8 @@ export default function Register() {
       </div>
 
     </div>
+
+    </>
 
   );
 

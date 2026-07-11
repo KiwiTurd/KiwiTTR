@@ -4,6 +4,8 @@ import {
   Building2,
   ChevronRight,
   Database,
+  Search,
+  Megaphone,
   Settings2,
   Shield,
 } from "lucide-react";
@@ -134,6 +136,46 @@ export default function Settings() {
 
             </div>
 
+          </Link>
+
+        )}
+
+        {isAdmin && (
+
+          <Link
+            to="/settings/notices"
+            className="group block rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <Megaphone className="h-6 w-6" />
+              </div>
+              <div className="ml-5 flex-1">
+                <h2 className="text-xl font-bold">Notices and News</h2>
+                <p className="mt-1 text-sm text-slate-500">Publish dashboard notices and manage previous announcements.</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
+            </div>
+          </Link>
+
+        )}
+
+        {isAdmin && (
+
+          <Link
+            to="/settings/seo"
+            className="group block rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <Search className="h-6 w-6" />
+              </div>
+              <div className="ml-5 flex-1">
+                <h2 className="text-xl font-bold">SEO Metadata</h2>
+                <p className="mt-1 text-sm text-slate-500">Manage page titles, descriptions, keywords and social images.</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
+            </div>
           </Link>
 
         )}

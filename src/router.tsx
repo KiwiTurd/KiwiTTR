@@ -31,6 +31,10 @@ import Matches from "./pages/Matches";
 
 import Simulator from "./pages/Simulator";
 import FlappyBat from "./pages/FlappyBat";
+import About from "./pages/About";
+import HowWeCalculate from "./pages/HowWeCalculate";
+import SeoMetadataSettings from "./pages/SeoMetadataSettings";
+import NoticeSettings from "./pages/NoticeSettings";
 
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
@@ -222,6 +226,18 @@ export const router = createBrowserRouter([
         element: <FlappyBat />,
       },
 
+      // Information
+
+      {
+        path: "about",
+        element: <About />,
+      },
+
+      {
+        path: "how-we-calculate",
+        element: <HowWeCalculate />,
+      },
+
       // Admin Pages
 
       {
@@ -265,6 +281,24 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <UserManagement />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "settings/seo",
+        element: (
+          <AdminRoute>
+            <SeoMetadataSettings />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "settings/notices",
+        element: (
+          <AdminRoute>
+            <NoticeSettings />
           </AdminRoute>
         ),
       },

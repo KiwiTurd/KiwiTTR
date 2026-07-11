@@ -36,6 +36,7 @@ import {
 } from "../services/supabase/clubService";
 
 import useRole from "../hooks/useRole";
+import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
 import {
@@ -90,13 +91,13 @@ export default function Events() {
     >([]);
 
   const [name, setName] =
-    useState("");
+    useFormDraftState("events.new.name", "");
 
   const [clubId, setClubId] =
-    useState("");
+    useFormDraftState("events.new.clubId", "");
 
   const [eventDate, setEventDate] =
-    useState("");
+    useFormDraftState("events.new.date", "");
 
   const [search, setSearch] =
     useState("");
