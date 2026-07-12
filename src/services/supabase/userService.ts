@@ -13,7 +13,7 @@ export type UserProfile = {
 export async function getUsers(): Promise<UserProfile[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, role, first_name, last_name, club_id, player_id, created_at")
     .order("created_at", {
       ascending: false,
     });

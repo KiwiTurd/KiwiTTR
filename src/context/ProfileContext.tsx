@@ -52,7 +52,7 @@ export function ProfileProvider({
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, first_name, last_name, role, club_id, player_id")
       .eq("id", session.user.id)
       .maybeSingle();
 

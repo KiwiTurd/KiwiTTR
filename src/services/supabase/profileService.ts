@@ -24,6 +24,9 @@ type ProfileRow = {
   created_at: string;
 };
 
+const PROFILE_COLUMNS =
+  "id, first_name, last_name, email, role, status, club_id, player_id, created_at";
+
 function normalizeRole(
   role: string
 ): Profile["role"] {
@@ -97,7 +100,7 @@ function profileMatchesPlayerName(
 export async function getProfiles(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_COLUMNS)
     .order("first_name");
 
   if (error) {
@@ -112,7 +115,7 @@ export async function getProfile(
 ): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_COLUMNS)
     .eq("id", id)
     .maybeSingle();
 
