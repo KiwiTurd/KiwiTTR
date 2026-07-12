@@ -181,11 +181,6 @@ export default function MobileBottomNav() {
 
   const competitionItems: MobileNavItem[] = [
     {
-      to: "/dashboard",
-      label: "Dashboard",
-      icon: <LayoutDashboard className="h-6 w-6" />,
-    },
-    {
       to: "/rankings",
       label: "Rankings",
       icon: <Podium className="h-6 w-6" />,

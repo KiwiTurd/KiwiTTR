@@ -41,38 +41,54 @@ const benefits = [
 ];
 
 export default function Home() {
-  const [hero, setHero] = useState<HomepageSettings>(DEFAULT_HOMEPAGE_SETTINGS);
+  const [hero, setHero] = useState<HomepageSettings | null>(null);
 
   useEffect(() => {
     void getHomepageSettings()
       .then(setHero)
-      .catch((error) => console.warn("Homepage is using its default hero content.", error));
+      .catch((error) => {
+        console.warn("Homepage is using its default hero content.", error);
+        setHero(DEFAULT_HOMEPAGE_SETTINGS);
+      });
   }, []);
 
   return (
     <div className="-mx-4 -mt-4 space-y-16 pb-8 md:-mx-8 md:-mt-8 md:space-y-24">
       <section
-        className="relative flex min-h-[620px] items-center overflow-hidden bg-slate-900 bg-cover bg-center px-6 py-20 text-white md:min-h-[680px] md:px-12 lg:px-20"
-        style={{ backgroundImage: `url(${hero.heroImageUrl || "/kiwittr-home-hero.jpg"})` }}
+        className="relative flex min-h-[620px] items-center overflow-hidden bg-slate-900 bg-cover bg-center py-20 text-white md:min-h-[680px]"
+        style={{ backgroundImage: `url(${hero?.heroImageUrl || "/kiwittr-home-hero.jpg"})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" />
-        <div className="home-hero-copy relative z-10 w-full max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-300">
-            {hero.eyebrowText}
-          </p>
-          <h1 className="home-page-heading mt-5 text-5xl font-normal leading-tight tracking-tight text-white md:text-7xl">
-            {hero.headingText}
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl">
-            {hero.subheadingText}
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 transition hover:bg-blue-50" to={hero.primaryButtonUrl}>
-              {hero.primaryButtonText} <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20" to={hero.secondaryButtonUrl}>
-              {hero.secondaryButtonText}
-            </Link>
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 md:px-8">
+          <div className="home-hero-copy max-w-3xl">
+          {hero ? (
+            <>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-300">
+                {hero.eyebrowText}
+              </p>
+              <h1 className="home-page-heading mt-5 text-5xl font-normal leading-tight tracking-tight text-white md:text-7xl">
+                {hero.headingText}
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl">
+                {hero.subheadingText}
+              </p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Link className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 transition hover:bg-blue-50" to={hero.primaryButtonUrl}>
+                  {hero.primaryButtonText} <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20" to={hero.secondaryButtonUrl}>
+                  {hero.secondaryButtonText}
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div aria-label="Loading homepage content" className="animate-pulse space-y-5">
+              <div className="h-4 w-56 rounded bg-white/20" />
+              <div className="h-16 w-full max-w-2xl rounded bg-white/20 md:h-24" />
+              <div className="h-6 w-full max-w-xl rounded bg-white/15" />
+              <div className="h-11 w-64 rounded-xl bg-white/20" />
+            </div>
+          )}
           </div>
         </div>
       </section>
@@ -99,8 +115,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-slate-900 px-4 py-16 text-white md:px-8 md:py-20">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+      <section className="bg-slate-900 py-16 text-white md:py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 md:px-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
           <div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/20 text-blue-300">
               <Calculator className="h-6 w-6" />
@@ -168,13 +184,15 @@ export default function Home() {
         </Link>
       </section>
 
-      <section className="mx-4 rounded-3xl bg-slate-200 px-6 py-14 text-center md:mx-8 md:px-10 md:py-16">
-        <ShieldCheck className="mx-auto h-9 w-9 text-blue-700" />
-        <h2 className="mx-auto mt-5 max-w-3xl text-4xl font-normal tracking-tight text-slate-900">Ready to make every match count?</h2>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">Create your KiwiTTR account and connect with New Zealand&apos;s table tennis community.</p>
-        <Link className="mt-7 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-3 font-semibold text-white transition hover:bg-blue-800" to="/register">
-          Sign up for KiwiTTR <ArrowRight className="h-4 w-4" />
-        </Link>
+      <section className="bg-slate-200 py-14 md:py-16">
+        <div className="mx-auto max-w-7xl px-4 text-left md:px-8">
+          <ShieldCheck className="h-9 w-9 text-blue-700" />
+          <h2 className="mt-5 max-w-3xl text-4xl font-normal tracking-tight text-slate-900">Ready to make every match count?</h2>
+          <p className="mt-4 max-w-2xl text-lg text-slate-600">Create your KiwiTTR account and connect with New Zealand&apos;s table tennis community.</p>
+          <Link className="mt-7 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-3 font-semibold text-white transition hover:bg-blue-800" to="/register">
+            Sign up for KiwiTTR <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </section>
     </div>
   );

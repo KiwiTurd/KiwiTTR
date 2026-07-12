@@ -17,38 +17,39 @@ export default function GlobalSearch({
   const navigate = useNavigate();
 
   const [query, setQuery] = useState("");
+  const [showCross, setShowCross] = useState(false);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        const [playerData, clubData, eventData] =
+          await Promise.all([
+            getPlayers(),
+            getClubs(),
+            getEvents(),
+          ]);
+
+        setPlayers(playerData);
+        setClubs(clubData);
+        setEvents(eventData);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
     void loadData();
   }, []);
-
-  async function loadData() {
-    try {
-      const [playerData, clubData, eventData] =
-        await Promise.all([
-          getPlayers(),
-          getClubs(),
-          getEvents(),
-        ]);
-
-      setPlayers(playerData);
-      setClubs(clubData);
-      setEvents(eventData);
-    } catch (error) {
-      console.error(error);
-    }
-  }
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
 
     const search = query.toLowerCase();
 
-    if (search.trim() === "flappy bat") {
+    if (["flappy bat", "jesus"].includes(search.trim())) {
       return [];
     }
 
@@ -97,16 +98,23 @@ export default function GlobalSearch({
   function handleKeyDown(
     event: React.KeyboardEvent<HTMLInputElement>
   ) {
-    if (
-      event.key !== "Enter" ||
-      query.trim().toLowerCase() !== "flappy bat"
-    ) {
+    if (event.key !== "Enter") {
       return;
     }
 
-    event.preventDefault();
-    setQuery("");
-    navigate("/flappy-bat");
+    const easterEgg = query.trim().toLowerCase();
+
+    if (easterEgg === "flappy bat") {
+      event.preventDefault();
+      setQuery("");
+      navigate("/flappy-bat");
+    }
+
+    if (easterEgg === "jesus") {
+      event.preventDefault();
+      setQuery("");
+      setShowCross(true);
+    }
   }
 
   return (
@@ -151,6 +159,24 @@ export default function GlobalSearch({
           ))}
 
         </div>
+      )}
+
+      {showCross && (
+        <button
+          aria-label="Close Easter egg"
+          className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center overflow-hidden bg-slate-950/95"
+          onClick={() => setShowCross(false)}
+          type="button"
+        >
+          <span className="absolute inset-0 bg-[radial-gradient(circle,rgba(250,204,21,0.22)_0%,rgba(15,23,42,0)_65%)]" />
+          <span className="relative block h-[72vh] w-[48vh] max-h-[720px] max-w-[480px] animate-pulse drop-shadow-[0_0_45px_rgba(250,204,21,0.85)]">
+            <span className="absolute left-1/2 top-0 h-full w-[20%] -translate-x-1/2 rounded-sm bg-gradient-to-b from-amber-100 via-yellow-300 to-amber-500" />
+            <span className="absolute left-0 top-[28%] h-[14%] w-full rounded-sm bg-gradient-to-r from-amber-500 via-yellow-200 to-amber-500" />
+          </span>
+          <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs font-medium uppercase tracking-[0.3em] text-amber-100/70">
+            Tap to close
+          </span>
+        </button>
       )}
 
     </div>
