@@ -31,6 +31,35 @@ export default function Login() {
 
   const [loading, setLoading] =
     useState(false);
+  const [resetLoading, setResetLoading] =
+    useState(false);
+
+  async function handlePasswordReset() {
+    const resetEmail = email.trim();
+
+    if (!resetEmail) {
+      notify.timeout("Enter your email address first.");
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      resetEmail,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      }
+    );
+    setResetLoading(false);
+
+    if (error) {
+      notify.fault(error.message);
+      return;
+    }
+
+    notify.edgeBall(
+      "If an account exists for that email, a password reset link has been sent."
+    );
+  }
 
   async function handleLogin() {
 
@@ -235,11 +264,9 @@ export default function Login() {
               <div className="flex justify-end">
 
                 <button
-                  onClick={() =>
-                    notify.service(
-                      "Password reset is coming soon."
-                    )
-                  }
+                  type="button"
+                  onClick={() => void handlePasswordReset()}
+                  disabled={resetLoading}
                   className="
                     text-sm
                     font-medium
@@ -251,7 +278,9 @@ export default function Login() {
                   "
                 >
 
-                  Forgot password?
+                  {resetLoading
+                    ? "Sending reset link..."
+                    : "Forgot password?"}
 
                 </button>
 

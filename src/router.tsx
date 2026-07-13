@@ -44,6 +44,7 @@ import ClubSettings from "./pages/ClubSettings";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 
 import Admin from "./pages/Admin";
 
@@ -60,6 +61,11 @@ export const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
+  },
+
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
   },
 
   {
