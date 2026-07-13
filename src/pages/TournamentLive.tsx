@@ -39,6 +39,7 @@ import { calculatePoolStandings } from "../services/tournament/standings";
 import type { TournamentMatch } from "../types/tournament";
 import { finishTournamentAndRecordRatings } from "../services/supabase/tournamentService";
 import { notify } from "../services/notificationService";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 const emptyGames = ["", "", "", "", ""];
 const emptyConfirmedGames = [false, false, false, false, false];
@@ -486,11 +487,7 @@ export default function TournamentLive() {
     id &&
     tournament.id !== id
   ) {
-    return (
-      <div className="rounded-3xl border bg-white p-10 text-center text-slate-500 shadow-sm">
-        Loading tournament...
-      </div>
-    );
+    return <LoadingScreen label="Loading tournament..." />;
   }
 
   if (!tournament.settings.name) {

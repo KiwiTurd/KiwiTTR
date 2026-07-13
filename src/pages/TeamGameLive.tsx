@@ -25,6 +25,7 @@ import {
 } from "../services/teams/teamEngine";
 import { getTeamGame } from "../services/teams/teamGameService";
 import useRole from "../hooks/useRole";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 function namesFor(
   team: Classic6Team,
@@ -118,11 +119,7 @@ export default function TeamGameLive() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-        Loading team game...
-      </div>
-    );
+    return <LoadingScreen label="Loading team game..." />;
   }
 
   const game =

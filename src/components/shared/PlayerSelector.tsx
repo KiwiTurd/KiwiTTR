@@ -28,23 +28,39 @@ import {
   type PlayerSearchResult,
 } from "../../services/supabase/playerService";
 
-interface Props {
-  value: PlayerSearchResult | null;
+type PlayerSelectorOption = Pick<
+  PlayerSearchResult,
+  | "id"
+  | "firstName"
+  | "lastName"
+  | "rating"
+> & Partial<Pick<PlayerSearchResult, "clubName">>;
+
+interface Props<T extends PlayerSelectorOption> {
+  value: T | null;
   onChange: (
-    player: PlayerSearchResult
+    player: T
   ) => void;
   excludePlayerId?: string;
+  players?: T[];
+  placeholder?: string;
+  onClear?: () => void;
 }
 
-export default function PlayerSelector({
+export default function PlayerSelector<
+  T extends PlayerSelectorOption = PlayerSearchResult,
+>({
   value,
   onChange,
   excludePlayerId,
-}: Props) {
+  players: providedPlayers,
+  placeholder = "Select Player...",
+  onClear,
+}: Props<T>) {
   const [open, setOpen] =
     useState(false);
 
-  const [players, setPlayers] =
+  const [loadedPlayers, setLoadedPlayers] =
     useState<PlayerSearchResult[]>([]);
 
   const [loading, setLoading] =
@@ -52,13 +68,18 @@ export default function PlayerSelector({
 
   useEffect(() => {
     async function load() {
+      if (providedPlayers) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
 
       try {
         const list =
           await getPlayerSearchList();
 
-        setPlayers(list);
+        setLoadedPlayers(list);
 
       } finally {
         setLoading(false);
@@ -67,7 +88,11 @@ export default function PlayerSelector({
 
     void load();
 
-  }, []);
+  }, [providedPlayers]);
+
+  const players = (
+    providedPlayers ?? loadedPlayers
+  ) as T[];
 
   const filteredPlayers =
     useMemo(() => {
@@ -83,7 +108,7 @@ export default function PlayerSelector({
     ]);
 
   function initials(
-    player: PlayerSearchResult
+    player: PlayerSelectorOption
   ) {
     return (
       player.firstName[0] +
@@ -135,7 +160,7 @@ export default function PlayerSelector({
 
         <p className="text-sm text-muted-foreground">
 
-          {value.clubName}
+          {value.clubName || "Player"}
 
         </p>
 
@@ -153,7 +178,7 @@ export default function PlayerSelector({
 
     <span className="text-muted-foreground">
 
-      Select Player...
+      {placeholder}
 
     </span>
 
@@ -186,12 +211,26 @@ export default function PlayerSelector({
 
             <CommandGroup>
 
+              {onClear && value && (
+                <CommandItem
+                  value="Clear selection"
+                  onSelect={() => {
+                    onClear();
+                    setOpen(false);
+                  }}
+                >
+                  <span className="text-muted-foreground">
+                    Clear selection
+                  </span>
+                </CommandItem>
+              )}
+
               {filteredPlayers.map(
                 (player) => (
 
                   <CommandItem
                     key={player.id}
-                    value={`${player.firstName} ${player.lastName} ${player.clubName}`}
+                    value={`${player.firstName} ${player.lastName} ${player.clubName ?? ""}`}
                     onSelect={() => {
 
                       onChange(player);
@@ -200,17 +239,6 @@ export default function PlayerSelector({
 
                     }}
                   >
-
-                    <Avatar className="mr-3">
-
-                      <AvatarFallback>
-
-                        {initials(player)}
-
-                      </AvatarFallback>
-
-                    </Avatar>
-
                     <div className="flex-1">
 
                       <p className="font-medium">
@@ -222,7 +250,7 @@ export default function PlayerSelector({
 
                       <p className="text-xs text-muted-foreground">
 
-                        {player.clubName}
+                        {player.clubName || "Player"}
 
                       </p>
 
@@ -233,12 +261,6 @@ export default function PlayerSelector({
                       <p className="font-semibold">
 
                         {player.rating}
-
-                      </p>
-
-                      <p className="text-xs text-muted-foreground">
-
-                        Peak {player.highestRating}
 
                       </p>
 

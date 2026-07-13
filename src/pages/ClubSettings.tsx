@@ -25,6 +25,7 @@ import {
 import useRole from "../hooks/useRole";
 import useFormDraftState, { hasFormDraft } from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 function readImageFile(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -209,13 +210,7 @@ export default function ClubSettings() {
   }
 
   if (loading) {
-    return (
-      <div className="mx-auto max-w-7xl">
-        <h1 className="text-4xl font-normal">
-          Loading...
-        </h1>
-      </div>
-    );
+    return <LoadingScreen label="Loading club settings..." />;
   }
 
   return (

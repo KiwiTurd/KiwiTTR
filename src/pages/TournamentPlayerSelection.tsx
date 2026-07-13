@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  Search,
   Trophy,
 } from "lucide-react";
 import {
@@ -30,6 +29,7 @@ import { getPlayers } from "../services/supabase/playerService";
 import { generateTournamentDraw } from "../services/tournament/drawGenerator";
 import { generateKnockout } from "../services/tournament/knockoutGenerator";
 import { generateDoubleKnockout } from "../services/tournament/doubleKnockout";
+import PlayerSelector from "../components/shared/PlayerSelector";
 
 function shufflePlayers(
   players: Player[]
@@ -118,9 +118,6 @@ const hasValidPlayerTotal =
       tournament.settings.playerCount
     : selectedPlayers.length >= 2;
 
-  const [search, setSearch] =
-    useState("");
-
   const [clubFilter, setClubFilter] =
     useState("");
 
@@ -193,18 +190,12 @@ const hasValidPlayerTotal =
           return false;
         }
 
-        const fullName =
-          `${player.firstName} ${player.lastName}`;
-
-        return fullName
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        return true;
 
       });
 
     }, [
       players,
-      search,
       clubFilter,
       tournament.settings.ttrLimit,
       tournament.settings.ttrLimitEnabled,
@@ -348,20 +339,22 @@ function getClubName(
 
           <div className="mb-6 space-y-3">
 
-            <div className="relative">
-
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
-
-              <input
-                value={search}
-                onChange={(e)=>
-                  setSearch(e.target.value)
-                }
-                placeholder="Search players..."
-                className="w-full rounded-xl border py-3 pl-12 pr-4"
-              />
-
-            </div>
+            <PlayerSelector
+              players={filteredPlayers
+                .filter(
+                  (player) =>
+                    !selectedPlayers.some(
+                      (selected) => selected.id === player.id
+                    )
+                )
+                .map((player) => ({
+                  ...player,
+                  clubName: getClubName(player.clubId),
+                }))}
+              value={null}
+              onChange={addPlayer}
+              placeholder="Search and add a player..."
+            />
 
             <div className="relative w-56 max-w-full">
               <select

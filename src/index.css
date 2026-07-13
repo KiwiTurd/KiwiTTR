@@ -61,6 +61,57 @@
   }
 }
 
+@keyframes kiwittr-loading-bounce-spin {
+  0%, 4% {
+    transform: translateY(0) rotate(0deg);
+  }
+  18% {
+    transform: translateY(-4rem) rotate(0deg);
+  }
+  32% {
+    transform: translateY(0) rotate(0deg);
+  }
+  40% {
+    transform: translateY(-1.25rem) rotate(0deg);
+  }
+  48%, 55% {
+    transform: translateY(0) rotate(0deg);
+  }
+  72% {
+    transform: translateY(0) rotate(360deg);
+  }
+  82% {
+    transform: translateY(-3rem) rotate(360deg);
+  }
+  94%, 100% {
+    transform: translateY(0) rotate(360deg);
+  }
+}
+
+@keyframes kiwittr-loading-shadow {
+  0%, 4%, 32%, 48%, 55%, 72%, 94%, 100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  18% {
+    opacity: 0.25;
+    transform: scaleX(0.45);
+  }
+  40%, 82% {
+    opacity: 0.45;
+    transform: scaleX(0.65);
+  }
+}
+
+.kiwittr-loading-icon {
+  animation: kiwittr-loading-bounce-spin 2.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.kiwittr-loading-shadow {
+  animation: kiwittr-loading-shadow 2.8s ease-in-out infinite;
+}
+
 .tournament-confetti {
   animation-name: tournament-confetti-fall;
   animation-timing-function: cubic-bezier(0.2, 0.7, 0.35, 1);
@@ -70,6 +121,11 @@
 @media (prefers-reduced-motion: reduce) {
   .tournament-confetti {
     display: none;
+  }
+
+  .kiwittr-loading-icon,
+  .kiwittr-loading-shadow {
+    animation: none;
   }
 }
 

@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase";
+import { deleteEvent } from "../supabase/eventService";
 import type { TeamGameStatus } from "./teamEngine";
 import {
   classicTeamTargetScore,
@@ -896,6 +897,17 @@ export async function createTeamGameDraft(args: {
 export async function deleteTeamGame(
   id: string
 ): Promise<void> {
+  const { data: game, error: loadError } =
+    await supabase
+      .from("team_games")
+      .select("event_id")
+      .eq("id", id)
+      .maybeSingle();
+
+  if (loadError) {
+    throw loadError;
+  }
+
   const { error } = await supabase
     .from("team_games")
     .delete()
@@ -903,5 +915,9 @@ export async function deleteTeamGame(
 
   if (error) {
     throw error;
+  }
+
+  if (game?.event_id) {
+    await deleteEvent(game.event_id);
   }
 }

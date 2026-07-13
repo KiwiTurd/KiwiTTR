@@ -12,6 +12,7 @@ import type {
 
 import type { Club } from "../../types/club";
 import type { Player } from "../../types/player";
+import PlayerSelector from "../shared/PlayerSelector";
 
 interface Props {
   profile: Profile | null;
@@ -178,33 +179,35 @@ export default function EditUserModal({
             ))}
           </select>
 
-          <select
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-            value={edited.playerId ?? ""}
-            onChange={(e) =>
+          <PlayerSelector
+            players={players
+              .filter(namesMatch)
+              .map((player) => ({
+                ...player,
+                clubName:
+                  clubs.find(
+                    (club) => club.id === player.clubId
+                  )?.name ?? "",
+              }))}
+            value={
+              players.find(
+                (player) => player.id === edited.playerId
+              ) ?? null
+            }
+            onChange={(player) =>
               setEdited({
                 ...edited,
-                playerId:
-                  e.target.value || null,
+                playerId: player.id,
               })
             }
-          >
-            <option value="">
-              No Linked Player
-            </option>
-
-            {players
-              .filter(namesMatch)
-              .map((player) => (
-                <option
-                  key={player.id}
-                  value={player.id}
-                >
-                  {player.firstName}{" "}
-                  {player.lastName}
-                </option>
-              ))}
-          </select>
+            onClear={() =>
+              setEdited({
+                ...edited,
+                playerId: null,
+              })
+            }
+            placeholder="No Linked Player"
+          />
 
         </div>
 

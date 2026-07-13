@@ -8,6 +8,7 @@ import {
 } from "../services/supabase/profileService";
 
 import { notify } from "../services/notificationService";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 export default function MyProfile() {
   const navigate = useNavigate();
@@ -54,20 +55,6 @@ export default function MyProfile() {
   }
 
   return (
-    <div className="flex items-center justify-center h-[60vh]">
-
-      <div className="text-center">
-
-        <h1 className="text-3xl font-normal mb-3">
-          Loading Your Profile...
-        </h1>
-
-        <p className="text-slate-500">
-          Just a moment while we find your player profile.
-        </p>
-
-      </div>
-
-    </div>
+    <LoadingScreen label="Loading your profile..." />
   );
 }

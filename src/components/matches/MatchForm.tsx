@@ -16,6 +16,7 @@ import { notify } from "../../services/notificationService";
 
 import SetScoreInput from "./SetScoreInput";
 import useFormDraftState from "../../hooks/useFormDraftState";
+import PlayerSelector from "../shared/PlayerSelector";
 
 const MIN_SETS_TO_WIN = 2;
 
@@ -299,19 +300,16 @@ export default function MatchForm() {
               Player 1
             </label>
 
-            <select
-              value={player1Id}
-              onChange={(e) => setPlayer1Id(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Select Player</option>
-
-              {players.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.firstName} {player.lastName} ({player.rating})
-                </option>
-              ))}
-            </select>
+            <PlayerSelector
+              value={
+                players.find(
+                  (player) => player.id === player1Id
+                ) ?? null
+              }
+              onChange={(player) => setPlayer1Id(player.id)}
+              onClear={() => setPlayer1Id("")}
+              excludePlayerId={player2Id || undefined}
+            />
           </div>
 
           <div>
@@ -319,19 +317,16 @@ export default function MatchForm() {
               Player 2
             </label>
 
-            <select
-              value={player2Id}
-              onChange={(e) => setPlayer2Id(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Select Player</option>
-
-              {players.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.firstName} {player.lastName} ({player.rating})
-                </option>
-              ))}
-            </select>
+            <PlayerSelector
+              value={
+                players.find(
+                  (player) => player.id === player2Id
+                ) ?? null
+              }
+              onChange={(player) => setPlayer2Id(player.id)}
+              onClear={() => setPlayer2Id("")}
+              excludePlayerId={player1Id || undefined}
+            />
           </div>
 
         </div>

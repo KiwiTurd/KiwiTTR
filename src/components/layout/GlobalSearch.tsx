@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
 import type { Player } from "../../types/player";
@@ -8,6 +9,7 @@ import type { Event } from "../../types/event";
 import { getPlayers } from "../../services/supabase/playerService";
 import { getClubs } from "../../services/supabase/clubService";
 import { getEvents } from "../../services/supabase/eventService";
+import { KiwiTtrLoadingAnimation } from "../shared/LoadingScreen";
 
 export default function GlobalSearch({
   resultsPlacement = "down",
@@ -18,6 +20,7 @@ export default function GlobalSearch({
 
   const [query, setQuery] = useState("");
   const [showCross, setShowCross] = useState(false);
+  const [showBounce, setShowBounce] = useState(false);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -49,7 +52,7 @@ export default function GlobalSearch({
 
     const search = query.toLowerCase();
 
-    if (["flappy bat", "jesus"].includes(search.trim())) {
+    if (["bounce", "flappy bat", "jesus"].includes(search.trim())) {
       return [];
     }
 
@@ -115,6 +118,12 @@ export default function GlobalSearch({
       setQuery("");
       setShowCross(true);
     }
+
+    if (easterEgg === "bounce") {
+      event.preventDefault();
+      setQuery("");
+      setShowBounce(true);
+    }
   }
 
   return (
@@ -161,7 +170,7 @@ export default function GlobalSearch({
         </div>
       )}
 
-      {showCross && (
+      {showCross && createPortal(
         <button
           aria-label="Close Easter egg"
           className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center overflow-hidden bg-slate-950/95"
@@ -177,7 +186,21 @@ export default function GlobalSearch({
             Tap to close
           </span>
         </button>
-      )}
+      , document.body)}
+
+      {showBounce && createPortal(
+        <button
+          aria-label="Close bounce animation"
+          className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center bg-slate-100"
+          onClick={() => setShowBounce(false)}
+          type="button"
+        >
+          <KiwiTtrLoadingAnimation />
+          <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs font-medium uppercase tracking-[0.3em] text-slate-500">
+            Tap to close
+          </span>
+        </button>
+      , document.body)}
 
     </div>
   );

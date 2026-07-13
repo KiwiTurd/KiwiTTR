@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import {
   ChevronRight,
   Medal,
-  Search,
   Trophy,
   Award,
 } from "lucide-react";
@@ -16,6 +15,8 @@ import { getPlayers } from "../services/supabase/playerService";
 import { getClubs } from "../services/supabase/clubService";
 
 import { notify } from "../services/notificationService";
+import LoadingScreen from "../components/shared/LoadingScreen";
+import PlayerSelector from "../components/shared/PlayerSelector";
 
 export default function Rankings() {
 
@@ -206,37 +207,33 @@ return (
 
         <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
 
-          <div className="relative">
-
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-            <input
-              type="text"
-              placeholder="Search players..."
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              className="
-                w-full
-                rounded-xl
-                border
-                border-slate-300
-                py-3
-                pl-12
-                pr-4
-
-                outline-none
-
-                transition
-
-                focus:border-blue-700
-                focus:ring-4
-                focus:ring-blue-100
-              "
-            />
-
-          </div>
+          <PlayerSelector
+            players={players
+              .filter(
+                (player) =>
+                  !clubFilter || player.clubId === clubFilter
+              )
+              .map((player) => ({
+                ...player,
+                clubName:
+                  clubs.find(
+                    (club) => club.id === player.clubId
+                  )?.name ?? "",
+              }))}
+            value={
+              players.find(
+                (player) =>
+                  `${player.firstName} ${player.lastName}` === search
+              ) ?? null
+            }
+            onChange={(player) =>
+              setSearch(
+                `${player.firstName} ${player.lastName}`
+              )
+            }
+            onClear={() => setSearch("")}
+            placeholder="Search players..."
+          />
 
           <select
             value={clubFilter}
@@ -291,12 +288,7 @@ return (
       <div className="space-y-3">
 
         {loading ? (
-
-          <div className="rounded-3xl border bg-white p-12 text-center text-slate-500">
-
-            Loading rankings...
-
-          </div>
+          <LoadingScreen label="Loading rankings..." />
 
         ) : rankings.length === 0 ? (
 

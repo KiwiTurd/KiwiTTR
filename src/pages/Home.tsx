@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import {
   ArrowRight,
   BarChart3,
@@ -9,6 +9,9 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import KiwiTtrIcon from "../assets/KIWITTR - Logo.svg?react";
+import LoadingScreen from "../components/shared/LoadingScreen";
+import { useAuth } from "../context/AuthContext";
 import { getHomepageSettings } from "../services/supabase/homepageSettingsService";
 import {
   DEFAULT_HOMEPAGE_SETTINGS,
@@ -39,7 +42,9 @@ const benefits = [
 ];
 
 export default function Home() {
+  const { session, loading: authLoading } = useAuth();
   const [hero, setHero] = useState<HomepageSettings | null>(null);
+  const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
   useEffect(() => {
     void getHomepageSettings()
@@ -50,6 +55,14 @@ export default function Home() {
       });
   }, []);
 
+  if (isMobile && authLoading) {
+    return <LoadingScreen label="Loading dashboard..." />;
+  }
+
+  if (isMobile && session) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="-mx-4 -mt-4 space-y-16 pb-8 md:-mx-8 md:-mt-8 md:space-y-24">
       <section
@@ -57,6 +70,11 @@ export default function Home() {
         style={{ backgroundImage: `url(${hero?.heroImageUrl || "/kiwittr-home-hero.jpg"})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" />
+        <KiwiTtrIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-[34%] top-1/2 w-[clamp(54rem,80vw,84rem)] max-w-none -translate-y-1/2 fill-slate-500 opacity-40 mix-blend-multiply md:-right-[14%]"
+          focusable="false"
+        />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 md:px-8">
           <div className="home-hero-copy max-w-3xl">
           {hero ? (
@@ -80,12 +98,7 @@ export default function Home() {
               </div>
             </>
           ) : (
-            <div aria-label="Loading homepage content" className="animate-pulse space-y-5">
-              <div className="h-4 w-56 rounded bg-white/20" />
-              <div className="h-16 w-full max-w-2xl rounded bg-white/20 md:h-24" />
-              <div className="h-6 w-full max-w-xl rounded bg-white/15" />
-              <div className="h-11 w-64 rounded-xl bg-white/20" />
-            </div>
+            <LoadingScreen label="Loading homepage..." />
           )}
           </div>
         </div>

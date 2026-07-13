@@ -5,6 +5,8 @@ import { pathMatches, SEO_PAGES } from "../../config/seoPages";
 import { getSeoMetadata } from "../../services/supabase/seoMetadataService";
 import type { SeoMetadata } from "../../types/seoMetadata";
 
+const DEFAULT_SOCIAL_IMAGE = "https://kiwittr.com/kiwittr-social-share.png";
+
 function setMeta(name: string, content: string, property = false) {
   const attribute = property ? "property" : "name";
   let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${name}"]`);
@@ -36,7 +38,7 @@ export default function SeoMetadataManager() {
     const title = custom?.title || definition.title;
     const description = custom?.description || definition.description;
     const keywords = custom?.keywords.filter(Boolean).join(", ") || definition.keywords.join(", ");
-    const image = custom?.imageUrl || "";
+    const image = custom?.imageUrl || DEFAULT_SOCIAL_IMAGE;
 
     document.title = title;
     setMeta("description", description);
@@ -44,14 +46,16 @@ export default function SeoMetadataManager() {
     setMeta("og:title", title, true);
     setMeta("og:description", description, true);
     setMeta("og:type", "website", true);
-    setMeta("twitter:card", image ? "summary_large_image" : "summary");
+    setMeta("og:image", image, true);
+    setMeta("og:image:secure_url", image, true);
+    setMeta("og:image:width", "1200", true);
+    setMeta("og:image:height", "630", true);
+    setMeta("og:image:alt", "KiwiTTR logo on a slate background", true);
+    setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", title);
     setMeta("twitter:description", description);
-
-    if (image) {
-      setMeta("og:image", image, true);
-      setMeta("twitter:image", image);
-    }
+    setMeta("twitter:image", image);
+    setMeta("twitter:image:alt", "KiwiTTR logo on a slate background");
   }, [pathname, saved]);
 
   return null;

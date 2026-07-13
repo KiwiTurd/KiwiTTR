@@ -33,6 +33,7 @@ import {
 
 import EditUserModal from "../components/settings/EditUserModal";
 import { notify } from "../services/notificationService";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 export default function UserManagement() {
 
@@ -293,6 +294,10 @@ export default function UserManagement() {
 
     }
 
+  }
+
+  if (loading) {
+    return <LoadingScreen label="Loading users..." />;
   }
 
   return (

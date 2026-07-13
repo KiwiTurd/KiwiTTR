@@ -36,6 +36,7 @@ import {
   removeTeamGameTtrMatches,
   recordTeamGameTtrMatches,
 } from "../services/teams/teamSubmission";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 export default function TeamGameManage() {
   const { id } = useParams();
@@ -677,11 +678,7 @@ export default function TeamGameManage() {
   }
 
   if (!game) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-        Loading team game...
-      </div>
-    );
+    return <LoadingScreen label="Loading team game..." />;
   }
 
   return (

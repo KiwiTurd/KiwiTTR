@@ -12,6 +12,7 @@ import {
   type HomepageSettings,
 } from "../types/homepageSettings";
 import useFormDraftState, { hasFormDraft } from "../hooks/useFormDraftState";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 function resizeHeroImage(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -118,7 +119,7 @@ export default function HomepageSettingsPage() {
   }
 
   if (loading) {
-    return <div className="mx-auto max-w-7xl text-slate-500">Loading homepage settings…</div>;
+    return <LoadingScreen label="Loading homepage settings..." />;
   }
 
   return (

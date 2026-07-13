@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import LoadingScreen from "../shared/LoadingScreen";
 
 type Props = {
   children: React.ReactNode;
@@ -11,11 +12,7 @@ export default function ProtectedRoute({
   const { session, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        Loading...
-      </div>
-    );
+    return <LoadingScreen label="Checking your session..." />;
   }
 
   if (!session) {

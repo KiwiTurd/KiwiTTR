@@ -45,6 +45,7 @@ import {
 
 import RatingGraph from "../components/player/RatingGraph";
 import RecentMatchCard from "../components/player/RecentMatchCard";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 import { notify } from "../services/notificationService";
 import useRole from "../hooks/useRole";
@@ -438,21 +439,7 @@ export default function PlayerProfile() {
   }
 
   if (loading) {
-
-    return (
-
-      <div className="max-w-7xl mx-auto">
-
-        <h1 className="text-4xl font-normal">
-
-          Loading...
-
-        </h1>
-
-      </div>
-
-    );
-
+    return <LoadingScreen label="Loading player..." />;
   }
 
   if (!player) {

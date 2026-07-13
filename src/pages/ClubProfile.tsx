@@ -33,6 +33,7 @@ import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
 import type { SavedTournament } from "../types/tournament";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 function externalUrl(url: string) {
   return /^https?:\/\//i.test(url)
@@ -53,11 +54,15 @@ export default function ClubProfile() {
 
   const [club, setClub] = useState<Club | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [editing, setEditing] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const [clubData, playerData] = await Promise.all([
@@ -71,6 +76,8 @@ export default function ClubProfile() {
     } catch (error) {
       console.error(error);
       notify.fault("Failed to load club.");
+    } finally {
+      setLoading(false);
     }
   }, [id]);
 
@@ -183,6 +190,10 @@ export default function ClubProfile() {
       savedTournaments,
     ]);
 
+  if (loading) {
+    return <LoadingScreen label="Loading club..." />;
+  }
+
   if (!club) {
     return (
       <div className="max-w-6xl mx-auto">
@@ -203,17 +214,10 @@ export default function ClubProfile() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-
-      <Link
-        to="/clubs"
-        className="text-blue-700 hover:underline"
-      >
-        ← Back to Clubs
-      </Link>
+    <div className="-mx-4 -mt-4 space-y-8 md:-mx-8 md:-mt-8">
 
       <div
-        className="relative flex min-h-80 overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 p-8 text-white shadow-sm"
+        className="relative flex min-h-80 overflow-hidden border-b border-slate-200 bg-slate-900 text-white shadow-sm"
         style={{
           backgroundImage:
             club.headerImageUrl
@@ -223,6 +227,14 @@ export default function ClubProfile() {
           backgroundSize: "cover",
         }}
       >
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-4 md:px-8 md:py-8">
+          <Link
+            to="/clubs"
+            className="self-start rounded-lg bg-slate-950/30 px-3 py-2 font-semibold text-white backdrop-blur-sm transition hover:bg-slate-950/50"
+          >
+            ← Back to Clubs
+          </Link>
+
         <div className="mt-auto flex w-full flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="club-profile-header">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold backdrop-blur">
@@ -250,7 +262,10 @@ export default function ClubProfile() {
             </button>
           )}
         </div>
+        </div>
       </div>
+
+      <div className="mx-auto max-w-7xl space-y-8 px-4 md:px-8">
 
       {club.notice && (
         <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
@@ -470,6 +485,8 @@ export default function ClubProfile() {
         />
 
       )}
+
+      </div>
 
     </div>
   );

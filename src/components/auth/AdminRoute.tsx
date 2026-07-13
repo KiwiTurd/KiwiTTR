@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 
 import { useProfile } from "../../context/ProfileContext";
+import LoadingScreen from "../shared/LoadingScreen";
 
 export default function AdminRoute({
   children,
@@ -10,11 +11,7 @@ export default function AdminRoute({
   const { profile, loading } = useProfile();
 
   if (loading) {
-    return (
-      <div className="p-10">
-        Loading...
-      </div>
-    );
+    return <LoadingScreen label="Loading your profile..." />;
   }
 
   if (profile?.role !== "admin") {

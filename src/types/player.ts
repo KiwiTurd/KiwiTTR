@@ -13,6 +13,7 @@ export interface Player {
   clubId: string;
 
   rating: number;
+  initialRating?: number;
   highestRating: number;
 
   wins: number;

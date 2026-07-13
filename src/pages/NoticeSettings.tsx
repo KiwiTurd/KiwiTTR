@@ -6,6 +6,7 @@ import { createNotice, deleteNotice, getNotices, setNoticeActive } from "../serv
 import { notify } from "../services/notificationService";
 import type { Notice } from "../types/notice";
 import type { AppLayoutOutletContext } from "./AppLayout";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 export default function NoticeSettings() {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -78,6 +79,10 @@ export default function NoticeSettings() {
       console.error(error);
       notify.fault("Unable to delete the notice.");
     }
+  }
+
+  if (loading) {
+    return <LoadingScreen label="Loading notices..." />;
   }
 
   return (

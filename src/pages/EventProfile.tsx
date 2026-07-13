@@ -20,6 +20,7 @@ import { getPlayers } from "../services/supabase/playerService";
 import { notify } from "../services/notificationService";
 
 import EventMatchCard from "../components/events/EventMatchCard";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 export default function EventProfile() {
   const { id } = useParams();
@@ -67,13 +68,7 @@ export default function EventProfile() {
   }
 
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-normal">
-          Loading...
-        </h1>
-      </div>
-    );
+    return <LoadingScreen label="Loading event..." />;
   }
 
   if (!event) {

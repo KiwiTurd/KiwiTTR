@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 import { useProfile } from "../../context/ProfileContext";
+import LoadingScreen from "../shared/LoadingScreen";
 
 type Role = "admin" | "club_admin" | "player";
 
@@ -18,11 +19,7 @@ export default function RoleRoute({
   const { profile, loading: profileLoading } = useProfile();
 
   if (authLoading || profileLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-lg">
-        Loading...
-      </div>
-    );
+    return <LoadingScreen label="Loading your profile..." />;
   }
 
   if (!session) {

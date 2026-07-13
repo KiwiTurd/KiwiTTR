@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Pencil,
   Plus,
-  Search,
   Users,
 } from "lucide-react";
 
@@ -30,6 +29,8 @@ import {
 import useRole from "../hooks/useRole";
 import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
+import LoadingScreen from "../components/shared/LoadingScreen";
+import PlayerSelector from "../components/shared/PlayerSelector";
 
 type InitialRatingMode =
   | "1200"
@@ -337,7 +338,7 @@ export default function PlayerManagement() {
         wins: 0,
         losses: 0,
         matchesPlayed: 0,
-        provisionalMatchesRemaining: 20,
+        provisionalMatchesRemaining: 10,
         ratingReliability: 0,
         isActive: true,
         createdAt: new Date().toISOString(),
@@ -429,6 +430,10 @@ export default function PlayerManagement() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (loading) {
+    return <LoadingScreen label="Loading players..." />;
   }
 
   return (
@@ -669,21 +674,33 @@ export default function PlayerManagement() {
             ))}
           </select>
 
-          <div className="relative">
-
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-            <input
-              type="search"
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              placeholder="Search players by name or club"
-              className="w-full rounded-xl border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-            />
-
-          </div>
+          <PlayerSelector
+            players={players
+              .filter(
+                (player) =>
+                  !clubFilter || player.clubId === clubFilter
+              )
+              .map((player) => ({
+                ...player,
+                clubName:
+                  clubs.find(
+                    (club) => club.id === player.clubId
+                  )?.name ?? "",
+              }))}
+            value={
+              players.find(
+                (player) =>
+                  `${player.firstName} ${player.lastName}` === search
+              ) ?? null
+            }
+            onChange={(player) =>
+              setSearch(
+                `${player.firstName} ${player.lastName}`
+              )
+            }
+            onClear={() => setSearch("")}
+            placeholder="Search players by name or club"
+          />
 
         </div>
 

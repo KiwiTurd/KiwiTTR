@@ -25,6 +25,7 @@ import useRole from "../hooks/useRole";
 
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 import type { Club } from "../types/club";
 import type { Player } from "../types/player";
@@ -220,7 +221,11 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [savedTournaments]);
 
-  if (!loading && !session) {
+  if (loading) {
+    return <LoadingScreen label="Loading dashboard..." />;
+  }
+
+  if (!session) {
     return <SignedOutDashboard />;
   }
 

@@ -8,6 +8,7 @@ import {
   getPlayer,
   updatePlayer,
 } from "./playerService";
+import { deleteEvent } from "./eventService";
 import { addMatch } from "./matchService";
 import { addRatingHistory } from "./ratingHistoryService";
 import type { MatchSet } from "../../types/match";
@@ -1095,6 +1096,8 @@ export async function deleteTournament(
   if (error) {
     throw error;
   }
+
+  await deleteEvent(tournamentId);
 }
 
 export async function signUpForTournament(

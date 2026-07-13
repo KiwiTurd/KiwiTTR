@@ -43,6 +43,8 @@ import {
   saveTeamGame,
 } from "../services/teams/teamGameService";
 import { removeTeamGameTtrMatches } from "../services/teams/teamSubmission";
+import LoadingScreen from "../components/shared/LoadingScreen";
+import PlayerSelector from "../components/shared/PlayerSelector";
 
 type Side = "home" | "away";
 
@@ -828,34 +830,22 @@ export default function NewTeamGameEvent() {
         <span className="mb-1 block text-sm font-medium">
           {label}
         </span>
-        <select
-          value={value}
-          onChange={(event) =>
-            updatePlayer(
-              side,
-              index,
-              event.target.value
-            )
-          }
-          className="w-full rounded-xl border p-3"
-        >
-          <option value="">
-            Select Player
-          </option>
-          {availablePlayers(
+        <PlayerSelector
+          players={availablePlayers(
             side,
             index,
             value
-          ).map((player) => (
-            <option
-              key={player.id}
-              value={player.id}
-            >
-              {player.firstName} {player.lastName} ·{" "}
-              {player.rating} TTR
-            </option>
-          ))}
-        </select>
+          )}
+          value={
+            players.find(
+              (player) => player.id === value
+            ) ?? null
+          }
+          onChange={(player) =>
+            updatePlayer(side, index, player.id)
+          }
+          onClear={() => updatePlayer(side, index, "")}
+        />
       </label>
     );
   }
@@ -891,35 +881,46 @@ export default function NewTeamGameEvent() {
               {team.name} D{pairIndex + 1}
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
-              {[0, 1].map((playerIndex) => (
-                <select
-                  key={playerIndex}
-                  value={pair[playerIndex]}
-                  onChange={(event) =>
-                    updateDoubles(
-                      side,
-                      pairIndex,
-                      playerIndex,
-                      event.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border bg-white p-3"
-                >
-                  <option value="">
-                    Select Player
-                  </option>
-                  {availableDoublesPlayers(
-                    pair[playerIndex]
-                  ).map((player) => (
-                    <option
-                      key={player.id}
-                      value={player.id}
-                    >
-                      {player.name}
-                    </option>
-                  ))}
-                </select>
-              ))}
+              {[0, 1].map((playerIndex) => {
+                const options = availableDoublesPlayers(
+                  pair[playerIndex]
+                ).map((player) => ({
+                  id: player.id,
+                  firstName: player.name,
+                  lastName: "",
+                  rating: player.rating,
+                  clubName: team.name,
+                }));
+
+                return (
+                  <PlayerSelector
+                    key={playerIndex}
+                    players={options}
+                    value={
+                      options.find(
+                        (player) =>
+                          player.id === pair[playerIndex]
+                      ) ?? null
+                    }
+                    onChange={(player) =>
+                      updateDoubles(
+                        side,
+                        pairIndex,
+                        playerIndex,
+                        player.id
+                      )
+                    }
+                    onClear={() =>
+                      updateDoubles(
+                        side,
+                        pairIndex,
+                        playerIndex,
+                        ""
+                      )
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
           ))}
@@ -928,11 +929,7 @@ export default function NewTeamGameEvent() {
   }
 
   if (loadingDraft) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-        Loading team game setup...
-      </div>
-    );
+    return <LoadingScreen label="Loading team game setup..." />;
   }
 
   return (

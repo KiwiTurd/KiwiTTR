@@ -6,6 +6,7 @@ import { getSeoMetadata, saveSeoMetadata } from "../services/supabase/seoMetadat
 import { notify } from "../services/notificationService";
 import type { SeoMetadata } from "../types/seoMetadata";
 import useFormDraftState, { hasFormDraft } from "../hooks/useFormDraftState";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 type SeoEditorRow = SeoMetadata & { label: string };
 
@@ -143,7 +144,7 @@ export default function SeoMetadataSettings() {
       </header>
 
       {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">Loading metadata…</div>
+        <LoadingScreen label="Loading metadata..." />
       ) : (
         <div className="space-y-5">
           {rows.map((row) => (

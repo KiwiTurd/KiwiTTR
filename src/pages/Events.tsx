@@ -43,6 +43,7 @@ import {
   type TeamGameStatus,
 } from "../services/teams/teamEngine";
 import { getTeamGames } from "../services/teams/teamGameService";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 type EventStatusFilter =
   | "all"
@@ -867,10 +868,7 @@ export default function Events() {
       </div>
 
       {loading ? (
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-          Loading events...
-        </div>
+        <LoadingScreen label="Loading events..." />
 
       ) : eventFeedItems.length === 0 ? (
 

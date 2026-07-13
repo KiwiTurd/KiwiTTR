@@ -15,6 +15,7 @@ type PlayerRow = {
   email: string | null;
 
   rating: number;
+  initial_rating: number | null;
   highest_rating: number;
 
   wins: number;
@@ -57,6 +58,7 @@ function fromRow(row: PlayerRow): Player {
     email: row.email ?? "",
 
     rating: row.rating,
+    initialRating: row.initial_rating ?? row.rating,
     highestRating: row.highest_rating,
 
     wins: row.wins,
@@ -92,6 +94,8 @@ function toRow(player: Player) {
     email: player.email,
 
     rating: player.rating,
+    initial_rating:
+      player.initialRating ?? player.rating,
     highest_rating: player.highestRating,
 
     wins: player.wins,

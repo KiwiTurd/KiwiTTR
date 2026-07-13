@@ -22,7 +22,6 @@ import { recordMatch } from "../recordMatch";
 import type { Event } from "../../types/event";
 import type { Match } from "../../types/match";
 import type { Player } from "../../types/player";
-import type { RatingHistory } from "../../types/ratingHistory";
 import type {
   Classic6Game,
   Classic6Match,
@@ -295,43 +294,6 @@ export function clearTeamGameRecordedMatchIds(
   };
 }
 
-async function getRatingHistoryForMatches(
-  matchIds: string[]
-) {
-  if (matchIds.length === 0) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("rating_history")
-    .select("*")
-    .in("match_id", matchIds);
-
-  if (error) {
-    throw error;
-  }
-
-  return (data as Array<{
-    id: string;
-    player_id: string;
-    match_id: string;
-    rating_before: number;
-    rating_after: number;
-    rating_change: number;
-    recorded_at: string;
-  }>).map(
-    (row): RatingHistory => ({
-      id: row.id,
-      playerId: row.player_id,
-      matchId: row.match_id,
-      ratingBefore: row.rating_before,
-      ratingAfter: row.rating_after,
-      ratingChange: row.rating_change,
-      recordedAt: row.recorded_at,
-    })
-  );
-}
-
 async function deleteRatingHistoryForMatches(
   matchIds: string[]
 ) {
@@ -372,15 +334,6 @@ function matchSetWinnerIds(match: Match) {
       };
 }
 
-function playerHistories(
-  histories: RatingHistory[],
-  playerId: string
-) {
-  return histories.filter(
-    (history) => history.playerId === playerId
-  );
-}
-
 function playerMatchStats(
   matches: Match[],
   playerId: string
@@ -400,8 +353,7 @@ function playerMatchStats(
 }
 
 async function baselinePlayersForReplay(
-  matches: Match[],
-  histories: RatingHistory[]
+  matches: Match[]
 ) {
   const playerIds = [
     ...new Set(
@@ -420,11 +372,18 @@ async function baselinePlayersForReplay(
       continue;
     }
 
-    const historiesForPlayer =
-      playerHistories(histories, playerId);
-    const ratingChange = historiesForPlayer.reduce(
-      (total, history) =>
-        total + history.ratingChange,
+    const ratingChange = matches.reduce(
+      (total, match) => {
+        if (match.winnerId === playerId) {
+          return total + match.winnerRatingChange;
+        }
+
+        if (match.loserId === playerId) {
+          return total + match.loserRatingChange;
+        }
+
+        return total;
+      },
       0
     );
     const stats = playerMatchStats(
@@ -571,14 +530,9 @@ async function replayMatchesFrom(
 
   const replayWindowMatchIds =
     replayWindowMatches.map((match) => match.id);
-  const histories =
-    await getRatingHistoryForMatches(
-      replayWindowMatchIds
-    );
   const playerState =
     await baselinePlayersForReplay(
-      replayWindowMatches,
-      histories
+      replayWindowMatches
     );
 
   await deleteRatingHistoryForMatches(

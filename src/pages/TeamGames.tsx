@@ -24,6 +24,7 @@ import {
   type TeamGameStatus,
 } from "../services/teams/teamEngine";
 import type { TeamGameFormat } from "../services/teams/teamEngine";
+import LoadingScreen from "../components/shared/LoadingScreen";
 
 type StatusFilter =
   | "all"
@@ -331,9 +332,7 @@ export default function TeamGames() {
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
-            Loading team games...
-          </div>
+          <LoadingScreen label="Loading team games..." />
         ) : filteredGames.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
             No team games match your filters.
