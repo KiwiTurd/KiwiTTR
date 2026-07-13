@@ -26,11 +26,15 @@ type MatchRow = {
   sets: unknown;
 
   created_at: string;
+  updated_at?: string;
 };
 
 function fromRow(row: MatchRow): Match {
   return {
     id: row.id,
+
+    createdAt: row.created_at,
+    updatedAt: row.updated_at ?? row.created_at,
 
     eventId: row.event_id,
 
@@ -53,6 +57,20 @@ function fromRow(row: MatchRow): Match {
 
     sets: row.sets as Match["sets"],
   };
+}
+
+export function isMatchFixed(
+  match: Match,
+  now = Date.now()
+) {
+  const lastChangedAt = new Date(
+    match.updatedAt ?? match.createdAt ?? match.playedAt
+  ).getTime();
+
+  return (
+    Number.isFinite(lastChangedAt) &&
+    lastChangedAt <= now - 7 * 24 * 60 * 60 * 1000
+  );
 }
 
 function toRow(match: Match) {
@@ -128,6 +146,11 @@ export async function addMatch(
 export async function updateMatch(
   match: Match
 ): Promise<void> {
+  if (isMatchFixed(match)) {
+    throw new Error(
+      "This match is fixed because its seven-day editing window has closed."
+    );
+  }
   const { error } = await supabase
     .from("matches")
     .update(toRow(match))
@@ -141,6 +164,14 @@ export async function updateMatch(
 export async function deleteMatch(
   id: string
 ): Promise<void> {
+  const existing = await getMatch(id);
+
+  if (existing && isMatchFixed(existing)) {
+    throw new Error(
+      "This match is fixed and can no longer be deleted."
+    );
+  }
+
   const { error } = await supabase
     .from("matches")
     .delete()

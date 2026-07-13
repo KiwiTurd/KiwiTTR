@@ -23,7 +23,10 @@ export function generateTournamentDraw(
   settings: TournamentSettings
 ): TournamentDraw {
 
-  if (settings.format !== "pools") {
+  if (
+    settings.format !== "pools" &&
+    settings.format !== "pool-ratings"
+  ) {
 
     return {
 

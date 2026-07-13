@@ -790,8 +790,17 @@ export default function NewTeamGameEvent() {
       navigate(`/team-games/${draft.id}/manage`);
     } catch (error) {
       console.error(error);
+      const message =
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Unable to save team game.";
       notify.fault(
-        "Unable to save team game."
+        message.includes("team_games_status_check")
+          ? "The database schema needs the latest team-game migration before drafts can be saved."
+          : message
       );
     } finally {
       setSaving(false);
@@ -812,7 +821,10 @@ export default function NewTeamGameEvent() {
       : `${side === "home" ? "Home" : "Away"} ${index + 1}`;
 
     return (
-      <label className="block">
+      <label
+        key={`${side}-player-${index}`}
+        className="block"
+      >
         <span className="mb-1 block text-sm font-medium">
           {label}
         </span>

@@ -15,7 +15,12 @@ export interface TournamentSettings {
 
   playerLimitEnabled: boolean;
 
-  format: "knockout" | "pools" | "doubles";
+  format:
+    | "knockout"
+    | "double-knockout"
+    | "pools"
+    | "pool-ratings"
+    | "doubles";
 
   poolSize: number;
 
@@ -95,9 +100,13 @@ export interface TournamentDraw {
 export interface KnockoutMatch {
   id: string;
 
+  table?: number;
+
   round: number;
 
   position: number;
+
+  bracket?: "winners" | "losers" | "grand-final";
 
   playerOne: Player | null;
 

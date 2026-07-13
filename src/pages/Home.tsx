@@ -5,9 +5,7 @@ import {
   BarChart3,
   Building2,
   CalendarDays,
-  Calculator,
   LineChart,
-  ShieldCheck,
   Trophy,
   Users,
 } from "lucide-react";
@@ -118,10 +116,7 @@ export default function Home() {
       <section className="bg-slate-900 py-16 text-white md:py-20">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 md:px-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
           <div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/20 text-blue-300">
-              <Calculator className="h-6 w-6" />
-            </div>
-            <h2 className="mt-6 text-4xl font-normal tracking-tight">A rating that responds to the result.</h2>
+            <h2 className="text-4xl font-normal tracking-tight">A rating that responds to the result.</h2>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-300">
               KiwiTTR considers the rating of both players and the result that
               was expected. A routine win moves the rating a little; an upset
@@ -156,9 +151,11 @@ export default function Home() {
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {benefits.map(({ icon: Icon, title, description }) => (
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" key={title}>
-              <Icon className="h-6 w-6 text-blue-700" />
-              <h3 className="mt-5 text-lg font-bold text-slate-900">{title}</h3>
+            <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" key={title}>
+              <div className="flex h-8 items-start">
+                <Icon className="h-6 w-6 text-blue-700" />
+              </div>
+              <h3 className="mt-3 min-h-14 text-lg font-bold text-slate-900">{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
             </article>
           ))}
@@ -166,17 +163,21 @@ export default function Home() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-5 px-4 md:grid-cols-2 md:px-8">
-        <Link className="group flex min-h-56 flex-col justify-between rounded-3xl bg-blue-700 p-7 text-white transition hover:bg-blue-800 md:p-9" to="/rankings">
-          <BarChart3 className="h-8 w-8" />
-          <div>
+        <Link className="group flex min-h-56 flex-col rounded-3xl bg-slate-800 p-7 text-white transition hover:bg-slate-900 md:p-9" to="/rankings">
+          <div className="flex h-8 items-start">
+            <BarChart3 className="h-8 w-8" />
+          </div>
+          <div className="mt-12">
             <h2 className="text-3xl font-normal">NZ Rankings</h2>
-            <p className="mt-2 text-blue-100">See current player ratings and find where the competition stands.</p>
+            <p className="mt-2 text-slate-200">See current player ratings and find where the competition stands.</p>
             <span className="mt-5 inline-flex items-center gap-2 font-semibold">View rankings <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
           </div>
         </Link>
-        <Link className="group flex min-h-56 flex-col justify-between rounded-3xl bg-emerald-700 p-7 text-white transition hover:bg-emerald-800 md:p-9" to="/events">
-          <CalendarDays className="h-8 w-8" />
-          <div>
+        <Link className="group flex min-h-56 flex-col rounded-3xl bg-emerald-700 p-7 text-white transition hover:bg-emerald-800 md:p-9" to="/events">
+          <div className="flex h-8 items-start">
+            <CalendarDays className="h-8 w-8" />
+          </div>
+          <div className="mt-12">
             <h2 className="text-3xl font-normal">Events and results</h2>
             <p className="mt-2 text-emerald-100">Follow rated competition from table tennis clubs around New Zealand.</p>
             <span className="mt-5 inline-flex items-center gap-2 font-semibold">Browse events <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
@@ -186,8 +187,7 @@ export default function Home() {
 
       <section className="bg-slate-200 py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4 text-left md:px-8">
-          <ShieldCheck className="h-9 w-9 text-blue-700" />
-          <h2 className="mt-5 max-w-3xl text-4xl font-normal tracking-tight text-slate-900">Ready to make every match count?</h2>
+          <h2 className="max-w-3xl text-4xl font-normal tracking-tight text-slate-900">Ready to make every match count?</h2>
           <p className="mt-4 max-w-2xl text-lg text-slate-600">Create your KiwiTTR account and connect with New Zealand&apos;s table tennis community.</p>
           <Link className="mt-7 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-3 font-semibold text-white transition hover:bg-blue-800" to="/register">
             Sign up for KiwiTTR <ArrowRight className="h-4 w-4" />

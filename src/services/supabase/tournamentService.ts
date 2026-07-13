@@ -20,6 +20,7 @@ import type {
   TournamentMatch,
   TournamentState,
 } from "../../types/tournament";
+import { generatePoolMatches } from "../tournament/matchGenerator";
 
 type TournamentRow = {
   id: string;
@@ -102,6 +103,7 @@ type TournamentMatchRow = {
   position: number | null;
   table_number: number | null;
   completed: boolean;
+  bracket: "winners" | "losers" | "grand-final" | null;
   recorded_match_id: string | null;
 };
 
@@ -180,6 +182,56 @@ function roundName(round: number, maxRound: number) {
   return `Round ${round}`;
 }
 
+function ensureCompleteKnockoutBracket(
+  knockout: KnockoutMatch[],
+  tournamentId: string
+): KnockoutMatch[] {
+  if (knockout.length === 0) return knockout;
+
+  const firstRound = Math.min(...knockout.map(match => match.round));
+  const firstRoundMatchCount = knockout.filter(
+    match => match.round === firstRound
+  ).length;
+
+  if (firstRoundMatchCount < 2) return knockout;
+
+  const expectedRoundCount = Math.ceil(
+    Math.log2(firstRoundMatchCount * 2)
+  );
+  const completed = [...knockout];
+
+  for (let offset = 0; offset < expectedRoundCount; offset += 1) {
+    const round = firstRound + offset;
+    const matchesInRound = Math.max(
+      1,
+      firstRoundMatchCount / Math.pow(2, offset)
+    );
+
+    for (let position = 1; position <= matchesInRound; position += 1) {
+      if (completed.some(
+        match => match.round === round && match.position === position
+      )) continue;
+
+      completed.push({
+        id: `recovered-${tournamentId}-${round}-${position}`,
+        round,
+        position,
+        playerOne: null,
+        playerTwo: null,
+        winnerId: null,
+        completed: false,
+        games: [],
+      });
+    }
+  }
+
+  return completed.sort((a, b) =>
+    a.round === b.round
+      ? a.position - b.position
+      : a.round - b.round
+  );
+}
+
 function fromTournamentRow(
   row: TournamentRow,
   details: {
@@ -216,6 +268,13 @@ function fromTournamentRow(
       ttrLimit: row.ttr_limit ?? 2000,
     },
     ...details,
+    knockout:
+      row.format === "double-knockout"
+        ? details.knockout
+        : ensureCompleteKnockoutBracket(
+            details.knockout,
+            row.id
+          ),
   };
 }
 
@@ -245,7 +304,8 @@ function toTournamentRow(tournament: TournamentState) {
       : null,
     status:
       tournament.status === "completed" ||
-      tournament.status === "cancelled"
+      tournament.status === "cancelled" ||
+      tournament.status === "active"
         ? tournament.status
         : tournament.knockout.some(match => match.winnerId)
           ? "active"
@@ -464,7 +524,7 @@ async function loadTournamentDetails(
     };
   });
 
-  const matches: TournamentMatch[] = matchRows
+  let matches: TournamentMatch[] = matchRows
     .filter(row => row.stage === "pool")
     .map(row => {
       const playerOne =
@@ -498,6 +558,10 @@ async function loadTournamentDetails(
     })
     .filter(Boolean) as TournamentMatch[];
 
+  if (matches.length === 0 && pools.length > 0) {
+    matches = generatePoolMatches(pools);
+  }
+
   const knockout: KnockoutMatch[] = matchRows
     .filter(row => row.stage === "knockout")
     .map(row => ({
@@ -510,6 +574,8 @@ async function loadTournamentDetails(
           : undefined) ??
         1,
       position: row.position ?? 1,
+      table: row.table_number ?? undefined,
+      bracket: row.bracket ?? undefined,
       playerOne: row.player_one_id
         ? playersByRowId.get(row.player_one_id) ?? null
         : null,
@@ -812,8 +878,9 @@ export async function saveTournamentRecord(
         : null,
       round_number: match.round,
       position: match.position,
-      table_number: null,
+      table_number: match.table ?? null,
       completed: match.completed,
+      ...(match.bracket ? { bracket: match.bracket } : {}),
       completed_at: match.completed
         ? new Date().toISOString()
         : null,
@@ -823,10 +890,7 @@ export async function saveTournamentRecord(
   const allMatchRows = [
     ...poolMatchRows,
     ...knockoutMatchRows,
-  ].filter(
-    row =>
-      row.player_one_id || row.player_two_id
-  );
+  ];
 
   const savedMatches =
     allMatchRows.length > 0

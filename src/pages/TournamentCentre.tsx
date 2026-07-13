@@ -49,6 +49,7 @@ type EditForm = {
 };
 
 type TournamentFilter =
+  | "all"
   | "live"
   | "upcoming"
   | "past";
@@ -180,8 +181,12 @@ export default function TournamentCentre() {
       const formatLabel =
         tournament.settings.format === "pools"
           ? "pools knockout"
+          : tournament.settings.format === "pool-ratings"
+            ? "pool only ratings round robin"
           : tournament.settings.format === "doubles"
             ? "doubles knockout"
+            : tournament.settings.format === "double-knockout"
+              ? "double knockout double elimination"
             : "straight knockout";
 
       return [
@@ -453,8 +458,12 @@ export default function TournamentCentre() {
   ) {
     return tournament.settings.format === "pools"
       ? "Pools -> Knockout"
+      : tournament.settings.format === "pool-ratings"
+        ? "Pool Only Ratings"
       : tournament.settings.format === "doubles"
         ? "Doubles Knockout"
+        : tournament.settings.format === "double-knockout"
+          ? "Double Knockout"
         : "Straight Knockout";
   }
 
@@ -495,6 +504,7 @@ export default function TournamentCentre() {
     const isLive =
       !isFinished &&
       !isCancelled &&
+      tournament.status === "active" &&
       drawBuilt &&
       stats.completed < stats.total;
     const isUpcoming =
@@ -534,6 +544,10 @@ export default function TournamentCentre() {
         const state =
           tournamentState(tournament);
 
+        if (statusFilter === "all") {
+          return true;
+        }
+
         if (statusFilter === "live") {
           return state.isLive;
         }
@@ -565,7 +579,9 @@ export default function TournamentCentre() {
       page * pageSize + pageSize
     );
   const filterTitle =
-    statusFilter === "live"
+    statusFilter === "all"
+      ? "All Tournaments"
+      : statusFilter === "live"
       ? "Live Tournaments"
       : statusFilter === "past"
         ? "Past Tournaments"
@@ -833,6 +849,7 @@ export default function TournamentCentre() {
                           )}
 
                         {canHostTournament &&
+                          tournament.status === "draft" &&
                           !state.isFinished &&
                           !state.isCancelled && (
                             <button
@@ -857,6 +874,7 @@ export default function TournamentCentre() {
                           )}
 
                         {canHostTournament &&
+                          tournament.status === "draft" &&
                           !state.isFinished &&
                           !state.isCancelled && (
                             <button
@@ -920,7 +938,9 @@ export default function TournamentCentre() {
                             className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
                           >
                             <Pencil className="h-4 w-4" />
-                            Edit Draws
+                            {tournament.status === "active"
+                              ? "Match Input"
+                              : "Edit Draws"}
                           </Link>
                         )}
                       </div>
@@ -969,7 +989,16 @@ export default function TournamentCentre() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <button
+          type="button"
+          aria-pressed={statusFilter === "all"}
+          onClick={() => setStatusFilter("all")}
+          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-400 hover:bg-slate-50 ${
+            statusFilter === "all"
+              ? "border-slate-500 ring-2 ring-slate-200"
+              : "border-slate-200"
+          }`}
+        >
           <Trophy className="h-5 w-5 text-blue-700" />
           <div>
             <p className="text-xs font-semibold uppercase text-slate-500">
@@ -979,9 +1008,18 @@ export default function TournamentCentre() {
               {savedTournaments.length}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <button
+          type="button"
+          aria-pressed={statusFilter === "live"}
+          onClick={() => setStatusFilter("live")}
+          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-green-400 hover:bg-green-50 ${
+            statusFilter === "live"
+              ? "border-green-500 ring-2 ring-green-100"
+              : "border-slate-200"
+          }`}
+        >
           <Eye className="h-5 w-5 text-green-600" />
           <div>
             <p className="text-xs font-semibold uppercase text-slate-500">
@@ -991,9 +1029,18 @@ export default function TournamentCentre() {
               {liveTournamentCount}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <button
+          type="button"
+          aria-pressed={statusFilter === "upcoming"}
+          onClick={() => setStatusFilter("upcoming")}
+          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-amber-400 hover:bg-amber-50 ${
+            statusFilter === "upcoming"
+              ? "border-amber-500 ring-2 ring-amber-100"
+              : "border-slate-200"
+          }`}
+        >
           <CalendarDays className="h-5 w-5 text-amber-600" />
           <div>
             <p className="text-xs font-semibold uppercase text-slate-500">
@@ -1003,7 +1050,7 @@ export default function TournamentCentre() {
               {upcomingTournamentCount}
             </p>
           </div>
-        </div>
+        </button>
       </div>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -1067,6 +1114,9 @@ export default function TournamentCentre() {
             }
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
           >
+            <option value="all">
+              All
+            </option>
             <option value="upcoming">
               Upcoming
             </option>

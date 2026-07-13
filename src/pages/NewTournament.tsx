@@ -2,6 +2,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +24,19 @@ import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
 
 export default function NewTournament() {
+const tournamentDetailsRef = useRef<HTMLDivElement | null>(null);
+const [tournamentDetailsHeight, setTournamentDetailsHeight] = useState<number>();
+
+useEffect(() => {
+  const details = tournamentDetailsRef.current;
+  if (!details) return;
+
+  const updateHeight = () => setTournamentDetailsHeight(details.offsetHeight);
+  updateHeight();
+  const observer = new ResizeObserver(updateHeight);
+  observer.observe(details);
+  return () => observer.disconnect();
+}, []);
 
   const navigate = useNavigate();
 
@@ -61,7 +75,7 @@ const [playerCount, setPlayerCount] =
   useFormDraftState("tournament.new.playerCount", "32");
 
 const [format, setFormat] =
-  useFormDraftState<"knockout" | "pools" | "doubles">("tournament.new.format",
+  useFormDraftState<"knockout" | "double-knockout" | "pools" | "pool-ratings" | "doubles">("tournament.new.format",
     "pools"
   );
 
@@ -142,7 +156,7 @@ useEffect(() => {
 
   const knockoutSize = useMemo(() => {
 
-    if (format === "knockout") {
+    if (format === "knockout" || format === "double-knockout") {
 
       return playerLimitEnabled
         ? Number(playerCount)
@@ -288,7 +302,7 @@ useEffect(() => {
         playersProgressing,
 
       seedByTTR:
-        socialPlay ||
+        (socialPlay && format !== "pool-ratings") ||
         format === "doubles"
           ? false
           : seedByTTR,
@@ -296,6 +310,8 @@ useEffect(() => {
       socialPlay:
         format === "doubles"
           ? true
+          : format === "pool-ratings"
+            ? false
           : socialPlay,
 
       allowSignUp,
@@ -344,7 +360,18 @@ useEffect(() => {
 
   return (
 
-    <div className="max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-8">
+
+      <div className="border-b border-slate-300 pb-6">
+        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+          <Trophy className="h-4 w-4" />
+          Tournament Wizard
+        </div>
+        <h1 className="mt-4 text-5xl font-normal">New Tournament</h1>
+        <p className="mt-3 text-lg text-slate-500">
+          Configure your tournament before selecting players.
+        </p>
+      </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
 
@@ -352,35 +379,9 @@ useEffect(() => {
 
         <div className="space-y-8">
 
-          {/* Header */}
-
-          <div>
-
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-
-              <Trophy className="h-4 w-4" />
-
-              Tournament Wizard
-
-            </div>
-
-            <h1 className="mt-4 text-5xl font-normal">
-
-              New Tournament
-
-            </h1>
-
-            <p className="mt-3 text-lg text-slate-500">
-
-              Configure your tournament before selecting players.
-
-            </p>
-
-          </div>
-
           {/* Tournament Details */}
 
-          <div className="rounded-3xl border bg-white p-8 shadow-sm">
+          <div ref={tournamentDetailsRef} className="rounded-3xl border bg-white p-8 shadow-sm">
 
             <h2 className="mb-6 text-xl font-bold">
 
@@ -617,6 +618,15 @@ useEffect(() => {
               </label>
 
               <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  checked={format === "double-knockout"}
+                  onChange={() => setFormat("double-knockout")}
+                />
+                Double Knockout
+              </label>
+
+              <label className="flex items-center gap-3">
 
                 <input
                   type="radio"
@@ -654,13 +664,25 @@ useEffect(() => {
 
               </label>
 
+              <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  checked={format === "pool-ratings"}
+                  onChange={() => {
+                    setFormat("pool-ratings");
+                    setSocialPlay(false);
+                  }}
+                />
+                Pool Only Ratings
+              </label>
+
             </div>
 
           </div>
 
           {/* Pool Settings */}
 
-          {format === "pools" && (
+          {(format === "pools" || format === "pool-ratings") && (
 
             <div className="rounded-3xl border bg-white p-8 shadow-sm">
 
@@ -707,7 +729,7 @@ useEffect(() => {
 
                 </div>
 
-                <div>
+                {format === "pools" && <div>
 
                   <label className="font-medium">
 
@@ -750,7 +772,7 @@ useEffect(() => {
 
                   </select>
 
-                </div>
+                </div>}
 
               </div>
 
@@ -768,9 +790,14 @@ useEffect(() => {
 
               <input
                 type="checkbox"
-                checked={socialPlay}
+                checked={
+                  format === "pool-ratings"
+                    ? false
+                    : socialPlay
+                }
                 disabled={
-                  format === "doubles"
+                  format === "doubles" ||
+                  format === "pool-ratings"
                 }
                 onChange={() =>
                   setSocialPlay(
@@ -788,12 +815,12 @@ useEffect(() => {
               <input
                 type="checkbox"
                 checked={
-                  !socialPlay &&
+                  (format === "pool-ratings" || !socialPlay) &&
                   format !== "doubles" &&
                   seedByTTR
                 }
                 disabled={
-                  socialPlay ||
+                  (socialPlay && format !== "pool-ratings") ||
                   format === "doubles"
                 }
                 onChange={() =>
@@ -903,7 +930,10 @@ useEffect(() => {
 
         <div>
 
-          <div className="sticky top-24 rounded-3xl border bg-white p-5 shadow-sm">
+          <div
+            className="sticky top-24 overflow-y-auto rounded-3xl border bg-white p-5 shadow-sm"
+            style={{ maxHeight: tournamentDetailsHeight }}
+          >
 
             <h2 className="text-lg font-bold">
 
@@ -1037,15 +1067,19 @@ useEffect(() => {
 
                   {format === "pools"
                     ? "Pools → Knockout"
+                    : format === "pool-ratings"
+                      ? "Pool Only Ratings"
                     : format === "doubles"
                       ? "Doubles Knockout"
+                      : format === "double-knockout"
+                        ? "Double Knockout"
                       : "Straight Knockout"}
 
                 </strong>
 
               </div>
 
-              {format === "pools" && (
+              {(format === "pools" || format === "pool-ratings") && (
 
                 <>
 
@@ -1081,7 +1115,7 @@ useEffect(() => {
 
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {format === "pools" && <div className="flex items-center justify-between">
 
                     <span className="text-slate-500">
 
@@ -1095,9 +1129,9 @@ useEffect(() => {
 
                     </strong>
 
-                  </div>
+                  </div>}
 
-                  <div className="flex items-center justify-between">
+                  {format === "pools" && <div className="flex items-center justify-between">
 
                     <span className="text-slate-500">
 
@@ -1113,7 +1147,7 @@ useEffect(() => {
 
                     </strong>
 
-                  </div>
+                  </div>}
 
                 </>
 

@@ -4,7 +4,9 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
+  type Context,
   type ReactNode,
 } from "react";
 
@@ -64,7 +66,8 @@ interface TournamentContextType {
   ) => Promise<SavedTournament>;
 
   loadTournament: (
-    id: string
+    id: string,
+    forceRefresh?: boolean
   ) => Promise<SavedTournament | null>;
 
   signUpForTournament: (
@@ -91,10 +94,19 @@ interface TournamentContextType {
   resetTournament: () => void;
 }
 
+const tournamentContextStore = globalThis as typeof globalThis & {
+  __kiwiTtrTournamentContext?: Context<TournamentContextType | null>;
+};
+
+// Keep one context identity when Vite hot-reloads this module. Without this,
+// an updated consumer can briefly reference a different context instance from
+// the provider that is already mounted above the router.
 const TournamentContext =
-  createContext<TournamentContextType | null>(
-    null
-  );
+  tournamentContextStore.__kiwiTtrTournamentContext ??
+  createContext<TournamentContextType | null>(null);
+
+tournamentContextStore.__kiwiTtrTournamentContext =
+  TournamentContext;
 
 export function TournamentProvider({
   children,
@@ -117,6 +129,10 @@ export function TournamentProvider({
     isLoadingTournaments,
     setIsLoadingTournaments,
   ] = useState(true);
+
+  const persistenceQueue = useRef<Promise<void>>(
+    Promise.resolve()
+  );
 
   const savedTournamentMap = useMemo(() => {
     return new Map(
@@ -174,8 +190,14 @@ export function TournamentProvider({
         return;
       }
 
-      void saveTournamentRecord(nextTournament)
-        .then(commitSavedTournament)
+      persistenceQueue.current = persistenceQueue.current
+        .catch(() => undefined)
+        .then(async () => {
+          const saved = await saveTournamentRecord(
+            nextTournament
+          );
+          commitSavedTournament(saved);
+        })
         .catch(error => {
           console.error(
             "Failed to save tournament",
@@ -288,12 +310,13 @@ export function TournamentProvider({
   }
 
   async function loadTournament(
-    id: string
+    id: string,
+    forceRefresh = false
   ): Promise<SavedTournament | null> {
     const cached =
       savedTournamentMap.get(id);
 
-    if (cached) {
+    if (cached && !forceRefresh) {
       setTournament(cached);
       return cached;
     }
@@ -383,6 +406,22 @@ export function TournamentProvider({
     nextTournament: TournamentState
   ) {
     setTournament(nextTournament);
+    if (nextTournament.id) {
+      setSavedTournaments(current =>
+        current.map(saved =>
+          saved.id === nextTournament.id
+            ? {
+                ...saved,
+                ...nextTournament,
+                createdAt:
+                  nextTournament.createdAt ?? saved.createdAt,
+                updatedAt:
+                  nextTournament.updatedAt ?? saved.updatedAt,
+              }
+            : saved
+        )
+      );
+    }
     persistCurrentIfSaved(nextTournament);
   }
 

@@ -6,6 +6,9 @@ export interface MatchSet {
 export interface Match {
   id: string;
 
+  createdAt?: string;
+  updatedAt?: string;
+
   eventId: string;
 
   playedAt: string;

@@ -8,11 +8,13 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronDown,
   Search,
   Trophy,
 } from "lucide-react";
 import {
   Link,
+  Navigate,
   useNavigate,
 } from "react-router-dom";
 import type { Club } from "../types/club";
@@ -27,6 +29,7 @@ import { getPlayers } from "../services/supabase/playerService";
 
 import { generateTournamentDraw } from "../services/tournament/drawGenerator";
 import { generateKnockout } from "../services/tournament/knockoutGenerator";
+import { generateDoubleKnockout } from "../services/tournament/doubleKnockout";
 
 function shufflePlayers(
   players: Player[]
@@ -118,6 +121,9 @@ const hasValidPlayerTotal =
   const [search, setSearch] =
     useState("");
 
+  const [clubFilter, setClubFilter] =
+    useState("");
+
   const loadPlayers = useCallback(async () => {
 
   const [
@@ -172,11 +178,9 @@ const hasValidPlayerTotal =
     useMemo(() => {
 
       return players.filter((player) => {
-
         if (
-          tournament.settings.clubId &&
-          player.clubId !==
-            tournament.settings.clubId
+          clubFilter &&
+          player.clubId !== clubFilter
         ) {
           return false;
         }
@@ -201,7 +205,7 @@ const hasValidPlayerTotal =
     }, [
       players,
       search,
-      tournament.settings.clubId,
+      clubFilter,
       tournament.settings.ttrLimit,
       tournament.settings.ttrLimitEnabled,
     ]);
@@ -287,7 +291,7 @@ const hasValidPlayerTotal =
     }
 
   }
-  function getClubName(
+function getClubName(
   clubId: string
 ) {
 
@@ -299,6 +303,20 @@ const hasValidPlayerTotal =
   );
 
 }
+
+  if (
+    tournament.id &&
+    (tournament.status === "active" ||
+      tournament.status === "completed" ||
+      tournament.status === "cancelled")
+  ) {
+    return (
+      <Navigate
+        to={`/tournaments/${tournament.id}/live`}
+        replace
+      />
+    );
+  }
 
   return (
 
@@ -328,18 +346,41 @@ const hasValidPlayerTotal =
 
         <div>
 
-          <div className="relative mb-6">
+          <div className="mb-6 space-y-3">
 
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
+            <div className="relative">
 
-            <input
-              value={search}
-              onChange={(e)=>
-                setSearch(e.target.value)
-              }
-              placeholder="Search players..."
-              className="w-full rounded-xl border py-3 pl-12 pr-4"
-            />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
+
+              <input
+                value={search}
+                onChange={(e)=>
+                  setSearch(e.target.value)
+                }
+                placeholder="Search players..."
+                className="w-full rounded-xl border py-3 pl-12 pr-4"
+              />
+
+            </div>
+
+            <div className="relative w-56 max-w-full">
+              <select
+                aria-label="Filter players by club"
+                value={clubFilter}
+                onChange={(event) => setClubFilter(event.target.value)}
+                className="w-full appearance-none rounded-xl border bg-white py-2 pl-3 pr-10 text-sm text-slate-700"
+              >
+                <option value="">All clubs</option>
+                {[...clubs]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((club) => (
+                    <option key={club.id} value={club.id}>
+                      {club.name}
+                    </option>
+                  ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
 
           </div>
 
@@ -617,6 +658,13 @@ const hasValidPlayerTotal =
           )
         : tournament.settings.format === "knockout"
         ? generateKnockout(
+            orderPlayersForKnockout(
+              selectedPlayers,
+              tournament.settings.seedByTTR
+            )
+          )
+        : tournament.settings.format === "double-knockout"
+        ? generateDoubleKnockout(
             orderPlayersForKnockout(
               selectedPlayers,
               tournament.settings.seedByTTR

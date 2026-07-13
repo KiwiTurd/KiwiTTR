@@ -1,19 +1,24 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
   Link,
+  useNavigate,
   useParams,
 } from "react-router-dom";
 
 import {
-  Circle,
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  Eye,
   Crown,
-  Swords,
-  Trophy,
-  Users,
+  Pencil,
+  Save,
+  Trash2,
 } from "lucide-react";
 
 import { useTournament } from "../context/TournamentContext";
@@ -26,13 +31,17 @@ import {
   recordMatchResult,
 } from "../services/tournament/matchProgression";
 import { generateKnockout } from "../services/tournament/knockoutGenerator";
-import type { KnockoutMatch } from "../types/tournament";
+import {
+  advanceDoubleKnockout,
+  getDoubleKnockoutChampion,
+} from "../services/tournament/doubleKnockout";
 import { calculatePoolStandings } from "../services/tournament/standings";
 import type { TournamentMatch } from "../types/tournament";
 import { finishTournamentAndRecordRatings } from "../services/supabase/tournamentService";
 import { notify } from "../services/notificationService";
 
 const emptyGames = ["", "", "", "", ""];
+const emptyConfirmedGames = [false, false, false, false, false];
 
 function playerName(
   player: { firstName: string; lastName: string } | null
@@ -42,13 +51,26 @@ function playerName(
     : "TBD";
 }
 
+function tournamentFormatLabel(
+  format: "knockout" | "double-knockout" | "pools" | "pool-ratings" | "doubles"
+) {
+  if (format === "double-knockout") return "Double Knockout";
+  if (format === "pool-ratings") return "Pool Only Ratings";
+  if (format === "pools") return "Pools";
+  if (format === "doubles") return "Doubles";
+  return "Knockout";
+}
+
 export default function TournamentLive() {
   const {
     tournament,
+    deleteTournament,
     loadTournament,
     setMatches,
     setKnockout,
+    setTournamentState,
   } = useTournament();
+  const navigate = useNavigate();
   const {
     isAdmin,
     isClubLeader,
@@ -71,16 +93,45 @@ export default function TournamentLive() {
   ]);
 
   const initialTab =
-    tournament.settings.format === "knockout"
+    tournament.settings.format === "knockout" ||
+    tournament.settings.format === "double-knockout"
       ? "knockout"
       : "pools";
+  const isPoolOnlyRatings =
+    tournament.settings.format === "pool-ratings";
 
   const [activeTab, setActiveTab] = useState<
     "pools" | "knockout" | "results"
   >(initialTab);
+  const restoredTabForTournament = useRef("");
+
+  useEffect(() => {
+    if (!tournament.id) return;
+
+    if (restoredTabForTournament.current === tournament.id) {
+      window.sessionStorage.setItem(
+        `tournament-input-tab:${tournament.id}`,
+        activeTab
+      );
+      return;
+    }
+
+    restoredTabForTournament.current = tournament.id;
+    const savedTab = window.sessionStorage.getItem(
+      `tournament-input-tab:${tournament.id}`
+    );
+
+    if (
+      savedTab === "pools" ||
+      savedTab === "knockout" ||
+      savedTab === "results"
+    ) {
+      setActiveTab(savedTab);
+    }
+  }, [activeTab, tournament.id]);
 
   const [
-    selectedPoolMatch,
+    selectedPoolMatchState,
     setSelectedPoolMatch,
   ] = useState<TournamentMatch | null>(
     getNextUnplayedMatch(tournament.matches) ?? null
@@ -93,7 +144,11 @@ export default function TournamentLive() {
 
   const [winnerId, setWinnerId] = useState("");
   const [games, setGames] = useState(emptyGames);
+  const [confirmedGames, setConfirmedGames] = useState(emptyConfirmedGames);
+  const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
+  const [focusedPoolId, setFocusedPoolId] = useState("");
   const [finishing, setFinishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const standings = useMemo(
     () =>
@@ -113,20 +168,38 @@ export default function TournamentLive() {
   const remainingPoolMatches =
     tournament.matches.filter(match => !match.completed);
 
-  const playableKnockoutMatches =
-    tournament.knockout.filter(
-      match =>
-        !match.completed &&
-        match.playerOne &&
-        match.playerTwo
-    );
+  const selectedPoolMatch =
+    selectedPoolMatchState ??
+    getNextUnplayedMatch(tournament.matches) ??
+    null;
 
   const selectedKnockoutMatch =
     tournament.knockout.find(
       match => match.id === selectedKnockoutMatchId
     ) ??
-    playableKnockoutMatches[0] ??
-    null;
+    tournament.knockout.find(
+      match =>
+        !match.completed &&
+        Boolean(match.playerOne) &&
+        Boolean(match.playerTwo)
+    ) ?? null;
+
+  useEffect(() => {
+    const match = activeTab === "pools"
+      ? selectedPoolMatch
+      : activeTab === "knockout"
+        ? selectedKnockoutMatch
+        : null;
+
+    if (!match) return;
+    restoreEntry(match);
+  }, [
+    activeTab,
+    selectedPoolMatch?.id,
+    selectedPoolMatch?.games,
+    selectedKnockoutMatch?.id,
+    selectedKnockoutMatch?.games,
+  ]);
 
   const completedKnockoutMatches =
     tournament.knockout.filter(match => match.completed);
@@ -147,8 +220,9 @@ export default function TournamentLive() {
         )
     );
 
-  const champion =
-    championMatch?.winnerId
+  const champion = tournament.settings.format === "double-knockout"
+    ? getDoubleKnockoutChampion(tournament.players, tournament.knockout)
+    : championMatch?.winnerId
       ? championMatch.playerOne?.id === championMatch.winnerId
         ? championMatch.playerOne
         : championMatch.playerTwo
@@ -157,15 +231,94 @@ export default function TournamentLive() {
   const tournamentComplete =
     totalMatches > 0 &&
     completedMatches === totalMatches &&
-    Boolean(champion);
+    (isPoolOnlyRatings || Boolean(champion));
 
   const tournamentLocked =
     tournament.status === "completed" ||
     tournament.status === "cancelled";
+  const canInputMatches = tournament.status === "active";
+
+  function markLive() {
+    if (!tournament.id || tournamentLocked || canInputMatches) return;
+
+    setTournamentState({
+      ...tournament,
+      status: "active",
+    });
+    notify.edgeBall(
+      `${tournament.settings.name || "Tournament"} is now live. Match input is enabled.`
+    );
+  }
+
+  async function deleteCurrentTournament() {
+    if (!tournament.id || !isAdmin || deleting) return;
+
+    const confirmed = window.confirm(
+      `Delete ${tournament.settings.name}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await deleteTournament(tournament.id);
+      notify.edgeBall("Tournament deleted.");
+      navigate("/tournaments");
+    } catch (error) {
+      console.error(error);
+      notify.fault("Unable to delete tournament.");
+      setDeleting(false);
+    }
+  }
 
   function resetEntry() {
     setWinnerId("");
     setGames(emptyGames);
+    setConfirmedGames(emptyConfirmedGames);
+  }
+
+  function restoreEntry(match: {
+    games: string[];
+    playerOne: { id: string } | null;
+    playerTwo: { id: string } | null;
+  }) {
+    const savedGames = match.games.slice(0, 5);
+    const nextGames = [
+      ...savedGames,
+      ...Array(Math.max(0, 5 - savedGames.length)).fill(""),
+    ];
+    const nextConfirmed = nextGames.map(
+      (game, index) => index < savedGames.length && game.trim() !== ""
+    );
+
+    let playerOneSets = 0;
+    let playerTwoSets = 0;
+    savedGames.forEach(game => {
+      const [one, two] = game.split("-").map(Number);
+      if (one > two) playerOneSets += 1;
+      if (two > one) playerTwoSets += 1;
+    });
+
+    setGames(nextGames);
+    setConfirmedGames(nextConfirmed);
+    setWinnerId(
+      playerOneSets >= 3
+        ? match.playerOne?.id ?? ""
+        : playerTwoSets >= 3
+          ? match.playerTwo?.id ?? ""
+          : ""
+    );
+  }
+
+  function focusPool(poolId: string) {
+    setFocusedPoolId(poolId);
+    setExpandedPoolId(poolId || null);
+    if (!poolId) return;
+
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(`[data-pool-card="${poolId}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   function ensureKnockoutFromPools(
@@ -190,7 +343,7 @@ export default function TournamentLive() {
   }
 
   function savePoolResult() {
-    if (!selectedPoolMatch || !winnerId) {
+    if (!canInputMatches || !selectedPoolMatch || !winnerId) {
       return;
     }
 
@@ -198,7 +351,9 @@ export default function TournamentLive() {
       tournament.matches,
       selectedPoolMatch.id,
       winnerId,
-      games.filter(game => game.trim() !== "")
+      games.filter((game, index) =>
+        confirmedGames[index] && game.trim() !== ""
+      )
     );
 
     setMatches(updatedMatches);
@@ -209,27 +364,81 @@ export default function TournamentLive() {
     resetEntry();
   }
 
+  function savePoolSets(savedGames: string[]) {
+    if (!selectedPoolMatch) return;
+    setMatches(
+      tournament.matches.map(match =>
+        match.id === selectedPoolMatch.id
+          ? { ...match, games: savedGames }
+          : match
+      )
+    );
+  }
+
+  function saveKnockoutSets(savedGames: string[]) {
+    if (!selectedKnockoutMatch) return;
+    setKnockout(
+      tournament.knockout.map(match =>
+        match.id === selectedKnockoutMatch.id
+          ? { ...match, games: savedGames }
+          : match
+      )
+    );
+  }
+
+  function savePoolTable(poolId: string, table?: number) {
+    setMatches(
+      tournament.matches.map(match =>
+        match.poolId === poolId
+          ? { ...match, table }
+          : match
+      )
+    );
+  }
+
+  function saveKnockoutTable(matchId: string, table?: number) {
+    setKnockout(
+      tournament.knockout.map(match =>
+        match.id === matchId
+          ? { ...match, table }
+          : match
+      )
+    );
+  }
+
   function saveKnockoutResult() {
-    if (!selectedKnockoutMatch || !winnerId) {
+    if (!canInputMatches || !selectedKnockoutMatch || !winnerId) {
       return;
     }
 
-    const updatedKnockout = advanceWinner(
-      tournament.knockout,
-      selectedKnockoutMatch.id,
-      winnerId,
-      games.filter(game => game.trim() !== "")
-    );
+    const updatedKnockout =
+      tournament.settings.format === "double-knockout"
+        ? advanceDoubleKnockout(
+            tournament.knockout,
+            tournament.players,
+            selectedKnockoutMatch.id,
+            winnerId,
+            games.filter((game, index) =>
+              confirmedGames[index] && game.trim() !== ""
+            )
+          )
+        : advanceWinner(
+            tournament.knockout,
+            selectedKnockoutMatch.id,
+            winnerId,
+            games.filter((game, index) =>
+              confirmedGames[index] && game.trim() !== ""
+            )
+          );
 
     setKnockout(updatedKnockout);
 
     const nextMatch = updatedKnockout.find(
       match =>
         !match.completed &&
-        match.playerOne &&
-        match.playerTwo
+        Boolean(match.playerOne) &&
+        Boolean(match.playerTwo)
     );
-
     setSelectedKnockoutMatchId(nextMatch?.id ?? null);
     resetEntry();
   }
@@ -329,30 +538,33 @@ export default function TournamentLive() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
-            <Circle className="h-3 w-3 fill-current" />
-            Live Tournament
-          </div>
-          <h1 className="mt-4 text-5xl font-normal">
+    <div className="mx-auto max-w-7xl space-y-8">
+      <div>
+        <Link
+          to="/tournaments"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Tournaments
+        </Link>
+        <div className="mt-6 flex items-start justify-between gap-6 border-b border-slate-300 pb-6">
+          <div className="tournament-page-header-copy">
+            <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">
+              {tournamentFormatLabel(tournament.settings.format)} Tournament Builder
+            </p>
+            <h1 className="mt-2 text-5xl font-normal tracking-tight">
             {tournament.settings.name || "Tournament"}
-          </h1>
-          <p className="mt-3 text-lg text-slate-500">
-            {tournament.settings.socialPlay
-              ? "Social play"
-              : "KiwiTTR event"}
-            {" "}-
-            {" "}
-            {tournament.settings.seedByTTR
-              ? "seeded by rating"
-              : "random draw"}
-          </p>
-        </div>
+            </h1>
+            <p className="mt-3 text-lg text-slate-500">
+              {new Date(`${tournament.settings.date}T00:00:00`).toLocaleDateString()}
+              {" · "}{tournament.players.length} players
+              {" · "}{tournament.settings.socialPlay ? "Social play" : "KiwiTTR event"}
+              {" · "}{tournament.settings.seedByTTR ? "Seeded by rating" : "Random draw"}
+            </p>
+          </div>
 
-        {champion && (
-          <div className="rounded-2xl border bg-white p-5 text-right shadow-sm">
+          {champion && (
+            <div className="rounded-2xl border bg-white p-5 text-right shadow-sm">
             <div className="flex items-center justify-end gap-2 text-sm font-semibold text-amber-700">
               <Crown className="h-4 w-4" />
               Champion
@@ -375,31 +587,64 @@ export default function TournamentLive() {
                     : "Finish & Update Ratings"}
               </button>
             )}
-          </div>
-        )}
+            </div>
+          )}
+          {isPoolOnlyRatings && tournamentComplete && !tournamentLocked && (
+            <div className="rounded-2xl border bg-white p-5 text-right shadow-sm">
+              <div className="text-sm font-semibold text-emerald-700">
+                All pool matches complete
+              </div>
+              <button
+                type="button"
+                onClick={() => void finishTournament()}
+                disabled={finishing}
+                className="mt-3 rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {finishing ? "Finishing..." : "Finish & Update Ratings"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-4">
-        <SummaryCard
-          icon={<Users className="h-5 w-5 text-blue-700" />}
-          label="Players"
-          value={tournament.players.length}
-        />
-        <SummaryCard
-          icon={<Trophy className="h-5 w-5 text-blue-700" />}
-          label="Pools"
-          value={tournament.pools.length || "-"}
-        />
-        <SummaryCard
-          icon={<Swords className="h-5 w-5 text-blue-700" />}
-          label="Matches"
-          value={totalMatches}
-        />
-        <SummaryCard
-          icon={<Circle className="h-5 w-5 fill-current text-green-600" />}
-          label="Completed"
-          value={`${completedMatches}/${Math.max(1, totalMatches)}`}
-        />
+      <div className="flex flex-wrap gap-3">
+        {tournament.status === "draft" && (
+          <Link
+            to="/tournaments/players"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Link>
+        )}
+        {tournament.status === "draft" && (
+          <button
+            type="button"
+            onClick={markLive}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+          >
+            Go Live
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
+        <Link
+          to={`/tournaments/${tournament.id}/viewer`}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          <Eye className="h-4 w-4" />
+          Open Live Viewer
+        </Link>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => void deleteCurrentTournament()}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-3 font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-70"
+          >
+            <Trash2 className="h-4 w-4" />
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        )}
       </div>
 
       {tournamentLocked && (
@@ -409,7 +654,7 @@ export default function TournamentLive() {
       )}
 
       <div className="flex gap-3">
-        {tournament.settings.format === "pools" && (
+        {(tournament.settings.format === "pools" || isPoolOnlyRatings) && (
           <TabButton
             active={activeTab === "pools"}
             onClick={() => setActiveTab("pools")}
@@ -417,12 +662,12 @@ export default function TournamentLive() {
             Pools
           </TabButton>
         )}
-        <TabButton
+        {!isPoolOnlyRatings && <TabButton
           active={activeTab === "knockout"}
           onClick={() => setActiveTab("knockout")}
         >
           Knockout
-        </TabButton>
+        </TabButton>}
         <TabButton
           active={activeTab === "results"}
           onClick={() => setActiveTab("results")}
@@ -431,30 +676,87 @@ export default function TournamentLive() {
         </TabButton>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div className={`grid gap-6 ${
+        canInputMatches &&
+        (
+          (activeTab === "pools" && selectedPoolMatch) ||
+          (activeTab === "knockout" && selectedKnockoutMatch)
+        )
+          ? "xl:grid-cols-[1fr_380px]"
+          : "grid-cols-1"
+      }`}>
         <div className="space-y-6">
-          {activeTab === "pools" &&
-            standings.map(({ pool, standings }) => (
+          {activeTab === "pools" && (
+            <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-xl border bg-white px-3 py-2 shadow-sm">
+              <label htmlFor="pool-quick-select" className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Pool quick select
+              </label>
+              <select
+                id="pool-quick-select"
+                value={focusedPoolId}
+                onChange={(event) => focusPool(event.target.value)}
+                className="w-44 rounded-lg border bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
+              >
+                <option value="">All pools</option>
+                {standings.map(({ pool }) => (
+                  <option key={pool.id} value={pool.id}>{pool.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+            {standings
+              .filter(({ pool }) => !focusedPoolId || pool.id === focusedPoolId)
+              .map(({ pool, standings }) => (
               <div
                 key={pool.id}
-                className="rounded-3xl border bg-white shadow-sm"
+                data-pool-card={pool.id}
+                className={`overflow-hidden rounded-xl border bg-white shadow-sm transition ${
+                  expandedPoolId === pool.id ? "lg:col-span-2" : ""
+                } ${
+                  focusedPoolId === pool.id
+                    ? "border-blue-400 ring-4 ring-blue-100"
+                    : ""
+                }`}
               >
-                <div className="border-b px-6 py-5">
-                  <h2 className="text-2xl font-bold">
-                    {pool.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {pool.players.length} players
-                  </p>
+                <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
+                  <div>
+                    <h2 className="text-lg font-bold">
+                      {pool.name}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {pool.players.length} players
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <TableAssignment
+                      value={tournament.matches.find(match => match.poolId === pool.id)?.table}
+                      disabled={!canInputMatches}
+                      onSave={(table) => savePoolTable(pool.id, table)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setExpandedPoolId(
+                        expandedPoolId === pool.id ? null : pool.id
+                      )}
+                      className="inline-flex items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      {remainingPoolMatches.filter((match) => match.poolId === pool.id).length} remaining
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${
+                        expandedPoolId === pool.id ? "rotate-180" : ""
+                      }`} />
+                    </button>
+                  </div>
                 </div>
+                <div className={expandedPoolId === pool.id ? "lg:grid lg:grid-cols-2" : ""}>
                 <div>
                   {standings.map(standing => (
                     <div
                       key={standing.player.id}
-                      className="flex items-center justify-between border-b px-6 py-4 last:border-b-0"
+                      className="flex items-center justify-between border-b px-4 py-2.5 last:border-b-0"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-900">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-900">
                           {standing.position}
                         </div>
                         <div>
@@ -477,8 +779,45 @@ export default function TournamentLive() {
                     </div>
                   ))}
                 </div>
+                {expandedPoolId === pool.id && (
+                  <div className="border-t bg-slate-50 lg:border-l lg:border-t-0">
+                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Remaining pool matches
+                    </div>
+                    {remainingPoolMatches.filter((match) => match.poolId === pool.id).length === 0 ? (
+                      <p className="px-4 pb-3 text-sm text-slate-500">
+                        All pool matches completed.
+                      </p>
+                    ) : (
+                      remainingPoolMatches
+                        .filter((match) => match.poolId === pool.id)
+                        .map((match) => (
+                          <button
+                            key={match.id}
+                            type="button"
+                            disabled={!canInputMatches}
+                            onClick={() => {
+                              setSelectedPoolMatch(match);
+                              restoreEntry(match);
+                            }}
+                            className={`grid w-full grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] items-center gap-3 border-t px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 ${
+                              selectedPoolMatch?.id === match.id ? "bg-blue-50" : "bg-white"
+                            }`}
+                          >
+                            <span className="font-semibold">{playerName(match.playerOne)}</span>
+                            <span className="text-center text-xs text-slate-400">vs</span>
+                            <span className="text-right font-semibold">{playerName(match.playerTwo)}</span>
+                          </button>
+                        ))
+                    )}
+                  </div>
+                )}
+                </div>
               </div>
             ))}
+            </div>
+            </div>
+          )}
 
           {activeTab === "knockout" && (
             <div className="grid gap-5 lg:grid-cols-2">
@@ -486,23 +825,9 @@ export default function TournamentLive() {
                 <EmptyPanel text="Complete the pool stage to create the knockout draw." />
               ) : (
                 tournament.knockout.map(match => (
-                  <button
+                  <div
                     key={match.id}
-                    onClick={() => {
-                      if (tournamentLocked) {
-                        return;
-                      }
-
-                      if (
-                        match.playerOne &&
-                        match.playerTwo &&
-                        !match.completed
-                      ) {
-                        setSelectedKnockoutMatchId(match.id);
-                        resetEntry();
-                      }
-                    }}
-                    className={`rounded-2xl border bg-white p-6 text-left shadow-sm transition ${
+                    className={`rounded-2xl border bg-white p-4 text-left shadow-sm transition ${
                       selectedKnockoutMatch?.id === match.id
                         ? "border-blue-500 bg-blue-50"
                         : "hover:border-blue-300"
@@ -510,14 +835,38 @@ export default function TournamentLive() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm font-semibold text-slate-500">
-                        Round {match.round} - Match {match.position}
+                        {match.bracket === "winners"
+                          ? "Winners Bracket"
+                          : match.bracket === "losers"
+                            ? "Elimination Bracket"
+                            : match.bracket === "grand-final"
+                              ? "Grand Final"
+                              : `Round ${match.round}`} - Match {match.position}
                       </div>
+                      <div className="flex items-center gap-2">
+                      <TableAssignment
+                        value={match.table}
+                        disabled={!canInputMatches || match.completed}
+                        onSave={(table) => saveKnockoutTable(match.id, table)}
+                      />
                       {match.completed && (
                         <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                           Complete
                         </span>
                       )}
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!canInputMatches) return;
+                        if (match.playerOne && match.playerTwo && !match.completed) {
+                          setSelectedKnockoutMatchId(match.id);
+                          restoreEntry(match);
+                        }
+                      }}
+                      className="mt-3 w-full text-left"
+                    >
                     <KnockoutPlayer
                       name={playerName(match.playerOne)}
                       winner={
@@ -533,7 +882,8 @@ export default function TournamentLive() {
                         match.winnerId === match.playerTwo?.id
                       }
                     />
-                  </button>
+                    </button>
+                  </div>
                 ))
               )}
             </div>
@@ -584,105 +934,38 @@ export default function TournamentLive() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold">
-              Tournament Progress
-            </h2>
-            <div className="mt-6">
-              <div className="mb-2 flex justify-between text-sm">
-                <span>
-                  {completedMatches} of {Math.max(1, totalMatches)} matches completed
-                </span>
-                <span>
-                  {Math.round(
-                    (completedMatches / Math.max(1, totalMatches)) * 100
-                  )}
-                  %
-                </span>
-              </div>
-              <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full rounded-full bg-green-500 transition-all duration-500"
-                  style={{
-                    width: `${(completedMatches / Math.max(1, totalMatches)) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {!tournamentLocked && activeTab === "pools" && (
-            <PoolQueue
-              matches={remainingPoolMatches}
-              selectedMatch={selectedPoolMatch}
-              onSelect={(match) => {
-                setSelectedPoolMatch(match);
-                resetEntry();
-              }}
-            />
-          )}
-
-          {!tournamentLocked && activeTab === "knockout" && (
-            <KnockoutQueue
-              matches={playableKnockoutMatches}
-              selectedMatch={selectedKnockoutMatch}
-              onSelect={(match) => {
-                setSelectedKnockoutMatchId(match.id);
-                resetEntry();
-              }}
-            />
-          )}
-
-          {!tournamentLocked && activeTab === "pools" && selectedPoolMatch && (
+          {canInputMatches && activeTab === "pools" && selectedPoolMatch && (
             <ResultEntry
               title="Enter Pool Result"
               playerOne={selectedPoolMatch.playerOne}
               playerTwo={selectedPoolMatch.playerTwo}
               winnerId={winnerId}
               games={games}
+              confirmedGames={confirmedGames}
               onWinnerChange={setWinnerId}
               onGamesChange={setGames}
+              onConfirmedGamesChange={setConfirmedGames}
+              onSetsChange={savePoolSets}
               onSave={savePoolResult}
             />
           )}
 
-          {!tournamentLocked && activeTab === "knockout" && selectedKnockoutMatch && (
+          {canInputMatches && activeTab === "knockout" && selectedKnockoutMatch && (
             <ResultEntry
               title="Enter Knockout Result"
               playerOne={selectedKnockoutMatch.playerOne}
               playerTwo={selectedKnockoutMatch.playerTwo}
               winnerId={winnerId}
               games={games}
+              confirmedGames={confirmedGames}
               onWinnerChange={setWinnerId}
               onGamesChange={setGames}
+              onConfirmedGamesChange={setConfirmedGames}
+              onSetsChange={saveKnockoutSets}
               onSave={saveKnockoutResult}
             />
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function SummaryCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border bg-white p-5">
-      <div className="flex items-center gap-3">
-        {icon}
-        <span className="text-slate-500">
-          {label}
-        </span>
-      </div>
-      <div className="mt-3 text-3xl font-black">
-        {value}
       </div>
     </div>
   );
@@ -731,6 +1014,71 @@ function KnockoutPlayer({
   );
 }
 
+function TableAssignment({
+  value,
+  disabled,
+  onSave,
+}: {
+  value?: number;
+  disabled: boolean;
+  onSave: (table?: number) => void;
+}) {
+  const [draft, setDraft] = useState(value ? String(value) : "");
+
+  useEffect(() => {
+    setDraft(value ? String(value) : "");
+  }, [value]);
+
+  function save() {
+    const table = Number(draft);
+    if (!Number.isInteger(table) || table < 1) {
+      notify.timeout("Enter a valid table number.");
+      return;
+    }
+    onSave(table);
+  }
+
+  return (
+    <div className="inline-flex items-center overflow-hidden rounded-lg border bg-white">
+      <input
+        type="number"
+        min={1}
+        inputMode="numeric"
+        aria-label="Table number"
+        placeholder="Table"
+        value={draft}
+        disabled={disabled}
+        onChange={(event) => setDraft(event.target.value)}
+        className="w-16 border-0 px-2 py-1.5 text-xs font-semibold outline-none disabled:bg-slate-50"
+      />
+      {value ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            setDraft("");
+            onSave(undefined);
+          }}
+          aria-label="Remove table number"
+          className="flex h-7 w-8 items-center justify-center border-l text-red-600 hover:bg-red-50 disabled:opacity-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled || !draft}
+          onClick={save}
+          aria-label="Save table number"
+          className="flex h-7 w-8 items-center justify-center border-l text-blue-800 hover:bg-blue-50 disabled:opacity-40"
+        >
+          <Save className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function EmptyPanel({
   text,
 }: {
@@ -743,133 +1091,17 @@ function EmptyPanel({
   );
 }
 
-function PoolQueue({
-  matches,
-  selectedMatch,
-  onSelect,
-}: {
-  matches: TournamentMatch[];
-  selectedMatch: TournamentMatch | null;
-  onSelect: (match: TournamentMatch) => void;
-}) {
-  return (
-    <QueueShell title="Remaining Pool Matches">
-      {matches.length === 0 ? (
-        <div className="p-8 text-center text-slate-500">
-          All pool matches completed.
-        </div>
-      ) : (
-        matches.map(match => (
-          <QueueButton
-            key={match.id}
-            active={selectedMatch?.id === match.id}
-            onClick={() => onSelect(match)}
-            label={playerName(match.playerOne)}
-            subLabel="vs"
-            detail={playerName(match.playerTwo)}
-          />
-        ))
-      )}
-    </QueueShell>
-  );
-}
-
-function KnockoutQueue({
-  matches,
-  selectedMatch,
-  onSelect,
-}: {
-  matches: KnockoutMatch[];
-  selectedMatch: KnockoutMatch | null;
-  onSelect: (match: KnockoutMatch) => void;
-}) {
-  return (
-    <QueueShell title="Remaining Knockout Matches">
-      {matches.length === 0 ? (
-        <div className="p-8 text-center text-slate-500">
-          No playable knockout matches.
-        </div>
-      ) : (
-        matches.map(match => (
-          <QueueButton
-            key={match.id}
-            active={selectedMatch?.id === match.id}
-            onClick={() => onSelect(match)}
-            label={playerName(match.playerOne)}
-            subLabel={`Round ${match.round}`}
-            detail={playerName(match.playerTwo)}
-          />
-        ))
-      )}
-    </QueueShell>
-  );
-}
-
-function QueueShell({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-3xl border bg-white shadow-sm">
-      <div className="border-b px-6 py-5">
-        <h2 className="text-xl font-bold">
-          {title}
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Click a match to enter the score.
-        </p>
-      </div>
-      <div className="max-h-[450px] overflow-y-auto">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function QueueButton({
-  active,
-  onClick,
-  label,
-  subLabel,
-  detail,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  subLabel: string;
-  detail: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full border-b px-6 py-5 text-left transition last:border-b-0 hover:bg-blue-50 ${
-        active ? "bg-blue-50" : ""
-      }`}
-    >
-      <div className="font-semibold">
-        {label}
-      </div>
-      <div className="my-1 text-sm text-slate-400">
-        {subLabel}
-      </div>
-      <div className="font-semibold">
-        {detail}
-      </div>
-    </button>
-  );
-}
-
 function ResultEntry({
   title,
   playerOne,
   playerTwo,
   winnerId,
   games,
+  confirmedGames,
   onWinnerChange,
   onGamesChange,
+  onConfirmedGamesChange,
+  onSetsChange,
   onSave,
 }: {
   title: string;
@@ -877,51 +1109,138 @@ function ResultEntry({
   playerTwo: { id: string; firstName: string; lastName: string } | null;
   winnerId: string;
   games: string[];
+  confirmedGames: boolean[];
   onWinnerChange: (winnerId: string) => void;
   onGamesChange: (games: string[]) => void;
+  onConfirmedGamesChange: (confirmed: boolean[]) => void;
+  onSetsChange: (games: string[]) => void;
   onSave: () => void;
 }) {
   if (!playerOne || !playerTwo) {
     return null;
   }
 
+  const playerOneId = playerOne.id;
+  const playerTwoId = playerTwo.id;
+
+  function scoresAt(index: number) {
+    const [one = "", two = ""] = games[index]?.split("-") ?? [];
+    return {
+      one: one === "0" ? "" : one,
+      two: two === "0" ? "" : two,
+    };
+  }
+
+  function updateScore(index: number, side: "one" | "two", value: string) {
+    const scores = scoresAt(index);
+    const next = [...games];
+    next[index] = side === "one"
+      ? `${value || 0}-${scores.two || 0}`
+      : `${scores.one || 0}-${value || 0}`;
+    onGamesChange(next);
+  }
+
+  function updateWinner(nextGames: string[], nextConfirmed: boolean[]) {
+    let oneSets = 0;
+    let twoSets = 0;
+    nextGames.forEach((game, index) => {
+      if (!nextConfirmed[index]) return;
+      const [one, two] = game.split("-").map(Number);
+      if (one > two) oneSets += 1;
+      if (two > one) twoSets += 1;
+    });
+    onWinnerChange(
+      oneSets >= 3 ? playerOneId : twoSets >= 3 ? playerTwoId : ""
+    );
+  }
+
+  function confirmSet(index: number) {
+    const { one, two } = scoresAt(index);
+    const oneScore = Number(one || 0);
+    const twoScore = Number(two || 0);
+    const high = Math.max(oneScore, twoScore);
+    const gap = Math.abs(oneScore - twoScore);
+    if (!((high === 11 && gap >= 2) || (high > 11 && gap === 2))) {
+      notify.timeout("A set is first to 11 and must be won by 2 points.");
+      return;
+    }
+    const nextConfirmed = confirmedGames.map((saved, savedIndex) =>
+      savedIndex === index ? true : saved
+    );
+    onConfirmedGamesChange(nextConfirmed);
+    updateWinner(games, nextConfirmed);
+    onSetsChange(
+      games.filter((game, gameIndex) =>
+        nextConfirmed[gameIndex] && game.trim() !== ""
+      )
+    );
+  }
+
+  function editSet(index: number) {
+    const nextConfirmed = confirmedGames.map((saved, savedIndex) =>
+      savedIndex === index ? false : saved
+    );
+    onConfirmedGamesChange(nextConfirmed);
+    updateWinner(games, nextConfirmed);
+    onSetsChange(
+      games.filter((game, gameIndex) =>
+        nextConfirmed[gameIndex] && game.trim() !== ""
+      )
+    );
+  }
+
+  function deleteSet(index: number) {
+    const nextGames = games.map((game, gameIndex) =>
+      gameIndex === index ? "" : game
+    );
+    const nextConfirmed = confirmedGames.map((saved, savedIndex) =>
+      savedIndex === index ? false : saved
+    );
+    onGamesChange(nextGames);
+    onConfirmedGamesChange(nextConfirmed);
+    updateWinner(nextGames, nextConfirmed);
+    onSetsChange(
+      nextGames.filter((game, gameIndex) =>
+        nextConfirmed[gameIndex] && game.trim() !== ""
+      )
+    );
+  }
+
   return (
-    <div className="rounded-3xl border bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border bg-white p-4 shadow-sm">
       <h2 className="text-xl font-bold">
         {title}
       </h2>
       <p className="mt-2 text-slate-500">
         {playerName(playerOne)} vs {playerName(playerTwo)}
       </p>
-      <select
-        value={winnerId}
-        onChange={(event) => onWinnerChange(event.target.value)}
-        className="mt-6 w-full rounded-xl border p-3"
-      >
-        <option value="">
-          Select winner
-        </option>
-        <option value={playerOne.id}>
-          {playerName(playerOne)}
-        </option>
-        <option value={playerTwo.id}>
-          {playerName(playerTwo)}
-        </option>
-      </select>
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        {games.map((game, index) => (
-          <input
-            key={index}
-            value={game}
-            onChange={(event) => {
-              const next = [...games];
-              next[index] = event.target.value;
-              onGamesChange(next);
-            }}
-            placeholder="11-8"
-            className="rounded-xl border p-3"
-          />
-        ))}
+      <div className="mt-4 space-y-1.5">
+        {games.map((_game, index) => {
+          const scores = scoresAt(index);
+          const saved = Boolean(confirmedGames[index]);
+          return (
+            <div key={index} className={`grid grid-cols-[minmax(36px,1fr)_52px_52px_34px_34px] items-center gap-1.5 rounded-lg px-2 py-1.5 ${saved ? "bg-slate-50" : "bg-blue-50"}`}>
+              <span className="text-sm font-semibold text-slate-600">S{index + 1}</span>
+              {saved ? (
+                <>
+                  <span className="rounded-md border bg-white py-1.5 text-center text-sm font-semibold">{scores.one}</span>
+                  <span className="rounded-md border bg-white py-1.5 text-center text-sm font-semibold">{scores.two}</span>
+                  <button type="button" onClick={() => editSet(index)} aria-label={`Edit set ${index + 1}`} className="flex h-8 w-8 items-center justify-center rounded-md border border-green-200 bg-white text-green-700"><Pencil className="h-4 w-4" /></button>
+                </>
+              ) : (
+                <>
+                  <input type="number" min={0} inputMode="numeric" value={scores.one} onChange={(event) => updateScore(index, "one", event.target.value)} className="min-w-0 rounded-md border bg-white py-1.5 text-center text-sm" />
+                  <input type="number" min={0} inputMode="numeric" value={scores.two} onChange={(event) => updateScore(index, "two", event.target.value)} className="min-w-0 rounded-md border bg-white py-1.5 text-center text-sm" />
+                  <button type="button" onClick={() => confirmSet(index)} aria-label={`Save set ${index + 1}`} className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-900 text-white"><Save className="h-4 w-4" /></button>
+                </>
+              )}
+              <button type="button" onClick={() => deleteSet(index)} aria-label={`Delete set ${index + 1}`} className="flex h-8 w-8 items-center justify-center rounded-md border text-slate-500 hover:border-red-300 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600">
+        Winner: {winnerId ? playerName(winnerId === playerOne.id ? playerOne : playerTwo) : "Confirm sets to determine the winner"}
       </div>
       <button
         onClick={onSave}

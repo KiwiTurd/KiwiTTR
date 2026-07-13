@@ -10,6 +10,7 @@ import {
   getMatch,
   getMatches,
   updateMatch,
+  isMatchFixed,
 } from "../supabase/matchService";
 import {
   getPlayer,
@@ -508,6 +509,37 @@ async function addReplayHistory(match: Match) {
   });
 }
 
+async function recomputeHighestRating(
+  player: Player
+): Promise<Player> {
+  const { data, error } = await supabase
+    .from("rating_history")
+    .select("rating_before,rating_after")
+    .eq("player_id", player.id);
+
+  if (error) {
+    throw error;
+  }
+
+  const recordedRatings = (
+    data as Array<{
+      rating_before: number;
+      rating_after: number;
+    }>
+  ).flatMap(history => [
+    history.rating_before,
+    history.rating_after,
+  ]);
+
+  return {
+    ...player,
+    highestRating: Math.max(
+      player.rating,
+      ...recordedRatings
+    ),
+  };
+}
+
 async function replayMatchesFrom(
   replayFrom: string,
   removedMatches: Match[] = []
@@ -526,6 +558,17 @@ async function replayMatchesFrom(
         ? a.id.localeCompare(b.id)
         : a.playedAt.localeCompare(b.playedAt)
     );
+
+  if (removedMatches.length > 0) {
+    const fixedMatch = replayWindowMatches.find(isMatchFixed);
+
+    if (fixedMatch) {
+      throw new Error(
+        "This result can no longer be removed because it would change fixed TTR history older than seven days."
+      );
+    }
+  }
+
   const replayWindowMatchIds =
     replayWindowMatches.map((match) => match.id);
   const histories =
@@ -578,7 +621,9 @@ async function replayMatchesFrom(
   }
 
   for (const player of playerState.values()) {
-    await updatePlayer(player);
+    await updatePlayer(
+      await recomputeHighestRating(player)
+    );
   }
 }
 

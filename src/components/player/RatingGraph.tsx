@@ -18,6 +18,7 @@ import {
 
 interface Props {
   playerId: string;
+  currentRating: number;
 }
 
 type Filter =
@@ -29,6 +30,7 @@ type Filter =
 
 export default function RatingGraph({
   playerId,
+  currentRating,
 }: Props) {
   const [history, setHistory] = useState<
     RatingHistory[]
@@ -39,6 +41,25 @@ export default function RatingGraph({
 
   const [filter, setFilter] =
     useState<Filter>("all");
+
+  const consistentHistory = useMemo(() => {
+    const valid = history.filter(
+      record =>
+        record.ratingAfter ===
+        record.ratingBefore + record.ratingChange
+    );
+
+    const currentRatingIndex = valid.findLastIndex(
+      record => record.ratingAfter === currentRating
+    );
+
+    // If replayed/deleted matches left stale entries after the player's
+    // current rating, trim only that trailing portion. Older valid history
+    // remains visible even if a legacy gap prevents a perfect chain.
+    return currentRatingIndex >= 0
+      ? valid.slice(0, currentRatingIndex + 1)
+      : valid;
+  }, [currentRating, history]);
 
   useEffect(() => {
     void loadHistory();
@@ -77,7 +98,7 @@ export default function RatingGraph({
 
     const now = new Date();
 
-    const filtered = history.filter(
+    const filtered = consistentHistory.filter(
       (record) => {
 
         if (filter === "all") {
@@ -234,7 +255,7 @@ for (let i = 0; i < daily.length; i++) {
 
 return points;
 
-  }, [history, filter]);
+  }, [consistentHistory, filter]);
 
   const yMin = useMemo(() => {
 

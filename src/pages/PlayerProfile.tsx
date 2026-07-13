@@ -815,6 +815,7 @@ return (
 
         <RatingGraph
           playerId={player.id}
+          currentRating={player.rating}
         />
 
       </div>

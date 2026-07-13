@@ -292,15 +292,12 @@ export default function Events() {
   const tournamentStatus = useCallback((
     tournament: SavedTournament
   ): EventFeedItem["status"] => {
-    const stats =
-      tournamentMatchStats(tournament);
     const finished =
       tournament.status === "completed" ||
       tournament.status === "cancelled";
     const live =
       !finished &&
-      stats.total > 0 &&
-      stats.completed < stats.total;
+      tournament.status === "active";
 
     if (live) {
       return "live";
@@ -314,7 +311,7 @@ export default function Events() {
     }
 
     return "upcoming";
-  }, [today, tournamentMatchStats]);
+  }, [today]);
 
   const teamEventStatus = useCallback((
     status: TeamGameStatus
@@ -329,37 +326,6 @@ export default function Events() {
 
     return "upcoming";
   }, []);
-
-  const tournamentCards = useMemo(() => {
-    return savedTournaments
-      .map((tournament) => {
-        const stats =
-          tournamentMatchStats(tournament);
-
-        return {
-          tournament,
-          club: clubs.find(
-            (club) =>
-              club.id === tournament.settings.clubId
-          ),
-          liveMatches: stats.live,
-          totalMatches: stats.total,
-        };
-      })
-      .filter(({ tournament, totalMatches }) => {
-        return (
-          tournament.settings.date === today &&
-          totalMatches > 0 &&
-          tournament.status !== "completed" &&
-          tournament.status !== "cancelled"
-        );
-      });
-  }, [
-    clubs,
-    savedTournaments,
-    today,
-    tournamentMatchStats,
-  ]);
 
   const eventFeedItems = useMemo(() => {
     const matchItems: EventFeedItem[] =
@@ -602,72 +568,6 @@ export default function Events() {
         </button>
 
       </div>
-
-      {tournamentCards.length > 0 && (
-
-        <div className="space-y-4">
-
-          <div className="flex items-center gap-3">
-            <Tv className="h-6 w-6 text-green-600" />
-            <h2 className="text-2xl font-bold">
-              Tournament Viewers
-            </h2>
-          </div>
-
-          <div className="grid gap-3 lg:grid-cols-2">
-
-            {tournamentCards.map(({
-              tournament,
-              club,
-              liveMatches,
-            }) => (
-
-              <Link
-                key={tournament.id}
-                to={`/tournaments/${tournament.id}/viewer`}
-                className="group block rounded-xl border border-green-200 bg-white px-4 py-3 shadow-sm transition hover:border-green-400 hover:bg-green-50/40"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      Live Viewer
-                    </div>
-
-                    <h3 className="mt-2 truncate text-base font-medium">
-                      {tournament.settings.name}
-                    </h3>
-
-                    <p className="text-sm text-slate-500">
-                      {club?.name ?? "-"} ·{" "}
-                      {new Date(
-                        tournament.settings.date
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-xs font-semibold text-slate-500">
-                      Live Matches
-                    </div>
-                    <div className="text-xl font-black text-green-700">
-                      {liveMatches}
-                    </div>
-                    <div className="mt-1 flex items-center justify-end gap-2 text-sm font-semibold text-blue-700">
-                      Open
-                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      )}
 
       {canCreateStandardEvent && (
 

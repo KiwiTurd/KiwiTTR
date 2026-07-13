@@ -480,6 +480,8 @@ function tournamentFormatLabel(
 ) {
   return tournament.settings.format === "pools"
     ? "Pools -> Knockout"
+    : tournament.settings.format === "pool-ratings"
+      ? "Pool Only Ratings"
     : tournament.settings.format === "doubles"
       ? "Doubles Knockout"
       : "Straight Knockout";

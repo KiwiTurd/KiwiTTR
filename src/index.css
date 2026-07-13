@@ -48,6 +48,31 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@keyframes tournament-confetti-fall {
+  0% {
+    opacity: 1;
+    translate: 0 -5vh;
+    rotate: 0deg;
+  }
+  100% {
+    opacity: 0.9;
+    translate: 40px 110vh;
+    rotate: 900deg;
+  }
+}
+
+.tournament-confetti {
+  animation-name: tournament-confetti-fall;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.35, 1);
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tournament-confetti {
+    display: none;
+  }
+}
+
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);

@@ -64,6 +64,7 @@ export async function getPlayerRatingHistory(
   const { data, error } = await supabase
     .from("rating_history")
     .select("*")
+    .eq("player_id", playerId)
     .order("recorded_at", {
       ascending: true,
     });
@@ -72,8 +73,24 @@ export async function getPlayerRatingHistory(
     throw error;
   }
 
-  return (data as RatingHistoryRow[])
-    .filter((row) => row.player_id === playerId)
+  const rows = data as RatingHistoryRow[];
+  const matchIds = [...new Set(rows.map(row => row.match_id))];
+
+  if (matchIds.length === 0) return [];
+
+  const { data: matches, error: matchError } = await supabase
+    .from("matches")
+    .select("id")
+    .in("id", matchIds);
+
+  if (matchError) throw matchError;
+
+  const validMatchIds = new Set(
+    (matches as Array<{ id: string }>).map(match => match.id)
+  );
+
+  return rows
+    .filter(row => validMatchIds.has(row.match_id))
     .map(fromRow);
 }
 
