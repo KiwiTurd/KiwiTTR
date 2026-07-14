@@ -591,7 +591,7 @@ export default function MobileBottomNav() {
         aria-hidden={panelOpen}
         className={`${
           installedApp
-            ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-white/70 bg-white/85 px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.22)] backdrop-blur-xl"
+            ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-white/65 bg-white/55 px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.20)] backdrop-blur-2xl backdrop-saturate-150"
             : "border-t border-slate-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)]"
         } transition-all duration-300 ease-out ${
           panelOpen
@@ -633,7 +633,7 @@ export default function MobileBottomNav() {
             <Medal className="h-7 w-7" />
           )}
 
-          {navButton(
+          {(isAdmin || isClubLeader) && navButton(
             "match-centre",
             "Management",
             <Paperclip className="h-7 w-7" />
