@@ -21,6 +21,7 @@ import type { Club } from "../types/club";
 
 import { getClubs } from "../services/supabase/clubService";
 import { notify } from "../services/notificationService";
+import { formatStartTime } from "../utils/tournamentTime";
 
 import { useTournament } from "../context/TournamentContext";
 
@@ -40,6 +41,14 @@ useEffect(() => {
 }, []);
 
   const navigate = useNavigate();
+
+  const creationIdRef = useRef(
+    crypto.randomUUID()
+  );
+  const submissionInProgressRef =
+    useRef(false);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
 
   const { startTournament, saveTournament } =
   useTournament();
@@ -66,6 +75,9 @@ const [clubId, setClubId] =
 
 const [date, setDate] =
   useFormDraftState("tournament.new.date", "");
+
+const [startTime, setStartTime] =
+  useFormDraftState("tournament.new.startTime", "");
 
 const [
   playerLimitEnabled,
@@ -230,6 +242,13 @@ useEffect(() => {
       return;
     }
 
+    if (!startTime) {
+      notify.timeout(
+        "Please choose a tournament start time."
+      );
+      return;
+    }
+
     const parsedPlayerCount =
       playerLimitEnabled
         ? Number(playerCount)
@@ -286,6 +305,8 @@ useEffect(() => {
 
       date,
 
+      startTime,
+
       signUpClosesAt:
         allowSignUp && signUpClosesAt
           ? signUpClosesAt
@@ -325,10 +346,20 @@ useEffect(() => {
         : 2000,
     };
 
+    // State updates do not disable a button until the next render. The ref
+    // closes that small window where a quick mobile double-tap can enter this
+    // handler twice.
+    if (submissionInProgressRef.current) {
+      return;
+    }
+
+    submissionInProgressRef.current = true;
+    setIsSubmitting(true);
+
     if (allowSignUp) {
       try {
         await saveTournament({
-          id: "",
+          id: creationIdRef.current,
           settings,
           players: [],
           pools: [],
@@ -346,6 +377,8 @@ useEffect(() => {
         notify.fault(
           "Unable to open tournament sign ups."
         );
+        submissionInProgressRef.current = false;
+        setIsSubmitting(false);
       }
 
       return;
@@ -473,6 +506,20 @@ useEffect(() => {
                 }
                 className="w-full rounded-xl border p-3"
               />
+
+              <div>
+                <label className="font-medium">
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(event) =>
+                    setStartTime(event.target.value)
+                  }
+                  className="mt-2 w-full rounded-xl border p-3"
+                />
+              </div>
 
               <label className="flex items-center gap-3 rounded-xl border bg-slate-50 p-3">
 
@@ -901,6 +948,7 @@ useEffect(() => {
 
           <button
             onClick={continueToPlayers}
+            disabled={isSubmitting}
             className="
               flex
               w-full
@@ -921,10 +969,15 @@ useEffect(() => {
               transition
 
               hover:bg-blue-800
+
+              disabled:cursor-not-allowed
+              disabled:bg-slate-400
             "
           >
 
-            {allowSignUp
+            {isSubmitting
+              ? "Saving Tournament..."
+              : allowSignUp
               ? "Open Sign Ups"
               : "Continue to Player Selection"}
 
@@ -1002,6 +1055,15 @@ useEffect(() => {
 
                 </strong>
 
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">
+                  Start Time
+                </span>
+                <strong>
+                  {formatStartTime(startTime)}
+                </strong>
               </div>
 
               <hr className="border-slate-200" />

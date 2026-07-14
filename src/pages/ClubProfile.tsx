@@ -34,6 +34,7 @@ import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
 import type { SavedTournament } from "../types/tournament";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import { formatStartTime } from "../utils/tournamentTime";
 
 function externalUrl(url: string) {
   return /^https?:\/\//i.test(url)
@@ -559,6 +560,8 @@ function TournamentListRow({
           {new Date(
             tournament.settings.date
           ).toLocaleDateString()}
+          {tournament.settings.startTime &&
+            ` at ${formatStartTime(tournament.settings.startTime)}`}
           {" "}·{" "}
           {tournamentFormatLabel(tournament)}
         </p>

@@ -9,6 +9,8 @@ export interface TournamentSettings {
 
   date: string;
 
+  startTime: string;
+
   signUpClosesAt: string | null;
 
   playerCount: number;
@@ -157,6 +159,8 @@ export const defaultTournament: TournamentState = {
     clubId: "",
 
     date: "",
+
+    startTime: "",
 
     signUpClosesAt: null,
 

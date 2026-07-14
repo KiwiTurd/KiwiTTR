@@ -53,6 +53,7 @@ import {
 } from "../services/teams/teamEngine";
 import { getTeamGames } from "../services/teams/teamGameService";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import { formatStartTime } from "../utils/tournamentTime";
 
 type EventStatusFilter =
   | "all"
@@ -71,6 +72,7 @@ type EventFeedItem = {
   sourceId: string;
   name: string;
   date: string;
+  startTime?: string;
   club: Club | undefined;
   clubName?: string;
   type: Exclude<EventTypeFilter, "all">;
@@ -87,6 +89,7 @@ type EventEditForm = {
   type: "match" | "tournament";
   name: string;
   date: string;
+  startTime: string;
   eventDescription: string;
   allowSignUp: boolean;
   signUpClosesAt: string;
@@ -403,6 +406,7 @@ export default function Events() {
             tournament.settings.name ||
             "Untitled Tournament",
           date: tournament.settings.date,
+          startTime: tournament.settings.startTime,
           club,
           clubName: club?.name,
           type: "tournament",
@@ -605,6 +609,7 @@ export default function Events() {
         type: "match",
         name: event.name,
         date: event.date,
+        startTime: "",
         eventDescription: "",
         allowSignUp: false,
         signUpClosesAt: "",
@@ -626,6 +631,7 @@ export default function Events() {
       type: "tournament",
       name: tournament.settings.name,
       date: tournament.settings.date,
+      startTime: tournament.settings.startTime,
       eventDescription:
         tournament.settings.eventDescription,
       allowSignUp:
@@ -640,8 +646,19 @@ export default function Events() {
       return;
     }
 
-    if (!editForm.name.trim() || !editForm.date) {
-      notify.timeout("Please enter a name and date.");
+    if (
+      !editForm.name.trim() ||
+      !editForm.date ||
+      (
+        editForm.type === "tournament" &&
+        !editForm.startTime
+      )
+    ) {
+      notify.timeout(
+        editForm.type === "tournament"
+          ? "Please enter a name, date and start time."
+          : "Please enter a name and date."
+      );
       return;
     }
 
@@ -678,6 +695,7 @@ export default function Events() {
             ...tournament.settings,
             name: editForm.name.trim(),
             date: editForm.date,
+            startTime: editForm.startTime,
             eventDescription:
               editForm.eventDescription.trim(),
             allowSignUp: editForm.allowSignUp,
@@ -1225,6 +1243,9 @@ export default function Events() {
                       <p className="text-sm text-slate-500">
                         {item.clubName ?? "-"} ·{" "}
                         {new Date(item.date).toLocaleDateString()}
+                        {item.startTime && (
+                          <> at {formatStartTime(item.startTime)}</>
+                        )}
                       </p>
                     </div>
 
@@ -1265,6 +1286,14 @@ export default function Events() {
                             item.date
                           ).toLocaleDateString()}
                         />
+                        {tournament && (
+                          <EventDetail
+                            label="Start Time"
+                            value={formatStartTime(
+                              tournament.settings.startTime
+                            )}
+                          />
+                        )}
                         <EventDetail
                           label="Club"
                           value={item.clubName ?? "-"}
@@ -1489,6 +1518,22 @@ export default function Events() {
 
                             {editForm.type === "tournament" && (
                               <>
+                                <label>
+                                  <span className="text-sm font-semibold">
+                                    Start Time
+                                  </span>
+                                  <input
+                                    type="time"
+                                    value={editForm.startTime}
+                                    onChange={(event) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        startTime: event.target.value,
+                                      })
+                                    }
+                                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                                  />
+                                </label>
                                 <label className="md:col-span-2">
                                   <span className="text-sm font-semibold">
                                     Description

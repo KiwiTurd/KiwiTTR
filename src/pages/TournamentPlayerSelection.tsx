@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -30,6 +31,7 @@ import { generateTournamentDraw } from "../services/tournament/drawGenerator";
 import { generateKnockout } from "../services/tournament/knockoutGenerator";
 import { generateDoubleKnockout } from "../services/tournament/doubleKnockout";
 import PlayerSelector from "../components/shared/PlayerSelector";
+import { notify } from "../services/notificationService";
 
 function shufflePlayers(
   players: Player[]
@@ -94,6 +96,14 @@ const {
   saveTournament,
   tournament,
 } = useTournament();
+
+const creationIdRef = useRef(
+  tournament.id || crypto.randomUUID()
+);
+const submissionInProgressRef =
+  useRef(false);
+const [isSubmitting, setIsSubmitting] =
+  useState(false);
 
 const [players, setPlayers] =
   useState<Player[]>([]);
@@ -669,6 +679,14 @@ function getClubName(
 
               <button
   onClick={async () => {
+    if (submissionInProgressRef.current) {
+      return;
+    }
+
+    submissionInProgressRef.current = true;
+    setIsSubmitting(true);
+
+    try {
 
     const draw =
       generateTournamentDraw(
@@ -712,6 +730,7 @@ function getClubName(
 const savedTournament =
   await saveTournament({
     ...tournament,
+    id: tournament.id || creationIdRef.current,
     players:
       isDoubles
         ? pairPlayers
@@ -725,8 +744,18 @@ navigate(
   `/tournaments/${savedTournament.id}/live`
 );
 
+    } catch (error) {
+      console.error(error);
+      notify.fault(
+        "Unable to build the tournament."
+      );
+      submissionInProgressRef.current = false;
+      setIsSubmitting(false);
+    }
+
   }}
   disabled={
+  isSubmitting ||
   !hasValidPlayerTotal ||
   (
     isDoubles &&
@@ -738,7 +767,9 @@ navigate(
   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-900 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
 >
 
-                Continue
+                {isSubmitting
+                  ? "Building Tournament..."
+                  : "Continue"}
 
                 <ArrowRight className="h-4 w-4"/>
 

@@ -32,12 +32,14 @@ import type { Club } from "../types/club";
 import type { SavedTournament } from "../types/tournament";
 import { getClubs } from "../services/supabase/clubService";
 import { notify } from "../services/notificationService";
+import { formatStartTime } from "../utils/tournamentTime";
 
 type EditForm = {
   name: string;
   eventDescription: string;
   clubId: string;
   date: string;
+  startTime: string;
   allowSignUp: boolean;
   signUpClosesAt: string;
   playerLimitEnabled: boolean;
@@ -278,6 +280,7 @@ export default function TournamentCentre() {
         tournament.settings.eventDescription,
       clubId: tournament.settings.clubId,
       date: tournament.settings.date,
+      startTime: tournament.settings.startTime,
       allowSignUp:
         tournament.settings.allowSignUp,
       signUpClosesAt:
@@ -318,9 +321,13 @@ export default function TournamentCentre() {
       return;
     }
 
-    if (!editForm.clubId || !editForm.date) {
+    if (
+      !editForm.clubId ||
+      !editForm.date ||
+      !editForm.startTime
+    ) {
       notify.timeout(
-        "Please choose a club and date."
+        "Please choose a club, date and start time."
       );
       return;
     }
@@ -364,6 +371,7 @@ export default function TournamentCentre() {
             editForm.eventDescription.trim(),
           clubId: editForm.clubId,
           date: editForm.date,
+          startTime: editForm.startTime,
           allowSignUp: editForm.allowSignUp,
           signUpClosesAt:
             editForm.allowSignUp &&
@@ -684,6 +692,9 @@ export default function TournamentCentre() {
                         {new Date(
                           tournament.settings.date
                         ).toLocaleDateString()}
+                        {tournament.settings.startTime && (
+                          <> at {formatStartTime(tournament.settings.startTime)}</>
+                        )}
                         {" "}·{" "}
                         {clubNameById.get(
                           tournament.settings.clubId
@@ -715,6 +726,12 @@ export default function TournamentCentre() {
                           value={new Date(
                             tournament.settings.date
                           ).toLocaleDateString()}
+                        />
+                        <DetailItem
+                          label="Start Time"
+                          value={formatStartTime(
+                            tournament.settings.startTime
+                          )}
                         />
                         <DetailItem
                           label="Club"
@@ -1323,6 +1340,23 @@ export default function TournamentCentre() {
                     setEditForm({
                       ...editForm,
                       date: event.target.value,
+                    })
+                  }
+                  className="mt-2 w-full rounded-xl border p-3"
+                />
+              </label>
+
+              <label>
+                <span className="font-medium">
+                  Start Time
+                </span>
+                <input
+                  type="time"
+                  value={editForm.startTime}
+                  onChange={(event) =>
+                    setEditForm({
+                      ...editForm,
+                      startTime: event.target.value,
                     })
                   }
                   className="mt-2 w-full rounded-xl border p-3"

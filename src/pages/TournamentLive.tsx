@@ -40,6 +40,7 @@ import type { TournamentMatch } from "../types/tournament";
 import { finishTournamentAndRecordRatings } from "../services/supabase/tournamentService";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import { formatStartTime } from "../utils/tournamentTime";
 
 const emptyGames = ["", "", "", "", ""];
 const emptyConfirmedGames = [false, false, false, false, false];
@@ -583,6 +584,8 @@ export default function TournamentLive() {
             </h1>
             <p className="mt-3 text-lg text-slate-500">
               {new Date(`${tournament.settings.date}T00:00:00`).toLocaleDateString()}
+              {tournament.settings.startTime &&
+                ` at ${formatStartTime(tournament.settings.startTime)}`}
               {" · "}{tournament.players.length} players
               {" · "}{tournament.settings.socialPlay ? "Social play" : "KiwiTTR event"}
               {" · "}{tournament.settings.seedByTTR ? "Seeded by rating" : "Random draw"}

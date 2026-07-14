@@ -29,6 +29,7 @@ type TournamentRow = {
   name: string;
   event_description: string | null;
   tournament_date: string;
+  start_time: string | null;
   signup_closes_at: string | null;
   player_count: number;
   player_limit_enabled: boolean;
@@ -253,6 +254,7 @@ function fromTournamentRow(
         row.event_description ?? "",
       clubId: row.club_id,
       date: row.tournament_date,
+      startTime: row.start_time?.slice(0, 5) ?? "",
       signUpClosesAt:
         row.signup_closes_at ?? null,
       playerCount: row.player_count,
@@ -287,6 +289,7 @@ function toTournamentRow(tournament: TournamentState) {
     event_description:
       tournament.settings.eventDescription,
     tournament_date: tournament.settings.date,
+    start_time: tournament.settings.startTime || null,
     signup_closes_at:
       tournament.settings.signUpClosesAt,
     player_count: tournament.settings.playerCount,
@@ -1021,6 +1024,7 @@ export async function updateTournamentMetadata(
       event_description:
         tournament.settings.eventDescription,
       tournament_date: tournament.settings.date,
+      start_time: tournament.settings.startTime || null,
       signup_closes_at:
         tournament.settings.signUpClosesAt,
       player_count: tournament.settings.playerCount,

@@ -231,6 +231,9 @@ export function TournamentProvider({
   ) {
     setTournament({
       ...defaultTournament,
+      // Allocate the primary key once for the whole wizard. Reusing it makes
+      // a retried save an update instead of a second tournament insert.
+      id: crypto.randomUUID(),
       settings,
     });
   }

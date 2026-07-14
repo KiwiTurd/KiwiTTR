@@ -26,6 +26,7 @@ import useRole from "../hooks/useRole";
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import { formatStartTime } from "../utils/tournamentTime";
 
 import type { Club } from "../types/club";
 import type { Player } from "../types/player";
@@ -440,6 +441,8 @@ export default function Dashboard() {
                       {new Date(
                         tournament.settings.date
                       ).toLocaleDateString()}
+                      {tournament.settings.startTime &&
+                        ` at ${formatStartTime(tournament.settings.startTime)}`}
                       {" "}·{" "}
                       {tournament.settings.playerLimitEnabled
                         ? `${tournament.settings.playerCount} players`
