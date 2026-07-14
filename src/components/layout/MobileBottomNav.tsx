@@ -42,6 +42,7 @@ import { useProfile } from "../../context/ProfileContext";
 import useRole from "../../hooks/useRole";
 import { supabase } from "../../lib/supabase";
 import GlobalSearch from "./GlobalSearch";
+import NavigationProfilePicture from "./NavigationProfilePicture";
 
 type Panel =
   | "home"
@@ -379,8 +380,12 @@ export default function MobileBottomNav() {
       <div className="grid gap-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
-              {initials()}
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-900 text-sm font-bold text-white">
+              <NavigationProfilePicture
+                avatarUrl={profile?.avatar_url}
+                className="h-full w-full"
+                fallback={initials()}
+              />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -586,7 +591,7 @@ export default function MobileBottomNav() {
         aria-hidden={panelOpen}
         className={`${
           installedApp
-            ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-slate-200 bg-white px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.22)]"
+            ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-white/70 bg-white/85 px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.22)] backdrop-blur-xl"
             : "border-t border-slate-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)]"
         } transition-all duration-300 ease-out ${
           panelOpen
@@ -594,7 +599,7 @@ export default function MobileBottomNav() {
             : "translate-y-0 opacity-100"
         }`}
       >
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-0.5">
+        <div className="relative mx-auto flex max-w-lg items-center justify-between gap-0.5 opacity-100">
           {navButton(
             "home",
             "KiwiTTR",
@@ -643,9 +648,13 @@ export default function MobileBottomNav() {
           {navButton(
             "account",
             "Account",
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-blue-900 text-sm font-bold text-white">
               {session ? (
-                initials()
+                <NavigationProfilePicture
+                  avatarUrl={profile?.avatar_url}
+                  className="h-full w-full"
+                  fallback={initials()}
+                />
               ) : (
                 <LogIn className="h-7 w-7" />
               )}

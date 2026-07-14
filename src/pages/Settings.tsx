@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   Building2,
   ChevronRight,
-  Database,
   Search,
   Megaphone,
   LayoutPanelTop,
@@ -15,12 +14,15 @@ import {
 
 import useRole from "../hooks/useRole";
 import { useSidebar } from "../context/SidebarContext";
+import PlayerProfileSettings from "../components/settings/PlayerProfileSettings";
 
 export default function Settings() {
 
   const {
     isAdmin,
     isClubLeader,
+    isPlayer,
+    playerId,
   } = useRole();
 
   const {
@@ -106,6 +108,10 @@ export default function Settings() {
             </div>
           </div>
         </section>
+
+        {isPlayer && (
+          <PlayerProfileSettings playerId={playerId} />
+        )}
 
         {(isAdmin || isClubLeader) && (
 
@@ -320,170 +326,6 @@ export default function Settings() {
           </Link>
 
         )}
-
-        {/* Competition */}
-
-        <div
-          className="
-            rounded-2xl
-
-            border
-            border-slate-200
-
-            bg-white/70
-
-            px-6
-            py-5
-
-            opacity-70
-          "
-        >
-
-          <div className="flex items-center">
-
-            <div
-              className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-
-                rounded-xl
-
-                bg-slate-100
-
-                text-slate-500
-              "
-            >
-
-              <Settings2 className="h-6 w-6" />
-
-            </div>
-
-            <div className="ml-5 flex-1">
-
-              <h2 className="text-xl font-bold">
-
-                Competition Settings
-
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-
-                Configure leagues, competitions and seasons.
-
-              </p>
-
-            </div>
-
-            <span
-              className="
-                rounded-full
-
-                bg-slate-200
-
-                px-3
-                py-1
-
-                text-xs
-                font-semibold
-
-                uppercase
-
-                tracking-wide
-              "
-            >
-
-              Coming Soon
-
-            </span>
-
-          </div>
-
-        </div>
-
-        {/* Database */}
-
-        <div
-          className="
-            rounded-2xl
-
-            border
-            border-slate-200
-
-            bg-white/70
-
-            px-6
-            py-5
-
-            opacity-70
-          "
-        >
-
-          <div className="flex items-center">
-
-            <div
-              className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-
-                rounded-xl
-
-                bg-slate-100
-
-                text-slate-500
-              "
-            >
-
-              <Database className="h-6 w-6" />
-
-            </div>
-
-            <div className="ml-5 flex-1">
-
-              <h2 className="text-xl font-bold">
-
-                Database
-
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-
-                Database maintenance, imports and exports.
-
-              </p>
-
-            </div>
-
-            <span
-              className="
-                rounded-full
-
-                bg-slate-200
-
-                px-3
-                py-1
-
-                text-xs
-                font-semibold
-
-                uppercase
-
-                tracking-wide
-              "
-            >
-
-              Coming Soon
-
-            </span>
-
-          </div>
-
-        </div>
 
         {isAdmin && (
           <Link

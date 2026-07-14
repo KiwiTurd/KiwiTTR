@@ -18,6 +18,7 @@ import NewTournament from "./pages/NewTournament";
 import TournamentPlayerSelection from "./pages/TournamentPlayerSelection";
 import TournamentLive from "./pages/TournamentLive";
 import TournamentViewer from "./pages/TournamentViewer";
+import MultiLiveViewer from "./pages/MultiLiveViewer";
 import TeamGames from "./pages/TeamGames";
 import TeamMatchType from "./pages/TeamMatchType";
 import NewTeamGameEvent from "./pages/NewTeamGameEvent";
@@ -173,6 +174,11 @@ export const router = createBrowserRouter([
       },
 
       {
+        path: "tournaments/multi-viewer",
+        element: <MultiLiveViewer />,
+      },
+
+      {
         path: "tournaments/:id/live",
         element: (
           <RoleRoute allowedRoles={["admin", "club_admin"]}>
@@ -265,9 +271,9 @@ export const router = createBrowserRouter([
       {
         path: "matches",
         element: (
-          <AdminRoute>
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
             <Matches />
-          </AdminRoute>
+          </RoleRoute>
         ),
       },
 

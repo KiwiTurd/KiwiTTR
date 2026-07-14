@@ -10,6 +10,11 @@ export interface Player {
   mobile: string;
   email: string;
 
+  mobilePublicToClub: boolean;
+  emailPublicToClub: boolean;
+
+  avatarUrl: string;
+
   clubId: string;
 
   rating: number;

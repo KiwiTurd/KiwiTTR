@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   ClipboardPen,
@@ -17,10 +22,17 @@ import { notify } from "../../services/notificationService";
 import SetScoreInput from "./SetScoreInput";
 import useFormDraftState from "../../hooks/useFormDraftState";
 import PlayerSelector from "../shared/PlayerSelector";
+import useRole from "../../hooks/useRole";
 
 const MIN_SETS_TO_WIN = 2;
 
 export default function MatchForm() {
+  const {
+    isAdmin,
+    isClubLeader,
+    clubId: userClubId,
+  } = useRole();
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
 
@@ -36,11 +48,7 @@ export default function MatchForm() {
   ]);
   const [savedSets, setSavedSets] = useFormDraftState<boolean[]>("matches.new.savedSets", [false]);
 
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const [playerData, eventData] = await Promise.all([
         getPlayers(),
@@ -48,12 +56,45 @@ export default function MatchForm() {
       ]);
 
       setPlayers(playerData);
-      setEvents(eventData);
+
+      const manageableEvents = isAdmin
+        ? eventData
+        : isClubLeader && userClubId
+          ? eventData.filter(
+              (event) => event.clubId === userClubId
+            )
+          : [];
+
+      setEvents(manageableEvents);
+
+      setEventId((currentEventId) =>
+        currentEventId &&
+        !manageableEvents.some(
+          (event) => event.id === currentEventId
+        )
+          ? ""
+          : currentEventId
+      );
     } catch (error) {
       console.error(error);
       notify.fault("Unable to load match data.");
     }
-  }
+  }, [
+    isAdmin,
+    isClubLeader,
+    setEventId,
+    userClubId,
+  ]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [loadData]);
 
   function updateSet(
     index: number,
@@ -170,8 +211,24 @@ export default function MatchForm() {
       summary.player2Sets
     ) >= MIN_SETS_TO_WIN;
 
+  const selectedEvent = events.find(
+    (event) => event.id === eventId
+  );
+
+  const canEnterMatchDetails = Boolean(
+    selectedEvent &&
+    (
+      isAdmin ||
+      (
+        isClubLeader &&
+        userClubId &&
+        selectedEvent.clubId === userClubId
+      )
+    )
+  );
+
   const canRecordMatch =
-    Boolean(eventId) &&
+    canEnterMatchDetails &&
     Boolean(player1Id) &&
     Boolean(player2Id) &&
     player1Id !== player2Id &&
@@ -180,8 +237,12 @@ export default function MatchForm() {
     allSetsSaved;
 
   async function handleRecordMatch() {
-    if (!eventId) {
-      notify.timeout("Please select an event.");
+    if (!eventId || !canEnterMatchDetails) {
+      notify.timeout(
+        isClubLeader
+          ? "Select an event associated with your club."
+          : "Please select an event."
+      );
       return;
     }
 
@@ -273,6 +334,16 @@ export default function MatchForm() {
 
       <div className="space-y-4 p-4 sm:p-5">
 
+        {isClubLeader && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            {userClubId
+              ? events.length > 0
+                ? "Select one of your club's events before entering players and scores."
+                : "Your club has no events available. Create a club event before recording a match."
+              : "Your account must be assigned to a club before recording matches."}
+          </div>
+        )}
+
         <div className="grid gap-3 lg:grid-cols-3">
 
           <div>
@@ -283,6 +354,9 @@ export default function MatchForm() {
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
+              disabled={
+                isClubLeader && !userClubId
+              }
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">Select Event</option>
@@ -309,6 +383,12 @@ export default function MatchForm() {
               onChange={(player) => setPlayer1Id(player.id)}
               onClear={() => setPlayer1Id("")}
               excludePlayerId={player2Id || undefined}
+              disabled={!canEnterMatchDetails}
+              placeholder={
+                canEnterMatchDetails
+                  ? "Select Player..."
+                  : "Select an eligible event first"
+              }
             />
           </div>
 
@@ -326,6 +406,12 @@ export default function MatchForm() {
               onChange={(player) => setPlayer2Id(player.id)}
               onClear={() => setPlayer2Id("")}
               excludePlayerId={player1Id || undefined}
+              disabled={!canEnterMatchDetails}
+              placeholder={
+                canEnterMatchDetails
+                  ? "Select Player..."
+                  : "Select an eligible event first"
+              }
             />
           </div>
 
@@ -359,13 +445,15 @@ export default function MatchForm() {
                 saved={Boolean(savedSets[index])}
                 onSave={() => saveSet(index)}
                 onEdit={() => editSet(index)}
+                disabled={!canEnterMatchDetails}
               />
             ))}
           </div>
 
           <button
             onClick={addSet}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-900 transition hover:bg-slate-200"
+            disabled={!canEnterMatchDetails}
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-900 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
             Add Set

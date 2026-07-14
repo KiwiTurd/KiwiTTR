@@ -27,9 +27,9 @@ import { advanceWinner } from "../services/tournament/advanceKnockout";
 import { getQualifiers } from "../services/tournament/getQualifiers";
 import {
   arePoolsComplete,
-  getNextUnplayedMatch,
   recordMatchResult,
 } from "../services/tournament/matchProgression";
+import { orderPoolMatchesForPlay } from "../services/tournament/matchGenerator";
 import { generateKnockout } from "../services/tournament/knockoutGenerator";
 import {
   advanceDoubleKnockout,
@@ -131,11 +131,43 @@ export default function TournamentLive() {
     }
   }, [activeTab, tournament.id]);
 
+  function getNextRotatingPoolMatch(
+    matches: TournamentMatch[]
+  ) {
+    for (const pool of tournament.pools) {
+      const nextMatch = orderPoolMatchesForPlay(
+        pool,
+        matches
+      ).find((match) => !match.completed);
+
+      if (nextMatch) {
+        return nextMatch;
+      }
+    }
+
+    return undefined;
+  }
+
+  function getRemainingPoolMatches(
+    poolId: string
+  ) {
+    const pool = tournament.pools.find(
+      (candidate) => candidate.id === poolId
+    );
+
+    return pool
+      ? orderPoolMatchesForPlay(
+          pool,
+          tournament.matches
+        ).filter((match) => !match.completed)
+      : [];
+  }
+
   const [
     selectedPoolMatchState,
     setSelectedPoolMatch,
   ] = useState<TournamentMatch | null>(
-    getNextUnplayedMatch(tournament.matches) ?? null
+    getNextRotatingPoolMatch(tournament.matches) ?? null
   );
 
   const [
@@ -166,12 +198,9 @@ export default function TournamentLive() {
   const poolMatchesComplete =
     tournament.matches.filter(match => match.completed).length;
 
-  const remainingPoolMatches =
-    tournament.matches.filter(match => !match.completed);
-
   const selectedPoolMatch =
     selectedPoolMatchState ??
-    getNextUnplayedMatch(tournament.matches) ??
+    getNextRotatingPoolMatch(tournament.matches) ??
     null;
 
   const selectedKnockoutMatch =
@@ -360,7 +389,7 @@ export default function TournamentLive() {
     setMatches(updatedMatches);
     ensureKnockoutFromPools(updatedMatches);
     setSelectedPoolMatch(
-      getNextUnplayedMatch(updatedMatches) ?? null
+      getNextRotatingPoolMatch(updatedMatches) ?? null
     );
     resetEntry();
   }
@@ -738,7 +767,7 @@ export default function TournamentLive() {
                       )}
                       className="inline-flex items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                     >
-                      {remainingPoolMatches.filter((match) => match.poolId === pool.id).length} remaining
+                      {getRemainingPoolMatches(pool.id).length} remaining
                       <ChevronDown className={`h-3.5 w-3.5 transition-transform ${
                         expandedPoolId === pool.id ? "rotate-180" : ""
                       }`} />
@@ -781,13 +810,12 @@ export default function TournamentLive() {
                     <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">
                       Remaining pool matches
                     </div>
-                    {remainingPoolMatches.filter((match) => match.poolId === pool.id).length === 0 ? (
+                    {getRemainingPoolMatches(pool.id).length === 0 ? (
                       <p className="px-4 pb-3 text-sm text-slate-500">
                         All pool matches completed.
                       </p>
                     ) : (
-                      remainingPoolMatches
-                        .filter((match) => match.poolId === pool.id)
+                      getRemainingPoolMatches(pool.id)
                         .map((match) => (
                           <button
                             key={match.id}

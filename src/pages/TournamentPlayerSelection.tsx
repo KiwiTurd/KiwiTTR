@@ -68,6 +68,9 @@ function createDoublesPair(
     lastName: `/ ${playerTwo.firstName} ${playerTwo.lastName}`,
     mobile: "",
     email: "",
+    mobilePublicToClub: false,
+    emailPublicToClub: false,
+    avatarUrl: "",
     clubId: playerOne.clubId,
     rating: 0,
     highestRating: 0,
@@ -104,7 +107,27 @@ const [selectedPlayers, setSelectedPlayers] =
   );
 
 const [doublesPairs, setDoublesPairs] =
-  useState<Player[][]>([]);
+  useState<Player[][]>(() => {
+    if (
+      tournament.settings.format !== "doubles"
+    ) {
+      return [];
+    }
+
+    const pairs: Player[][] = [];
+
+    for (
+      let index = 0;
+      index < tournament.players.length;
+      index += 2
+    ) {
+      pairs.push(
+        tournament.players.slice(index, index + 2)
+      );
+    }
+
+    return pairs;
+  });
 
 const isDoubles =
   tournament.settings.format === "doubles";
@@ -112,11 +135,18 @@ const isDoubles =
 const hasPlayerLimit =
   tournament.settings.playerLimitEnabled;
 
+const playerLimitReached =
+  hasPlayerLimit &&
+  selectedPlayers.length >=
+    tournament.settings.playerCount;
+
 const hasValidPlayerTotal =
-  hasPlayerLimit
-    ? selectedPlayers.length ===
+  selectedPlayers.length >= 2 &&
+  (
+    !hasPlayerLimit ||
+    selectedPlayers.length <=
       tournament.settings.playerCount
-    : selectedPlayers.length >= 2;
+  );
 
   const [clubFilter, setClubFilter] =
     useState("");
@@ -208,6 +238,10 @@ const hasValidPlayerTotal =
         (p) => p.id === player.id
       )
     ) {
+      return;
+    }
+
+    if (playerLimitReached) {
       return;
     }
 
@@ -343,6 +377,7 @@ function getClubName(
               players={filteredPlayers
                 .filter(
                   (player) =>
+                    !playerLimitReached &&
                     !selectedPlayers.some(
                       (selected) => selected.id === player.id
                     )
@@ -353,7 +388,11 @@ function getClubName(
                 }))}
               value={null}
               onChange={addPlayer}
-              placeholder="Search and add a player..."
+              placeholder={
+                playerLimitReached
+                  ? "Player limit reached"
+                  : "Search and add a player..."
+              }
             />
 
             <div className="relative w-56 max-w-full">
@@ -384,9 +423,12 @@ function getClubName(
     <button
       key={player.id}
       onClick={() => addPlayer(player)}
-      disabled={selectedPlayers.some(
-        (p) => p.id === player.id
-      )}
+      disabled={
+        playerLimitReached ||
+        selectedPlayers.some(
+          (p) => p.id === player.id
+        )
+      }
       className={`
         flex
         w-full
@@ -403,6 +445,8 @@ function getClubName(
             (p) => p.id === player.id
           )
             ? "border-green-300 bg-green-50"
+            : playerLimitReached
+              ? "cursor-not-allowed bg-slate-50 opacity-50"
             : "bg-white hover:border-blue-300 hover:bg-blue-50"
         }
       `}
@@ -483,7 +527,7 @@ function getClubName(
             <p className="mt-2 text-slate-500">
 
   {hasPlayerLimit
-    ? `${selectedPlayers.length} / ${tournament.settings.playerCount} selected`
+    ? `${selectedPlayers.length} selected · limit ${tournament.settings.playerCount}`
     : `${selectedPlayers.length} selected`}
 
 </p>

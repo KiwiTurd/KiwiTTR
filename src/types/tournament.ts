@@ -174,7 +174,7 @@ export const defaultTournament: TournamentState = {
 
     socialPlay: false,
 
-    allowSignUp: false,
+    allowSignUp: true,
 
     ttrLimitEnabled: false,
 

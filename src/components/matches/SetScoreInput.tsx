@@ -13,6 +13,7 @@ type Props = {
   saved: boolean;
   onSave: () => void;
   onEdit: () => void;
+  disabled?: boolean;
 };
 
 export default function SetScoreInput({
@@ -26,6 +27,7 @@ export default function SetScoreInput({
   saved,
   onSave,
   onEdit,
+  disabled = false,
 }: Props) {
   function displayScore(score: number) {
     return score === 0
@@ -40,7 +42,7 @@ export default function SetScoreInput({
   }
 
   return (
-    <div className={`grid grid-cols-[minmax(44px,1fr)_56px_56px_36px_36px] items-center gap-1.5 rounded-lg px-2 py-1.5 sm:grid-cols-[minmax(72px,1fr)_96px_96px_40px_40px] ${saved ? "bg-slate-50" : "bg-blue-50"}`}>
+    <div className={`grid grid-cols-[minmax(44px,1fr)_56px_56px_36px_36px] items-center gap-1.5 rounded-lg px-2 py-1.5 sm:grid-cols-[minmax(72px,1fr)_96px_96px_40px_40px] ${saved ? "bg-slate-50" : "bg-blue-50"} ${disabled ? "opacity-60" : ""}`}>
 
       <div className="text-sm font-semibold text-slate-700">
         S{index + 1}
@@ -50,7 +52,7 @@ export default function SetScoreInput({
         <>
           <div className="rounded-md border bg-white px-1 py-1.5 text-center text-sm font-semibold">{player1Score}</div>
           <div className="rounded-md border bg-white px-1 py-1.5 text-center text-sm font-semibold">{player2Score}</div>
-          <button aria-label={`Edit set ${index + 1}`} className="flex h-8 w-8 items-center justify-center rounded-md border border-green-200 bg-white text-green-700 transition hover:border-slate-400 hover:text-slate-900" onClick={onEdit} title="Edit set" type="button">
+          <button aria-label={`Edit set ${index + 1}`} disabled={disabled} className="flex h-8 w-8 items-center justify-center rounded-md border border-green-200 bg-white text-green-700 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50" onClick={onEdit} title="Edit set" type="button">
             <Pencil className="h-4 w-4" />
           </button>
         </>
@@ -62,6 +64,7 @@ export default function SetScoreInput({
             inputMode="numeric"
             placeholder="0"
             value={displayScore(player1Score)}
+            disabled={disabled}
             onChange={(e) => onPlayer1Change(parseScore(e.target.value))}
             className="min-w-0 rounded-md border border-slate-300 bg-white px-1 py-1.5 text-center text-sm outline-none transition placeholder:text-slate-300 focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
           />
@@ -71,10 +74,11 @@ export default function SetScoreInput({
             inputMode="numeric"
             placeholder="0"
             value={displayScore(player2Score)}
+            disabled={disabled}
             onChange={(e) => onPlayer2Change(parseScore(e.target.value))}
             className="min-w-0 rounded-md border border-slate-300 bg-white px-1 py-1.5 text-center text-sm outline-none transition placeholder:text-slate-300 focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
           />
-          <button aria-label={`Save set ${index + 1}`} className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-900 text-white transition hover:bg-blue-800" onClick={onSave} title="Save set" type="button">
+          <button aria-label={`Save set ${index + 1}`} disabled={disabled} className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-900 text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400" onClick={onSave} title="Save set" type="button">
             <Save className="h-4 w-4" />
           </button>
         </>
@@ -83,7 +87,7 @@ export default function SetScoreInput({
       <button
         type="button"
         onClick={onRemove}
-        disabled={!canRemove}
+        disabled={disabled || !canRemove}
         aria-label={`Remove set ${index + 1}`}
         className="
           flex

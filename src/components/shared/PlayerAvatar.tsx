@@ -4,7 +4,7 @@ type Props = {
   firstName?: string | null;
   lastName?: string | null;
   imageUrl?: string | null;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "profile";
 };
 
 export default function PlayerAvatar({
@@ -40,6 +40,12 @@ export default function PlayerAvatar({
       wrapper: "h-20 w-20",
       text: "text-2xl",
       icon: "w-8 h-8",
+    },
+
+    profile: {
+      wrapper: "h-28 w-28",
+      text: "text-3xl",
+      icon: "h-10 w-10",
     },
   };
 

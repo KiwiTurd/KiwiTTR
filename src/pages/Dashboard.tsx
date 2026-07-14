@@ -825,6 +825,11 @@ function QuickActions({
     ...(isPlayer
       ? [
           {
+            to: "/events",
+            icon: <CalendarDays className="h-5 w-5 text-emerald-600" />,
+            title: "Events",
+          },
+          {
             to: "/my-profile",
             icon: <User className="h-5 w-5 text-blue-700" />,
             title: "My Profile",

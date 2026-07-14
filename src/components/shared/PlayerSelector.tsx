@@ -45,6 +45,7 @@ interface Props<T extends PlayerSelectorOption> {
   players?: T[];
   placeholder?: string;
   onClear?: () => void;
+  disabled?: boolean;
 }
 
 export default function PlayerSelector<
@@ -56,6 +57,7 @@ export default function PlayerSelector<
   players: providedPlayers,
   placeholder = "Select Player...",
   onClear,
+  disabled = false,
 }: Props<T>) {
   const [open, setOpen] =
     useState(false);
@@ -118,13 +120,18 @@ export default function PlayerSelector<
 
   return (
     <Popover
-      open={open}
-      onOpenChange={setOpen}
+      open={disabled ? false : open}
+      onOpenChange={(nextOpen) => {
+        if (!disabled) {
+          setOpen(nextOpen);
+        }
+      }}
     >
       <PopoverTrigger
   render={
     <Button
       variant="outline"
+      disabled={disabled}
       className="
         w-full
         h-auto

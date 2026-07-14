@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 import {
   ArrowRight,
+  Info,
   Lock,
   Trophy,
 } from "lucide-react";
@@ -94,7 +95,7 @@ const [socialPlay, setSocialPlay] =
   useFormDraftState("tournament.new.socialPlay", false);
 
 const [allowSignUp, setAllowSignUp] =
-  useFormDraftState("tournament.new.allowSignUp", false);
+  useFormDraftState("tournament.new.allowSignUp", true);
 
 const [signUpClosesAt, setSignUpClosesAt] =
   useFormDraftState("tournament.new.signUpClosesAt", "");
@@ -137,6 +138,7 @@ useEffect(() => {
 
 }, [
   isClubLeader,
+  setClubId,
   userClubId,
 ]);
 
@@ -383,11 +385,10 @@ useEffect(() => {
 
           <div ref={tournamentDetailsRef} className="rounded-3xl border bg-white p-8 shadow-sm">
 
-            <h2 className="mb-6 text-xl font-bold">
-
-              Tournament Details
-
-            </h2>
+            <SettingSectionHeading
+              title="Tournament Details"
+              information="Set the tournament name, public description, hosting club and date. Sign ups are enabled by default so players can enter before you build the draw."
+            />
 
             <div className="space-y-5">
 
@@ -526,11 +527,10 @@ useEffect(() => {
 
           <div className="rounded-3xl border bg-white p-8 shadow-sm">
 
-            <h2 className="mb-6 text-xl font-bold">
-
-              Tournament Size
-
-            </h2>
+            <SettingSectionHeading
+              title="Tournament Size"
+              information="The player limit is a maximum, not a required total. You can build the tournament with any valid number of selected players up to this limit."
+            />
 
             <label className="flex items-center gap-3">
 
@@ -558,7 +558,7 @@ useEffect(() => {
 
               <label className="font-medium">
 
-              Number of Players
+              Maximum Players
 
             </label>
 
@@ -572,6 +572,10 @@ useEffect(() => {
               }
               className="mt-2 w-full rounded-xl border p-3"
             />
+
+            <p className="mt-2 text-sm text-slate-500">
+              You can proceed with fewer players. This only caps how many can enter or be selected.
+            </p>
 
             </div>
 
@@ -591,11 +595,10 @@ useEffect(() => {
 
           <div className="rounded-3xl border bg-white p-8 shadow-sm">
 
-            <h2 className="mb-6 text-xl font-bold">
-
-              Tournament Format
-
-            </h2>
+            <SettingSectionHeading
+              title="Tournament Format"
+              information="Choose how matches are organised. Knockout formats eliminate players, pools provide round-robin play, and Pool Only Ratings records pool results without a knockout stage."
+            />
 
             <div className="space-y-4">
 
@@ -686,11 +689,10 @@ useEffect(() => {
 
             <div className="rounded-3xl border bg-white p-8 shadow-sm">
 
-              <h2 className="mb-6 text-xl font-bold">
-
-                Pool Settings
-
-              </h2>
+              <SettingSectionHeading
+                title="Pool Settings"
+                information="Choose the preferred number of players per pool and, for Pools → Knockout, how many advance. Pools are calculated from the players actually selected."
+              />
 
               <div className="grid gap-5 md:grid-cols-2">
 
@@ -783,6 +785,11 @@ useEffect(() => {
           {/* Seeding */}
 
           <div className="rounded-3xl border bg-white p-8 shadow-sm">
+
+            <SettingSectionHeading
+              title="Event and Rating Settings"
+              information="Control whether results affect KiwiTTR, how competitive draws are seeded, and whether entry is restricted to players at or below a maximum TTR."
+            />
 
             <div className="space-y-5">
 
@@ -1041,14 +1048,14 @@ useEffect(() => {
 
                 <span className="text-slate-500">
 
-                  Players
+                  Player Limit
 
                 </span>
 
                 <strong>
 
                   {playerLimitEnabled
-                    ? Number(playerCount) || "-"
+                    ? `Up to ${Number(playerCount) || "-"}`
                     : "Dynamic"}
 
                 </strong>
@@ -1087,13 +1094,15 @@ useEffect(() => {
 
                     <span className="text-slate-500">
 
-                      Number of Pools
+                      Maximum Pools
 
                     </span>
 
                     <strong>
 
-                      {poolCount ?? "Dynamic"}
+                      {poolCount === null
+                        ? "Dynamic"
+                        : `Up to ${poolCount}`}
 
                     </strong>
 
@@ -1143,7 +1152,7 @@ useEffect(() => {
 
                       {knockoutSize === null
                         ? "Dynamic"
-                        : `${knockoutSize} Players`}
+                        : `Up to ${knockoutSize} Players`}
 
                     </strong>
 
@@ -1167,7 +1176,7 @@ useEffect(() => {
 
                     {playerLimitEnabled &&
                     Number(playerCount)
-                      ? Math.ceil(Number(playerCount) / 2)
+                      ? `Up to ${Math.ceil(Number(playerCount) / 2)}`
                       : "Dynamic"}
 
                   </strong>
@@ -1224,4 +1233,33 @@ useEffect(() => {
 
   );
 
+}
+
+function SettingSectionHeading({
+  title,
+  information,
+}: {
+  title: string;
+  information: string;
+}) {
+  return (
+    <div className="mb-6 flex items-center gap-2">
+      <h2 className="text-xl font-bold">
+        {title}
+      </h2>
+      <span
+        className="group relative inline-flex"
+        tabIndex={0}
+        aria-label={`${title}: ${information}`}
+      >
+        <Info className="h-5 w-5 cursor-help text-blue-700" />
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-72 -translate-x-1/2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-normal leading-relaxed text-white opacity-0 shadow-xl transition group-hover:opacity-100 group-focus:opacity-100"
+        >
+          {information}
+        </span>
+      </span>
+    </div>
+  );
 }

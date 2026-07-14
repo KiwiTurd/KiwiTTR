@@ -13,6 +13,9 @@ type PlayerRow = {
 
   mobile: string | null;
   email: string | null;
+  mobile_public_to_club: boolean | null;
+  email_public_to_club: boolean | null;
+  avatar_url: string | null;
 
   rating: number;
   initial_rating: number | null;
@@ -56,6 +59,9 @@ function fromRow(row: PlayerRow): Player {
 
     mobile: row.mobile ?? "",
     email: row.email ?? "",
+    mobilePublicToClub: row.mobile_public_to_club ?? false,
+    emailPublicToClub: row.email_public_to_club ?? false,
+    avatarUrl: row.avatar_url ?? "",
 
     rating: row.rating,
     initialRating: row.initial_rating ?? row.rating,
@@ -92,6 +98,9 @@ function toRow(player: Player) {
 
     mobile: player.mobile,
     email: player.email,
+    mobile_public_to_club: player.mobilePublicToClub,
+    email_public_to_club: player.emailPublicToClub,
+    avatar_url: player.avatarUrl || null,
 
     rating: player.rating,
     initial_rating:
@@ -200,6 +209,47 @@ export async function updatePlayer(
     .from("players")
     .update(toRow(player))
     .eq("id", player.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateOwnPlayerContact({
+  mobile,
+  email,
+  mobilePublicToClub,
+  emailPublicToClub,
+}: {
+  mobile: string;
+  email: string;
+  mobilePublicToClub: boolean;
+  emailPublicToClub: boolean;
+}): Promise<void> {
+  const { error } = await supabase.rpc(
+    "update_own_player_contact",
+    {
+      new_mobile: mobile,
+      new_email: email,
+      new_mobile_public_to_club: mobilePublicToClub,
+      new_email_public_to_club: emailPublicToClub,
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateOwnPlayerAvatarUrl(
+  avatarUrl: string
+): Promise<void> {
+  const { error } = await supabase.rpc(
+    "update_own_player_avatar",
+    {
+      new_avatar_url: avatarUrl,
+    }
+  );
 
   if (error) {
     throw error;

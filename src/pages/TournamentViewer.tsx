@@ -11,14 +11,19 @@ import {
 
 import {
   ArrowLeft,
+  Check,
   ClipboardPen,
   Crown,
   Maximize2,
   Minimize2,
+  PanelsTopLeft,
+  Plus,
   Trophy,
 } from "lucide-react";
 
+import LiveTournamentPanel from "../components/tournaments/LiveTournamentPanel";
 import { useTournament } from "../context/TournamentContext";
+import useMultiLiveViewer from "../hooks/useMultiLiveViewer";
 import useRole from "../hooks/useRole";
 import type {
   KnockoutMatch,
@@ -84,6 +89,11 @@ export default function TournamentViewer() {
     clubId: userClubId,
   } = useRole();
   const { id } = useParams();
+  const {
+    selectedTournamentIds,
+    toggleTournament,
+    isSelected,
+  } = useMultiLiveViewer();
   const canManageTournament =
     isAdmin ||
     (isClubLeader && userClubId === tournament.settings.clubId);
@@ -250,6 +260,9 @@ export default function TournamentViewer() {
 
   const tournamentIsLive = tournament.status === "active";
   const tournamentCompleted = tournament.status === "completed";
+  const isInMultiView = Boolean(
+    tournament.id && isSelected(tournament.id)
+  );
 
   const scale =
     1 - scrollProgress * 0.24;
@@ -367,14 +380,39 @@ export default function TournamentViewer() {
 
         <div className="flex flex-col items-end gap-3">
         {tournamentIsLive && (
-          <button
-            type="button"
-            onClick={() => void toggleFullscreen()}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Full Screen
+            </button>
+            {tournament.id && (
+              <button
+                type="button"
+                onClick={() => toggleTournament(tournament.id)}
+                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
+                  isInMultiView
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {isInMultiView ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {isInMultiView ? "Added to Multi View" : "Add to Multi View"}
+              </button>
+            )}
+          </div>
+        )}
+        {selectedTournamentIds.length > 1 && (
+          <Link
+            to="/tournaments/multi-viewer"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
           >
-            <Maximize2 className="h-4 w-4" />
-            Full Screen
-          </button>
+            <PanelsTopLeft className="h-4 w-4" />
+            Multi Live Viewer ({selectedTournamentIds.length})
+          </Link>
         )}
         {canManageTournament && tournament.id && (
           <Link
@@ -559,96 +597,25 @@ function TournamentDisplayBoard({
   knockoutMatches: KnockoutMatch[];
   onExit: () => void;
 }) {
-  const matchCount = poolMatches.length + knockoutMatches.length;
-
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950 p-5 text-white md:p-8">
       <div className="mx-auto max-w-[1800px]">
-        <div className="flex items-start justify-between gap-6 border-b border-slate-700 pb-4">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-emerald-400">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400" />
-              Live matches
-            </div>
-            <h1 className="mt-2 text-3xl font-normal tracking-tight text-white md:text-5xl">
-              {name}
-            </h1>
-            <p className="mt-2 text-slate-300">
-              {matchCount} match{matchCount === 1 ? "" : "es"} currently on display
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onExit}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Minimize2 className="h-5 w-5" />
-            Exit Full Screen
-          </button>
-        </div>
-
-        {matchCount === 0 ? (
-          <div className="py-24 text-center">
-            <Trophy className="mx-auto h-12 w-12 text-slate-600" />
-            <h2 className="mt-5 text-2xl font-semibold">No live matches right now</h2>
-            <p className="mt-2 text-slate-400">New matches will appear here automatically.</p>
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {poolMatches.map(match => (
-              <DisplayMatchCard
-                key={`pool-${match.id}`}
-                label={`${
-                  pools.find(pool => pool.id === match.poolId)?.name ?? "Pool"
-                }${match.table ? ` · Table ${match.table}` : ""}`}
-                playerOne={playerName(match.playerOne)}
-                playerTwo={playerName(match.playerTwo)}
-                games={match.games}
-              />
-            ))}
-            {knockoutMatches.map(match => (
-              <DisplayMatchCard
-                key={`knockout-${match.id}`}
-                label={`${match.bracket === "grand-final" ? "Grand Final" : `Knockout · Round ${match.round}`}${match.table ? ` · Table ${match.table}` : ""}`}
-                playerOne={playerName(match.playerOne)}
-                playerTwo={playerName(match.playerTwo)}
-                games={match.games}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DisplayMatchCard({
-  label,
-  playerOne,
-  playerTwo,
-  games,
-}: {
-  label: string;
-  playerOne: string;
-  playerTwo: string;
-  games: string[];
-}) {
-  return (
-    <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-lg">
-      <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-        <span>{label}</span>
-        <span className="inline-flex items-center gap-1.5 text-emerald-400">
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          Live
-        </span>
-      </div>
-      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_30px_minmax(0,1fr)] items-center gap-2 text-lg font-semibold">
-        <span className="truncate">{playerOne}</span>
-        <span className="text-center text-xs font-bold uppercase text-slate-500">vs</span>
-        <span className="truncate text-right">{playerTwo}</span>
-      </div>
-      <div className="mt-3 min-h-5 text-sm font-medium text-slate-300">
-        {games.length > 0 ? games.join("  ·  ") : "Awaiting first set"}
+        <LiveTournamentPanel
+          name={name}
+          pools={pools}
+          poolMatches={poolMatches}
+          knockoutMatches={knockoutMatches}
+          action={(
+            <button
+              type="button"
+              onClick={onExit}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800"
+            >
+              <Minimize2 className="h-5 w-5" />
+              <span className="hidden sm:inline">Exit Full Screen</span>
+            </button>
+          )}
+        />
       </div>
     </div>
   );

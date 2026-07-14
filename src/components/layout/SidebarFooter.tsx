@@ -15,6 +15,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { useProfile } from "../../context/ProfileContext";
 import { useSidebar } from "../../context/SidebarContext";
+import NavigationProfilePicture from "./NavigationProfilePicture";
 
 export default function SidebarFooter() {
 
@@ -150,8 +151,11 @@ export default function SidebarFooter() {
                   shrink-0
                 "
               >
-
-                {initials()}
+                <NavigationProfilePicture
+                  avatarUrl={profile?.avatar_url}
+                  className="h-full w-full"
+                  fallback={initials()}
+                />
 
               </div>
 

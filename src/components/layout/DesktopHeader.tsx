@@ -28,6 +28,7 @@ import { useProfile } from "../../context/ProfileContext";
 import useRole from "../../hooks/useRole";
 import { supabase } from "../../lib/supabase";
 import GlobalSearch from "./GlobalSearch";
+import NavigationProfilePicture from "./NavigationProfilePicture";
 
 type MenuName = "competition" | "management" | "tools";
 
@@ -166,8 +167,12 @@ export default function DesktopHeader() {
 
         <div className="relative shrink-0">
           {session ? (
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white ring-offset-2 transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-700" onClick={() => { setAccountOpen((current) => !current); setOpenMenu(null); }} type="button">
-              {initials()}
+            <button className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-blue-900 text-sm font-bold text-white ring-offset-2 transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-700" onClick={() => { setAccountOpen((current) => !current); setOpenMenu(null); }} type="button">
+              <NavigationProfilePicture
+                avatarUrl={profile?.avatar_url}
+                className="h-full w-full"
+                fallback={initials()}
+              />
             </button>
           ) : (
             <div className="flex items-center gap-2">
@@ -182,7 +187,9 @@ export default function DesktopHeader() {
                 <p className="truncate font-semibold">{`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() || "KiwiTTR member"}</p>
                 <p className="truncate text-xs text-slate-500">{session.user.email}</p>
               </div>
-              <Link className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-slate-100" to="/my-profile"><User className="h-4 w-4" /> My Profile</Link>
+              <Link className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-slate-100" to="/my-profile">
+                <User className="h-4 w-4" /> My Profile
+              </Link>
               <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50" onClick={() => void handleLogout()} type="button"><LogOut className="h-4 w-4" /> Sign Out</button>
             </div>
           )}

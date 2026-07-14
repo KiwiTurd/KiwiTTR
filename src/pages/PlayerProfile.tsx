@@ -28,7 +28,7 @@ import type { Event } from "../types/event";
 import {
   getPlayer,
   getPlayers,
-  updatePlayer,
+  updateOwnPlayerContact,
 } from "../services/supabase/playerService";
 
 import {
@@ -51,6 +51,8 @@ import { notify } from "../services/notificationService";
 import useRole from "../hooks/useRole";
 import { useTournament } from "../context/TournamentContext";
 import { getTeamGames } from "../services/teams/teamGameService";
+import PlayerAvatar from "../components/shared/PlayerAvatar";
+import PlayerAvatarUploader from "../components/player/PlayerAvatarUploader";
 
 export default function PlayerProfile() {
 
@@ -98,12 +100,6 @@ export default function PlayerProfile() {
     recentMatchPage,
     setRecentMatchPage,
   ] = useState(0);
-
-  const [editFirstName, setEditFirstName] =
-    useState("");
-
-  const [editLastName, setEditLastName] =
-    useState("");
 
   const [editMobile, setEditMobile] =
     useState("");
@@ -241,6 +237,28 @@ export default function PlayerProfile() {
       )
     );
 
+  const canViewMobile =
+    Boolean(player) &&
+    (
+      isAdmin ||
+      isOwnPlayer ||
+      (
+        canViewContact &&
+        Boolean(player?.mobilePublicToClub)
+      )
+    );
+
+  const canViewEmail =
+    Boolean(player) &&
+    (
+      isAdmin ||
+      isOwnPlayer ||
+      (
+        canViewContact &&
+        Boolean(player?.emailPublicToClub)
+      )
+    );
+
   const clubTopPlayers = useMemo(() => {
     if (!player) {
       return [];
@@ -371,8 +389,6 @@ export default function PlayerProfile() {
       return;
     }
 
-    setEditFirstName(player.firstName);
-    setEditLastName(player.lastName);
     setEditMobile(player.mobile);
     setEditEmail(player.email);
     setEditing(true);
@@ -380,10 +396,19 @@ export default function PlayerProfile() {
 
   function closeEdit() {
     setEditing(false);
-    setEditFirstName("");
-    setEditLastName("");
     setEditMobile("");
     setEditEmail("");
+  }
+
+  function handleAvatarUploaded(avatarUrl: string) {
+    if (!player) {
+      return;
+    }
+
+    setPlayer(current => current ? { ...current, avatarUrl } : current);
+    setPlayers(current => current.map(item =>
+      item.id === player.id ? { ...item, avatarUrl } : item
+    ));
   }
 
   async function handleSave() {
@@ -394,28 +419,21 @@ export default function PlayerProfile() {
       return;
     }
 
-    if (
-      !editFirstName.trim() ||
-      !editLastName.trim()
-    ) {
-      notify.timeout(
-        "First name and last name are required."
-      );
-      return;
-    }
-
     setSaving(true);
 
     try {
       const updatedPlayer: Player = {
         ...player,
-        firstName: editFirstName.trim(),
-        lastName: editLastName.trim(),
         mobile: editMobile.trim(),
         email: editEmail.trim(),
       };
 
-      await updatePlayer(updatedPlayer);
+      await updateOwnPlayerContact({
+        mobile: updatedPlayer.mobile,
+        email: updatedPlayer.email,
+        mobilePublicToClub: updatedPlayer.mobilePublicToClub,
+        emailPublicToClub: updatedPlayer.emailPublicToClub,
+      });
       setPlayer(updatedPlayer);
       setPlayers((current) =>
         current.map((item) =>
@@ -531,7 +549,14 @@ return (
 
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
 
-          <div className="flex items-center">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+
+            <PlayerAvatar
+              firstName={player.firstName}
+              lastName={player.lastName}
+              imageUrl={player.avatarUrl}
+              size="profile"
+            />
 
             <div className="player-profile-header">
 
@@ -631,11 +656,11 @@ return (
 
         </div>
 
-        {canViewContact ? (
+        {canViewMobile || canViewEmail ? (
 
           <div className="flex flex-col gap-3 text-sm md:flex-row md:items-center md:gap-6">
 
-            <div className="flex items-center gap-2">
+            {canViewMobile && <div className="flex items-center gap-2">
               <span className="flex items-center gap-2 text-slate-500">
                 <Phone className="h-4 w-4" />
                 Mobile
@@ -643,9 +668,9 @@ return (
               <span className="font-semibold">
                 {player.mobile || "-"}
               </span>
-            </div>
+            </div>}
 
-            <div className="flex items-center gap-2">
+            {canViewEmail && <div className="flex items-center gap-2">
               <span className="flex items-center gap-2 text-slate-500">
                 <Mail className="h-4 w-4" />
                 Email
@@ -653,14 +678,14 @@ return (
               <span className="font-semibold">
                 {player.email || "-"}
               </span>
-            </div>
+            </div>}
 
           </div>
 
         ) : (
 
           <div className="text-sm text-slate-500">
-            Contact details are only visible to admins and members of this player's club.
+            This player has kept their contact details private.
           </div>
 
         )}
@@ -1224,30 +1249,25 @@ return (
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                TTR is managed by match results and cannot be edited here.
+                Update the contact details connected to your player profile. Your name and TTR are managed by administrators and match results.
               </p>
 
             </div>
 
             <div className="space-y-4 p-6">
 
-              <input
-                value={editFirstName}
-                onChange={(e) =>
-                  setEditFirstName(e.target.value)
-                }
-                placeholder="First Name"
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-              />
-
-              <input
-                value={editLastName}
-                onChange={(e) =>
-                  setEditLastName(e.target.value)
-                }
-                placeholder="Last Name"
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-              />
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <PlayerAvatarUploader
+                  firstName={player.firstName}
+                  lastName={player.lastName}
+                  avatarUrl={player.avatarUrl}
+                  onUploaded={handleAvatarUploaded}
+                  compact
+                />
+                <p className="mt-3 text-xs text-slate-500">
+                  Images are centre-cropped and compressed to a 512 × 512 WebP.
+                </p>
+              </div>
 
               <input
                 value={editMobile}

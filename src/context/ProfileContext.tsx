@@ -1,4 +1,5 @@
 import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
@@ -7,6 +8,7 @@ import {
 
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
+import { PLAYER_AVATAR_UPDATED_EVENT } from "../constants/playerAvatar";
 
 export type Profile = {
   id: string;
@@ -15,6 +17,7 @@ export type Profile = {
   role: "player" | "club_admin" | "admin";
   club_id: string | null;
   player_id: string | null;
+  avatar_url: string | null;
 };
 
 type ProfileContextType = {
@@ -39,7 +42,7 @@ export function ProfileProvider({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     if (authLoading) return;
 
     if (!session) {
@@ -79,13 +82,41 @@ export function ProfileProvider({
       return;
     }
 
-    setProfile(data as Profile);
+    let avatarUrl: string | null = null;
+
+    if (data.player_id) {
+      const { data: playerData, error: playerError } = await supabase
+        .from("players")
+        .select("avatar_url")
+        .eq("id", data.player_id)
+        .maybeSingle();
+
+      if (playerError) {
+        console.error("Player avatar error:", playerError);
+      } else {
+        avatarUrl = playerData?.avatar_url ?? null;
+      }
+    }
+
+    setProfile({
+      ...data,
+      avatar_url: avatarUrl,
+    } as Profile);
     setLoading(false);
-  }
+  }, [authLoading, session]);
 
   useEffect(() => {
     void refreshProfile();
-  }, [session, authLoading]);
+  }, [refreshProfile]);
+
+  useEffect(() => {
+    const handleAvatarUpdated = () => {
+      void refreshProfile();
+    };
+
+    window.addEventListener(PLAYER_AVATAR_UPDATED_EVENT, handleAvatarUpdated);
+    return () => window.removeEventListener(PLAYER_AVATAR_UPDATED_EVENT, handleAvatarUpdated);
+  }, [refreshProfile]);
 
   return (
     <ProfileContext.Provider
