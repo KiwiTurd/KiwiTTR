@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { Link } from "react-router-dom";
 
@@ -11,6 +12,11 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Edit3,
+  Eye,
   Monitor,
   LockKeyhole,
   Plus,
@@ -19,6 +25,7 @@ import {
   Swords,
   Trophy,
   Tv,
+  UserPlus,
   UsersRound,
 } from "lucide-react";
 
@@ -29,6 +36,7 @@ import type { SavedTournament } from "../types/tournament";
 import {
   addEvent,
   getEvents,
+  updateEvent,
 } from "../services/supabase/eventService";
 
 import {
@@ -40,6 +48,7 @@ import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
 import {
+  teamGameFormatLabel,
   type TeamGameStatus,
 } from "../services/teams/teamEngine";
 import { getTeamGames } from "../services/teams/teamGameService";
@@ -59,6 +68,7 @@ type EventTypeFilter =
 
 type EventFeedItem = {
   id: string;
+  sourceId: string;
   name: string;
   date: string;
   club: Club | undefined;
@@ -71,14 +81,29 @@ type EventFeedItem = {
   countValue?: number;
 };
 
+type EventEditForm = {
+  itemId: string;
+  sourceId: string;
+  type: "match" | "tournament";
+  name: string;
+  date: string;
+  eventDescription: string;
+  allowSignUp: boolean;
+  signUpClosesAt: string;
+};
+
 export default function Events() {
-  const { savedTournaments } =
-    useTournament();
+  const {
+    savedTournaments,
+    signUpForTournament,
+    updateTournamentDetails,
+  } = useTournament();
 
   const {
     isAdmin,
     isClubLeader,
     clubId: userClubId,
+    playerId: linkedPlayerId,
   } = useRole();
 
   const [events, setEvents] =
@@ -121,6 +146,18 @@ export default function Events() {
     useState(true);
 
   const [saving, setSaving] =
+    useState(false);
+
+  const [expandedEventId, setExpandedEventId] =
+    useState<string | null>(null);
+
+  const [signingUpTournamentId, setSigningUpTournamentId] =
+    useState<string | null>(null);
+
+  const [editForm, setEditForm] =
+    useState<EventEditForm | null>(null);
+
+  const [savingEdit, setSavingEdit] =
     useState(false);
 
   const [
@@ -184,6 +221,7 @@ export default function Events() {
   }, [
     isAdmin,
     isClubLeader,
+    setClubId,
     userClubId,
   ]);
 
@@ -337,6 +375,7 @@ export default function Events() {
 
         return {
           id: `match-${event.id}`,
+          sourceId: event.id,
           name: event.name,
           date: event.date,
           club,
@@ -359,6 +398,7 @@ export default function Events() {
 
         return {
           id: `tournament-${tournament.id}`,
+          sourceId: tournament.id,
           name:
             tournament.settings.name ||
             "Untitled Tournament",
@@ -383,6 +423,7 @@ export default function Events() {
     const teamItems: EventFeedItem[] =
       teamGames.map((game) => ({
         id: `team-${game.id}`,
+        sourceId: game.id,
         name: game.name,
         date: game.date,
         club: undefined,
@@ -502,6 +543,198 @@ export default function Events() {
       });
     }, 0);
   }, []);
+
+  function tournamentFormatLabel(
+    tournament: SavedTournament
+  ) {
+    return tournament.settings.format === "pools"
+      ? "Pools → Knockout"
+      : tournament.settings.format === "pool-ratings"
+        ? "Pool Only Ratings"
+        : tournament.settings.format === "doubles"
+          ? "Doubles Knockout"
+          : tournament.settings.format === "double-knockout"
+            ? "Double Knockout"
+            : "Straight Knockout";
+  }
+
+  function canManageItem(item: EventFeedItem) {
+    if (isAdmin) {
+      return true;
+    }
+
+    if (!isClubLeader || !userClubId) {
+      return false;
+    }
+
+    if (item.type === "team") {
+      const game = teamGames.find(
+        (candidate) => candidate.id === item.sourceId
+      );
+
+      return Boolean(
+        game &&
+        [
+          game.homeClubId,
+          game.awayClubId,
+          game.locationClubId,
+        ].includes(userClubId)
+      );
+    }
+
+    return item.club?.id === userClubId;
+  }
+
+  function openEdit(item: EventFeedItem) {
+    if (!canManageItem(item) || item.type === "team") {
+      return;
+    }
+
+    if (item.type === "match") {
+      const event = events.find(
+        (candidate) => candidate.id === item.sourceId
+      );
+
+      if (!event) {
+        return;
+      }
+
+      setEditForm({
+        itemId: item.id,
+        sourceId: event.id,
+        type: "match",
+        name: event.name,
+        date: event.date,
+        eventDescription: "",
+        allowSignUp: false,
+        signUpClosesAt: "",
+      });
+      return;
+    }
+
+    const tournament = savedTournaments.find(
+      (candidate) => candidate.id === item.sourceId
+    );
+
+    if (!tournament) {
+      return;
+    }
+
+    setEditForm({
+      itemId: item.id,
+      sourceId: tournament.id,
+      type: "tournament",
+      name: tournament.settings.name,
+      date: tournament.settings.date,
+      eventDescription:
+        tournament.settings.eventDescription,
+      allowSignUp:
+        tournament.settings.allowSignUp,
+      signUpClosesAt:
+        tournament.settings.signUpClosesAt ?? "",
+    });
+  }
+
+  async function saveEventEdit() {
+    if (!editForm) {
+      return;
+    }
+
+    if (!editForm.name.trim() || !editForm.date) {
+      notify.timeout("Please enter a name and date.");
+      return;
+    }
+
+    setSavingEdit(true);
+
+    try {
+      if (editForm.type === "match") {
+        const event = events.find(
+          (candidate) => candidate.id === editForm.sourceId
+        );
+
+        if (!event) {
+          throw new Error("Event could not be found.");
+        }
+
+        await updateEvent({
+          ...event,
+          name: editForm.name.trim(),
+          date: editForm.date,
+        });
+        await loadData();
+      } else {
+        const tournament = savedTournaments.find(
+          (candidate) => candidate.id === editForm.sourceId
+        );
+
+        if (!tournament) {
+          throw new Error("Tournament could not be found.");
+        }
+
+        await updateTournamentDetails({
+          ...tournament,
+          settings: {
+            ...tournament.settings,
+            name: editForm.name.trim(),
+            date: editForm.date,
+            eventDescription:
+              editForm.eventDescription.trim(),
+            allowSignUp: editForm.allowSignUp,
+            signUpClosesAt:
+              editForm.allowSignUp &&
+              editForm.signUpClosesAt
+                ? editForm.signUpClosesAt
+                : null,
+          },
+        });
+      }
+
+      notify.edgeBall("Event details updated.");
+      setEditForm(null);
+    } catch (error) {
+      console.error(error);
+      notify.fault(
+        error instanceof Error
+          ? error.message
+          : "Unable to update event."
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function handleTournamentSignUp(
+    tournamentId: string
+  ) {
+    if (!linkedPlayerId) {
+      notify.timeout(
+        "Link your account to a player profile before signing up."
+      );
+      return;
+    }
+
+    setSigningUpTournamentId(tournamentId);
+
+    try {
+      await signUpForTournament(
+        tournamentId,
+        linkedPlayerId
+      );
+      notify.edgeBall(
+        "You are signed up for this tournament."
+      );
+    } catch (error) {
+      console.error(error);
+      notify.fault(
+        error instanceof Error
+          ? error.message
+          : "Unable to sign up."
+      );
+    } finally {
+      setSigningUpTournamentId(null);
+    }
+  }
 
   return (
       <div className="mx-auto max-w-7xl space-y-8">
@@ -888,74 +1121,464 @@ export default function Events() {
 
           <div className="divide-y">
 
-            {filteredEventItems.map((item) => (
+            {filteredEventItems.map((item) => {
+              const expanded =
+                expandedEventId === item.id;
+              const tournament =
+                item.type === "tournament"
+                  ? savedTournaments.find(
+                      (candidate) =>
+                        candidate.id === item.sourceId
+                    )
+                  : undefined;
+              const teamGame =
+                item.type === "team"
+                  ? teamGames.find(
+                      (candidate) =>
+                        candidate.id === item.sourceId
+                    )
+                  : undefined;
+              const canManage = canManageItem(item);
+              const drawBuilt = Boolean(
+                tournament &&
+                (
+                  tournament.matches.length +
+                  tournament.knockout.length
+                ) > 0
+              );
+              const signupClosedByDate = Boolean(
+                tournament?.settings.signUpClosesAt &&
+                tournament.settings.signUpClosesAt < today
+              );
+              const signUpsOpen = Boolean(
+                tournament?.settings.allowSignUp &&
+                !drawBuilt &&
+                tournament.status !== "completed" &&
+                tournament.status !== "cancelled" &&
+                !signupClosedByDate
+              );
+              const signedUp = Boolean(
+                tournament &&
+                linkedPlayerId &&
+                tournament.players.some(
+                  (player) => player.id === linkedPlayerId
+                )
+              );
+              const tournamentFull = Boolean(
+                tournament?.settings.playerLimitEnabled &&
+                tournament.players.length >=
+                  tournament.settings.playerCount
+              );
+              const editing = editForm?.itemId === item.id;
 
-              <Link
-                key={item.id}
-                to={item.to}
-                className="group flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
-              >
-                <div className="min-w-0">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        item.type === "tournament"
-                          ? "bg-amber-100 text-amber-700"
-                          : item.type === "team"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      {item.meta}
-                    </span>
+              return (
+                <div key={item.id}>
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => {
+                      setExpandedEventId(
+                        expanded ? null : item.id
+                      );
 
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        item.status === "live"
-                          ? "bg-green-100 text-green-700"
-                          : item.status === "upcoming"
-                            ? "bg-indigo-100 text-indigo-700"
-                            : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {item.status === "live"
-                        ? "Live"
-                        : item.status === "upcoming"
-                          ? "Upcoming"
-                          : "Past"}
-                    </span>
-                  </div>
+                      if (expanded && editing) {
+                        setEditForm(null);
+                      }
+                    }}
+                    className="flex w-full items-center justify-between gap-4 px-5 py-3 text-left transition hover:bg-slate-50"
+                  >
+                    <div className="min-w-0">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            item.type === "tournament"
+                              ? "bg-amber-100 text-amber-700"
+                              : item.type === "team"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {item.meta}
+                        </span>
 
-                  <h2 className="truncate text-base font-medium">
-                    {item.name}
-                  </h2>
-
-                  <p className="text-sm text-slate-500">
-                    {item.clubName ?? "-"} ·{" "}
-                    {new Date(item.date).toLocaleDateString()}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-4">
-                  {item.countLabel && (
-                    <div className="hidden text-right sm:block">
-                      <div className="text-xs font-semibold text-slate-500">
-                        {item.countLabel}
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            item.status === "live"
+                              ? "bg-green-100 text-green-700"
+                              : item.status === "upcoming"
+                                ? "bg-indigo-100 text-indigo-700"
+                                : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {item.status === "live"
+                            ? "Live"
+                            : item.status === "upcoming"
+                              ? "Upcoming"
+                              : "Past"}
+                        </span>
                       </div>
-                      <div className="text-lg font-black text-slate-800">
-                        {item.countValue}
+
+                      <h2 className="truncate text-base font-medium">
+                        {item.name}
+                      </h2>
+
+                      <p className="text-sm text-slate-500">
+                        {item.clubName ?? "-"} ·{" "}
+                        {new Date(item.date).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-4">
+                      {item.countLabel && (
+                        <div className="hidden text-right sm:block">
+                          <div className="text-xs font-semibold text-slate-500">
+                            {item.countLabel}
+                          </div>
+                          <div className="text-lg font-black text-slate-800">
+                            {item.countValue}
+                          </div>
+                        </div>
+                      )}
+
+                      {expanded ? (
+                        <ChevronDown className="h-5 w-5 text-slate-400" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-slate-400" />
+                      )}
+                    </div>
+                  </button>
+
+                  {expanded && (
+                    <div className="space-y-3 bg-slate-50 px-4 py-3">
+                      {(tournament?.settings.eventDescription ||
+                        teamGame?.description) && (
+                        <p className="whitespace-pre-line rounded-xl border bg-white px-3 py-2 text-sm text-slate-700">
+                          {tournament?.settings.eventDescription ??
+                            teamGame?.description}
+                        </p>
+                      )}
+
+                      <div className="grid gap-2 md:grid-cols-3">
+                        <EventDetail
+                          label="Date"
+                          value={new Date(
+                            item.date
+                          ).toLocaleDateString()}
+                        />
+                        <EventDetail
+                          label="Club"
+                          value={item.clubName ?? "-"}
+                        />
+                        <EventDetail
+                          label="Type"
+                          value={item.meta}
+                        />
+                        <EventDetail
+                          label="Status"
+                          value={
+                            item.status === "live"
+                              ? "Live"
+                              : item.status === "upcoming"
+                                ? "Upcoming"
+                                : "Past"
+                          }
+                        />
+
+                        {tournament && (
+                          <>
+                            <EventDetail
+                              label="Format"
+                              value={tournamentFormatLabel(
+                                tournament
+                              )}
+                            />
+                            <EventDetail
+                              label="Players"
+                              value={
+                                tournament.settings
+                                  .playerLimitEnabled
+                                  ? `${tournament.players.length}/${tournament.settings.playerCount}`
+                                  : tournament.players.length
+                              }
+                            />
+                            <EventDetail
+                              label="Sign Ups"
+                              value={
+                                signUpsOpen
+                                  ? "Open"
+                                  : tournament.settings.allowSignUp
+                                    ? "Closed"
+                                    : "Off"
+                              }
+                            />
+                            <EventDetail
+                              label="Close Date"
+                              value={
+                                tournament.settings
+                                  .signUpClosesAt
+                                  ? new Date(
+                                      tournament.settings.signUpClosesAt
+                                    ).toLocaleDateString()
+                                  : "None"
+                              }
+                            />
+                          </>
+                        )}
+
+                        {teamGame && (
+                          <>
+                            <EventDetail
+                              label="Format"
+                              value={teamGameFormatLabel(
+                                teamGame.format ?? "classic-6"
+                              )}
+                            />
+                            <EventDetail
+                              label="Matches"
+                              value={`${teamGame.matchesPlayed}/${teamGame.totalMatches}`}
+                            />
+                            <EventDetail
+                              label="Start Time"
+                              value={teamGame.startTime || "Not set"}
+                            />
+                          </>
+                        )}
                       </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          to={item.to}
+                          className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                          {item.type === "team"
+                            ? "Live Viewer"
+                            : "View"}
+                        </Link>
+
+                        {tournament && signUpsOpen && signedUp && (
+                          <span className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+                            <Check className="h-4 w-4" />
+                            Signed Up
+                          </span>
+                        )}
+
+                        {tournament &&
+                          signUpsOpen &&
+                          !signedUp &&
+                          !tournamentFull && (
+                            <button
+                              type="button"
+                              disabled={
+                                signingUpTournamentId ===
+                                tournament.id
+                              }
+                              onClick={() =>
+                                void handleTournamentSignUp(
+                                  tournament.id
+                                )
+                              }
+                              className="inline-flex items-center gap-2 rounded-lg bg-green-700 px-3 py-2 text-sm font-semibold text-white hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                              {signingUpTournamentId ===
+                              tournament.id
+                                ? "Signing Up"
+                                : "Sign Up"}
+                            </button>
+                          )}
+
+                        {tournament &&
+                          signUpsOpen &&
+                          !signedUp &&
+                          tournamentFull && (
+                            <span className="inline-flex items-center rounded-lg border bg-white px-3 py-2 text-sm font-semibold text-slate-500">
+                              Full
+                            </span>
+                          )}
+
+                        {canManage &&
+                          item.type !== "team" &&
+                          (!tournament ||
+                            tournament.status === "draft") && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                editing
+                                  ? setEditForm(null)
+                                  : openEdit(item)
+                              }
+                              className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              {editing
+                                ? "Close Edit"
+                                : "Edit Details"}
+                            </button>
+                          )}
+
+                        {canManage && tournament && (
+                          <Link
+                            to={`/tournaments/${tournament.id}/live`}
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            {tournament.status === "active"
+                              ? "Match Input"
+                              : "Edit Draws"}
+                          </Link>
+                        )}
+
+                        {canManage && teamGame && (
+                          <>
+                            {(teamGame.status === "draft" ||
+                              isAdmin) && (
+                              <Link
+                                to={`/team-games/new/${teamGame.format ?? "classic-6"}?edit=${teamGame.id}`}
+                                className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                                Edit Setup
+                              </Link>
+                            )}
+                            <Link
+                              to={`/team-games/${teamGame.id}/manage`}
+                              className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              Manage
+                            </Link>
+                          </>
+                        )}
+                      </div>
+
+                      {editing && editForm && (
+                        <div className="rounded-xl border bg-white p-4">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <label>
+                              <span className="text-sm font-semibold">
+                                Name
+                              </span>
+                              <input
+                                value={editForm.name}
+                                onChange={(event) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    name: event.target.value,
+                                  })
+                                }
+                                className="mt-1 w-full rounded-lg border px-3 py-2"
+                              />
+                            </label>
+                            <label>
+                              <span className="text-sm font-semibold">
+                                Date
+                              </span>
+                              <input
+                                type="date"
+                                value={editForm.date}
+                                onChange={(event) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    date: event.target.value,
+                                  })
+                                }
+                                className="mt-1 w-full rounded-lg border px-3 py-2"
+                              />
+                            </label>
+
+                            {editForm.type === "tournament" && (
+                              <>
+                                <label className="md:col-span-2">
+                                  <span className="text-sm font-semibold">
+                                    Description
+                                  </span>
+                                  <textarea
+                                    rows={3}
+                                    value={
+                                      editForm.eventDescription
+                                    }
+                                    onChange={(event) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        eventDescription:
+                                          event.target.value,
+                                      })
+                                    }
+                                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                                  />
+                                </label>
+                                <label className="flex items-center gap-3 rounded-lg border bg-slate-50 p-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      editForm.allowSignUp
+                                    }
+                                    onChange={() =>
+                                      setEditForm({
+                                        ...editForm,
+                                        allowSignUp:
+                                          !editForm.allowSignUp,
+                                      })
+                                    }
+                                  />
+                                  <span className="text-sm font-semibold">
+                                    Allow Sign Up
+                                  </span>
+                                </label>
+                                {editForm.allowSignUp && (
+                                  <label>
+                                    <span className="text-sm font-semibold">
+                                      Sign Up Close Date
+                                    </span>
+                                    <input
+                                      type="date"
+                                      value={
+                                        editForm.signUpClosesAt
+                                      }
+                                      onChange={(event) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          signUpClosesAt:
+                                            event.target.value,
+                                        })
+                                      }
+                                      className="mt-1 w-full rounded-lg border px-3 py-2"
+                                    />
+                                  </label>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          <div className="mt-4 flex gap-2">
+                            <button
+                              type="button"
+                              disabled={savingEdit}
+                              onClick={() =>
+                                void saveEventEdit()
+                              }
+                              className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                            >
+                              {savingEdit
+                                ? "Saving"
+                                : "Save Changes"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditForm(null)}
+                              className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
-                    Open
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                  </div>
                 </div>
-              </Link>
-
-            ))}
+              );
+            })}
 
           </div>
 
@@ -963,6 +1586,25 @@ export default function Events() {
 
       )}
 
+    </div>
+  );
+}
+
+function EventDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border bg-white px-3 py-2">
+      <div className="text-[11px] font-semibold uppercase text-slate-400">
+        {label}
+      </div>
+      <div className="text-sm font-semibold text-slate-900">
+        {value}
+      </div>
     </div>
   );
 }

@@ -101,7 +101,12 @@ type TeamGameSummary = {
   id: string;
   name: string;
   clubName: string;
+  description: string;
   date: string;
+  startTime: string | null;
+  homeClubId: string;
+  awayClubId: string;
+  locationClubId: string | null;
   status: TeamGameStatus;
   format: Classic6Game["format"];
   matchesPlayed: number;
@@ -610,7 +615,12 @@ export async function getTeamGames(): Promise<
         row.location_club?.name ??
         row.home_club?.name ??
         "",
+      description: row.event_description,
       date: row.game_date,
+      startTime: row.start_time,
+      homeClubId: row.home_club_id,
+      awayClubId: row.away_club_id,
+      locationClubId: row.location_club_id,
       status: summaryStatus(row),
       format: row.format,
       matchesPlayed: stats.completed,

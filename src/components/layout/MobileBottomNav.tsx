@@ -58,6 +58,23 @@ type MobileNavItem = {
   icon: React.ReactNode;
 };
 
+type StandaloneNavigator = Navigator & {
+  standalone?: boolean;
+};
+
+function isInstalledApp() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return (
+    window.matchMedia("(display-mode: standalone)")
+      .matches ||
+    (window.navigator as StandaloneNavigator)
+      .standalone === true
+  );
+}
+
 export default function MobileBottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,6 +92,9 @@ export default function MobileBottomNav() {
 
   const [panelOpen, setPanelOpen] =
     useState(false);
+
+  const [installedApp, setInstalledApp] =
+    useState(isInstalledApp);
 
   const closeTimerRef =
     useRef<number | null>(null);
@@ -119,6 +139,28 @@ export default function MobileBottomNav() {
   useEffect(() => {
     return clearCloseTimer;
   }, [clearCloseTimer]);
+
+  useEffect(() => {
+    const displayMode = window.matchMedia(
+      "(display-mode: standalone)"
+    );
+
+    function updateInstalledMode() {
+      setInstalledApp(isInstalledApp());
+    }
+
+    displayMode.addEventListener(
+      "change",
+      updateInstalledMode
+    );
+
+    return () => {
+      displayMode.removeEventListener(
+        "change",
+        updateInstalledMode
+      );
+    };
+  }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -429,6 +471,53 @@ export default function MobileBottomNav() {
     label: string,
     icon: React.ReactNode
   ) {
+    const pathname = location.pathname;
+    const active =
+      activePanel === panel ||
+      (
+        panel === "home" &&
+        pathname === "/"
+      ) ||
+      (
+        panel === "competition" &&
+        [
+          "/rankings",
+          "/clubs",
+          "/events",
+          "/tournaments",
+          "/team-games",
+        ].some((path) =>
+          pathname === path ||
+          pathname.startsWith(`${path}/`)
+        )
+      ) ||
+      (
+        panel === "match-centre" &&
+        ["/matches", "/players"].some(
+          (path) =>
+            pathname === path ||
+            pathname.startsWith(`${path}/`)
+        )
+      ) ||
+      (
+        panel === "tools" &&
+        ["/simulator", "/settings"].some(
+          (path) =>
+            pathname === path ||
+            pathname.startsWith(`${path}/`)
+        )
+      ) ||
+      (
+        panel === "profile" &&
+        ["/dashboard", "/my-profile"].includes(
+          pathname
+        )
+      ) ||
+      (
+        panel === "account" &&
+        ["/login", "/register"].includes(pathname)
+      );
+
     return (
       <button
         type="button"
@@ -442,7 +531,15 @@ export default function MobileBottomNav() {
           openPanel(panel);
         }}
         aria-label={label}
-        className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14"
+        className={`flex h-14 min-w-0 flex-1 items-center justify-center text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14 ${
+          installedApp
+            ? `rounded-[1.4rem] ${
+                active
+                  ? "bg-slate-100 text-blue-900"
+                  : ""
+              }`
+            : "rounded-xl"
+        }`}
       >
         {icon}
       </button>
@@ -487,7 +584,11 @@ export default function MobileBottomNav() {
 
       <nav
         aria-hidden={panelOpen}
-        className={`border-t border-slate-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] transition-all duration-300 ease-out ${
+        className={`${
+          installedApp
+            ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-slate-200 bg-white px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.22)]"
+            : "border-t border-slate-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)]"
+        } transition-all duration-300 ease-out ${
           panelOpen
             ? "pointer-events-none translate-y-3 opacity-0"
             : "translate-y-0 opacity-100"
