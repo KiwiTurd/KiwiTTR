@@ -109,7 +109,8 @@ export default function Settings() {
           </div>
         </section>
 
-        {isPlayer && (
+        {(isPlayer ||
+          ((isAdmin || isClubLeader) && Boolean(playerId))) && (
           <PlayerProfileSettings playerId={playerId} />
         )}
 

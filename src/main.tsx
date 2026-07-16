@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 
@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { TournamentProvider } from "./context/TournamentContext";
+import LoadingScreen from "./components/shared/LoadingScreen";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -24,7 +25,9 @@ createRoot(document.getElementById("root")!).render(
 
           <SidebarProvider>
 
-            <RouterProvider router={router} />
+            <Suspense fallback={<LoadingScreen label="Loading page..." />}>
+              <RouterProvider router={router} />
+            </Suspense>
 
             <Toaster
               position="bottom-right"

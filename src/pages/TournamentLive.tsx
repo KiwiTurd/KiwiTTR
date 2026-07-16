@@ -275,9 +275,13 @@ export default function TournamentLive() {
     setTournamentState({
       ...tournament,
       status: "active",
+      settings: {
+        ...tournament.settings,
+        allowSignUp: false,
+      },
     });
     notify.edgeBall(
-      `${tournament.settings.name || "Tournament"} is now live. Match input is enabled.`
+      `${tournament.settings.name || "Tournament"} is now live. Match Centre is enabled.`
     );
   }
 

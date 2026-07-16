@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Edit3,
   Eye,
-  Monitor,
   LockKeyhole,
   Plus,
   Search,
@@ -54,6 +53,7 @@ import {
 import { getTeamGames } from "../services/teams/teamGameService";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import { formatStartTime } from "../utils/tournamentTime";
+import { getNewZealandDate } from "../utils/newZealandDate";
 
 type EventStatusFilter =
   | "all"
@@ -79,8 +79,6 @@ type EventFeedItem = {
   status: Exclude<EventStatusFilter, "all">;
   to: string;
   meta: string;
-  countLabel?: string;
-  countValue?: number;
 };
 
 type EventEditForm = {
@@ -94,6 +92,8 @@ type EventEditForm = {
   allowSignUp: boolean;
   signUpClosesAt: string;
 };
+
+const EVENTS_PER_PAGE = 10;
 
 export default function Events() {
   const {
@@ -141,6 +141,9 @@ export default function Events() {
 
   const [typeFilter, setTypeFilter] =
     useState<EventTypeFilter>("all");
+
+  const [eventPage, setEventPage] =
+    useState(0);
 
   const eventListRef =
     useRef<HTMLDivElement | null>(null);
@@ -289,8 +292,7 @@ export default function Events() {
     );
   }
 
-  const today =
-    new Date().toISOString().slice(0, 10);
+  const today = getNewZealandDate();
 
   const dateStatus = useCallback((
     date: string
@@ -305,31 +307,6 @@ export default function Events() {
 
     return "upcoming";
   }, [today]);
-
-  const tournamentMatchStats = useCallback((
-    tournament: SavedTournament
-  ) => {
-    const matches = [
-      ...tournament.matches,
-      ...tournament.knockout,
-    ];
-    const total = matches.length;
-    const completed =
-      matches.filter((match) => match.completed)
-        .length;
-
-    return {
-      total,
-      completed,
-      live:
-        tournament.knockout.filter(
-          (match) =>
-            !match.completed &&
-            match.playerOne &&
-            match.playerTwo
-        ).length,
-    };
-  }, []);
 
   const tournamentStatus = useCallback((
     tournament: SavedTournament
@@ -396,9 +373,6 @@ export default function Events() {
           (c) =>
             c.id === tournament.settings.clubId
         );
-        const stats =
-          tournamentMatchStats(tournament);
-
         return {
           id: `tournament-${tournament.id}`,
           sourceId: tournament.id,
@@ -413,14 +387,6 @@ export default function Events() {
           status: tournamentStatus(tournament),
           to: `/tournaments/${tournament.id}/viewer`,
           meta: "Tournament",
-          countLabel:
-            stats.total > 0
-              ? "Matches"
-              : "Players",
-          countValue:
-            stats.total > 0
-              ? stats.total
-              : tournament.players.length,
         };
       });
 
@@ -430,14 +396,13 @@ export default function Events() {
         sourceId: game.id,
         name: game.name,
         date: game.date,
+        startTime: game.startTime ?? undefined,
         club: undefined,
         clubName: game.clubName,
         type: "team",
         status: teamEventStatus(game.status),
         to: `/team-games/${game.id}/live`,
         meta: "Teams Event",
-        countLabel: "Matches",
-        countValue: game.totalMatches,
       }));
 
     return [
@@ -452,7 +417,6 @@ export default function Events() {
     teamGames,
     dateStatus,
     teamEventStatus,
-    tournamentMatchStats,
     tournamentStatus,
   ]);
 
@@ -501,24 +465,52 @@ export default function Events() {
         return searchable.includes(query);
       })
       .sort((a, b) => {
-        const aTime =
-          new Date(a.date).getTime();
-        const bTime =
-          new Date(b.date).getTime();
+        const todayTime = Date.parse(
+          `${today}T00:00:00Z`
+        );
+        const aDistance = Math.abs(
+          Date.parse(`${a.date}T00:00:00Z`) -
+            todayTime
+        );
+        const bDistance = Math.abs(
+          Date.parse(`${b.date}T00:00:00Z`) -
+            todayTime
+        );
 
-        if (statusFilter === "past") {
-          return bTime - aTime;
-        }
-
-        return aTime - bTime;
+        return (
+          aDistance - bDistance ||
+          a.date.localeCompare(b.date) ||
+          a.name.localeCompare(b.name)
+        );
       });
   }, [
     clubFilter,
     eventFeedItems,
     search,
     statusFilter,
+    today,
     typeFilter,
   ]);
+
+  const eventPageCount = Math.max(
+    1,
+    Math.ceil(
+      filteredEventItems.length / EVENTS_PER_PAGE
+    )
+  );
+  const currentEventPage = Math.min(
+    eventPage,
+    eventPageCount - 1
+  );
+  const paginatedEventItems = useMemo(() => {
+    const start =
+      currentEventPage * EVENTS_PER_PAGE;
+
+    return filteredEventItems.slice(
+      start,
+      start + EVENTS_PER_PAGE
+    );
+  }, [currentEventPage, filteredEventItems]);
 
   const upcomingEvents = useMemo(() => {
     return eventFeedItems.filter(
@@ -539,6 +531,7 @@ export default function Events() {
     setClubFilter("");
     setStatusFilter(nextStatus);
     setTypeFilter("all");
+    setEventPage(0);
 
     window.setTimeout(() => {
       eventListRef.current?.scrollIntoView({
@@ -547,6 +540,19 @@ export default function Events() {
       });
     }, 0);
   }, []);
+
+  function changeEventPage(nextPage: number) {
+    setEventPage(nextPage);
+    setExpandedEventId(null);
+    setEditForm(null);
+
+    window.setTimeout(() => {
+      eventListRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }
 
   function tournamentFormatLabel(
     tournament: SavedTournament
@@ -769,68 +775,9 @@ export default function Events() {
 
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <CalendarDays className="h-5 w-5 text-blue-700" />
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-500">
-              Events
-            </p>
-            <p className="text-xl font-black">
-              {eventFeedItems.length}
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() =>
-            applyStatusShortcut("live")
-          }
-          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-amber-300 hover:bg-amber-50/40 focus:outline-none focus:ring-4 focus:ring-amber-100"
-        >
-          <Tv className="h-5 w-5 text-amber-500" />
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-500">
-              Live Viewers
-            </p>
-            <p className="text-xl font-black">
-              {liveViewerEvents}
-            </p>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            applyStatusShortcut("upcoming")
-          }
-          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50/40 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-        >
-          <ArrowRight className="h-5 w-5 text-indigo-600" />
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-500">
-              Upcoming
-            </p>
-            <p className="text-xl font-black">
-              {upcomingEvents}
-            </p>
-          </div>
-        </button>
-
-      </div>
-
       {canCreateStandardEvent && (
 
         <div className="space-y-4">
-
-          <div className="flex items-center gap-3">
-            <Monitor className="h-6 w-6 text-blue-700" />
-            <h2 className="text-xl font-bold">
-              Event Types
-            </h2>
-          </div>
 
           <div className="grid gap-3 md:grid-cols-3">
 
@@ -1019,9 +966,10 @@ export default function Events() {
           <input
             type="search"
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setEventPage(0);
+            }}
             placeholder="Search events by name, club or date"
             className="w-full rounded-xl border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
           />
@@ -1035,9 +983,10 @@ export default function Events() {
             </span>
             <select
               value={clubFilter}
-              onChange={(event) =>
-                setClubFilter(event.target.value)
-              }
+              onChange={(event) => {
+                setClubFilter(event.target.value);
+                setEventPage(0);
+              }}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             >
               <option value="">
@@ -1062,12 +1011,13 @@ export default function Events() {
             </span>
             <select
               value={statusFilter}
-              onChange={(event) =>
+              onChange={(event) => {
                 setStatusFilter(
                   event.target
                     .value as EventStatusFilter
-                )
-              }
+                );
+                setEventPage(0);
+              }}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             >
               <option value="all">
@@ -1092,12 +1042,13 @@ export default function Events() {
             </span>
             <select
               value={typeFilter}
-              onChange={(event) =>
+              onChange={(event) => {
                 setTypeFilter(
                   event.target
                     .value as EventTypeFilter
-                )
-              }
+                );
+                setEventPage(0);
+              }}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             >
               <option value="all">
@@ -1137,9 +1088,16 @@ export default function Events() {
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
+          <div className="hidden grid-cols-[minmax(0,2fr)_minmax(8rem,1fr)_minmax(7rem,1fr)_minmax(7rem,1fr)] items-center gap-x-5 border-b bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:grid">
+            <span>Event</span>
+            <span className="text-center">Date</span>
+            <span className="text-center">Event Type</span>
+            <span className="text-center">Status</span>
+          </div>
+
           <div className="divide-y">
 
-            {filteredEventItems.map((item) => {
+            {paginatedEventItems.map((item) => {
               const expanded =
                 expandedEventId === item.id;
               const tournament =
@@ -1157,22 +1115,13 @@ export default function Events() {
                     )
                   : undefined;
               const canManage = canManageItem(item);
-              const drawBuilt = Boolean(
-                tournament &&
-                (
-                  tournament.matches.length +
-                  tournament.knockout.length
-                ) > 0
-              );
               const signupClosedByDate = Boolean(
                 tournament?.settings.signUpClosesAt &&
                 tournament.settings.signUpClosesAt < today
               );
               const signUpsOpen = Boolean(
                 tournament?.settings.allowSignUp &&
-                !drawBuilt &&
-                tournament.status !== "completed" &&
-                tournament.status !== "cancelled" &&
+                tournament.status === "draft" &&
                 !signupClosedByDate
               );
               const signedUp = Boolean(
@@ -1203,70 +1152,68 @@ export default function Events() {
                         setEditForm(null);
                       }
                     }}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-3 text-left transition hover:bg-slate-50"
+                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 text-left transition hover:bg-slate-50 md:grid-cols-[minmax(0,2fr)_minmax(8rem,1fr)_minmax(7rem,1fr)_minmax(7rem,1fr)] md:gap-x-5"
                   >
                     <div className="min-w-0">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            item.type === "tournament"
-                              ? "bg-amber-100 text-amber-700"
-                              : item.type === "team"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {item.meta}
-                        </span>
-
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            item.status === "live"
-                              ? "bg-green-100 text-green-700"
-                              : item.status === "upcoming"
-                                ? "bg-indigo-100 text-indigo-700"
-                                : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {item.status === "live"
-                            ? "Live"
-                            : item.status === "upcoming"
-                              ? "Upcoming"
-                              : "Past"}
-                        </span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h2 className="min-w-0 truncate text-base font-medium">
+                          {item.name}
+                        </h2>
+                        {expanded ? (
+                          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                        )}
                       </div>
 
-                      <h2 className="truncate text-base font-medium">
-                        {item.name}
-                      </h2>
-
-                      <p className="text-sm text-slate-500">
-                        {item.clubName ?? "-"} ·{" "}
-                        {new Date(item.date).toLocaleDateString()}
-                        {item.startTime && (
-                          <> at {formatStartTime(item.startTime)}</>
-                        )}
+                      <p className="truncate text-xs text-slate-500 sm:text-sm">
+                        {item.clubName ?? "-"}
                       </p>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-4">
-                      {item.countLabel && (
-                        <div className="hidden text-right sm:block">
-                          <div className="text-xs font-semibold text-slate-500">
-                            {item.countLabel}
-                          </div>
-                          <div className="text-lg font-black text-slate-800">
-                            {item.countValue}
-                          </div>
-                        </div>
-                      )}
-
-                      {expanded ? (
-                        <ChevronDown className="h-5 w-5 text-slate-400" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-slate-400" />
-                      )}
+                    <div className="col-start-1 row-start-2 mt-1 text-xs text-slate-500 md:col-start-auto md:row-start-auto md:mt-0 md:text-center md:text-sm">
+                      <div className="font-medium text-slate-700">
+                        {new Date(item.date).toLocaleDateString()}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {item.startTime
+                          ? formatStartTime(item.startTime)
+                          : "Time not set"}
+                      </div>
                     </div>
+
+                    <div className="col-start-2 row-start-2 mt-1 flex justify-end md:col-start-auto md:row-start-auto md:mt-0 md:justify-center">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          item.type === "tournament"
+                            ? "bg-amber-100 text-amber-700"
+                            : item.type === "team"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {item.meta}
+                      </span>
+                    </div>
+
+                    <div className="col-span-2 mt-1 flex justify-start md:col-span-1 md:mt-0 md:justify-center">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          item.status === "live"
+                            ? "bg-green-100 text-green-700"
+                            : item.status === "upcoming"
+                              ? "bg-indigo-100 text-indigo-700"
+                              : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {item.status === "live"
+                          ? "Live"
+                          : item.status === "upcoming"
+                            ? "Upcoming"
+                            : "Past"}
+                      </span>
+                    </div>
+
                   </button>
 
                   {expanded && (
@@ -1452,9 +1399,7 @@ export default function Events() {
                             className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
                           >
                             <Edit3 className="h-4 w-4" />
-                            {tournament.status === "active"
-                              ? "Match Input"
-                              : "Edit Draws"}
+                            Match Centre
                           </Link>
                         )}
 
@@ -1627,9 +1572,99 @@ export default function Events() {
 
           </div>
 
+          <div className="flex flex-col gap-3 border-t bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">
+              Showing{" "}
+              {currentEventPage * EVENTS_PER_PAGE + 1}
+              –
+              {Math.min(
+                (currentEventPage + 1) * EVENTS_PER_PAGE,
+                filteredEventItems.length
+              )}{" "}
+              of {filteredEventItems.length}
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={currentEventPage === 0}
+                onClick={() =>
+                  changeEventPage(currentEventPage - 1)
+                }
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous 10
+              </button>
+              <button
+                type="button"
+                disabled={
+                  currentEventPage >= eventPageCount - 1
+                }
+                onClick={() =>
+                  changeEventPage(currentEventPage + 1)
+                }
+                className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                View Next 10
+              </button>
+            </div>
+          </div>
+
         </div>
 
       )}
+
+      <div className="grid gap-3 md:grid-cols-3">
+
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <CalendarDays className="h-5 w-5 text-blue-700" />
+          <div>
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Events
+            </p>
+            <p className="text-xl font-black">
+              {eventFeedItems.length}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            applyStatusShortcut("live")
+          }
+          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-amber-300 hover:bg-amber-50/40 focus:outline-none focus:ring-4 focus:ring-amber-100"
+        >
+          <Tv className="h-5 w-5 text-amber-500" />
+          <div>
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Live Viewers
+            </p>
+            <p className="text-xl font-black">
+              {liveViewerEvents}
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            applyStatusShortcut("upcoming")
+          }
+          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50/40 focus:outline-none focus:ring-4 focus:ring-indigo-100"
+        >
+          <ArrowRight className="h-5 w-5 text-indigo-600" />
+          <div>
+            <p className="text-xs font-semibold uppercase text-slate-500">
+              Upcoming
+            </p>
+            <p className="text-xl font-black">
+              {upcomingEvents}
+            </p>
+          </div>
+        </button>
+
+      </div>
 
     </div>
   );

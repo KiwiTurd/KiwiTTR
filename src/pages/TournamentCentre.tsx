@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -11,6 +12,7 @@ import {
 
 import {
   ArrowRight,
+  Building2,
   CalendarDays,
   Check,
   ChevronDown,
@@ -20,6 +22,7 @@ import {
   Pencil,
   Plus,
   Search,
+  SlidersHorizontal,
   Trash2,
   Trophy,
   UserPlus,
@@ -33,6 +36,7 @@ import type { SavedTournament } from "../types/tournament";
 import { getClubs } from "../services/supabase/clubService";
 import { notify } from "../services/notificationService";
 import { formatStartTime } from "../utils/tournamentTime";
+import { getNewZealandDate } from "../utils/newZealandDate";
 
 type EditForm = {
   name: string;
@@ -56,6 +60,12 @@ type TournamentFilter =
   | "upcoming"
   | "past";
 
+type TournamentFormatFilter =
+  | "all"
+  | SavedTournament["settings"]["format"];
+
+const TOURNAMENTS_PER_PAGE = 10;
+
 export default function TournamentCentre() {
   const navigate = useNavigate();
 
@@ -72,7 +82,6 @@ export default function TournamentCentre() {
   const {
     savedTournaments,
     loadTournament,
-    saveTournament,
     signUpForTournament,
     updateTournamentDetails,
     cancelTournament,
@@ -92,8 +101,14 @@ export default function TournamentCentre() {
   const [statusFilter, setStatusFilter] =
     useState<TournamentFilter>("upcoming");
 
+  const [formatFilter, setFormatFilter] =
+    useState<TournamentFormatFilter>("all");
+
   const [page, setPage] =
     useState(0);
+
+  const tournamentListRef =
+    useRef<HTMLDivElement | null>(null);
 
   const [
     signingUpTournamentId,
@@ -141,15 +156,6 @@ export default function TournamentCentre() {
     void loadClubs();
   }, []);
 
-  useEffect(() => {
-    setPage(0);
-    setExpandedTournamentId(null);
-  }, [
-    search,
-    clubFilter,
-    statusFilter,
-  ]);
-
   const clubNameById = useMemo(() => {
     return new Map(
       clubs.map(club => [
@@ -167,6 +173,13 @@ export default function TournamentCentre() {
       if (
         clubFilter &&
         tournament.settings.clubId !== clubFilter
+      ) {
+        return false;
+      }
+
+      if (
+        formatFilter !== "all" &&
+        tournament.settings.format !== formatFilter
       ) {
         return false;
       }
@@ -204,6 +217,7 @@ export default function TournamentCentre() {
   }, [
     clubFilter,
     clubNameById,
+    formatFilter,
     savedTournaments,
     search,
   ]);
@@ -247,16 +261,6 @@ export default function TournamentCentre() {
           "Tournament could not be loaded."
         );
         return;
-      }
-
-      if (saved.settings.allowSignUp) {
-        await saveTournament({
-          ...saved,
-          settings: {
-            ...saved.settings,
-            allowSignUp: false,
-          },
-        });
       }
 
       navigate("/tournaments/players");
@@ -457,9 +461,7 @@ export default function TournamentCentre() {
     }
   }
 
-  const today = new Date()
-    .toISOString()
-    .slice(0, 10);
+  const today = getNewZealandDate();
 
   function tournamentFormatLabel(
     tournament: SavedTournament
@@ -539,9 +541,7 @@ export default function TournamentCentre() {
       signupClosedByDate,
       signUpsOpen:
         tournament.settings.allowSignUp &&
-        !drawBuilt &&
-        !isFinished &&
-        !isCancelled &&
+        tournament.status === "draft" &&
         !signupClosedByDate,
     };
   }
@@ -567,33 +567,48 @@ export default function TournamentCentre() {
         return !state.isLive && !state.isUpcoming;
       })
       .sort((a, b) => {
-        const aDate =
-          new Date(a.settings.date).getTime();
-        const bDate =
-          new Date(b.settings.date).getTime();
+        const todayTime = Date.parse(
+          `${today}T00:00:00Z`
+        );
+        const aDistance = Math.abs(
+          Date.parse(
+            `${a.settings.date}T00:00:00Z`
+          ) - todayTime
+        );
+        const bDistance = Math.abs(
+          Date.parse(
+            `${b.settings.date}T00:00:00Z`
+          ) - todayTime
+        );
 
-        return statusFilter === "past"
-          ? bDate - aDate
-          : aDate - bDate;
+        return (
+          aDistance - bDistance ||
+          a.settings.date.localeCompare(
+            b.settings.date
+          ) ||
+          a.settings.name.localeCompare(
+            b.settings.name
+          )
+        );
       });
 
-  const pageSize = 10;
-  const pageCount = Math.ceil(
-    statusFilteredTournaments.length / pageSize
+  const pageCount = Math.max(
+    1,
+    Math.ceil(
+      statusFilteredTournaments.length /
+        TOURNAMENTS_PER_PAGE
+    )
+  );
+  const currentPage = Math.min(
+    page,
+    pageCount - 1
   );
   const paginatedTournaments =
     statusFilteredTournaments.slice(
-      page * pageSize,
-      page * pageSize + pageSize
+      currentPage * TOURNAMENTS_PER_PAGE,
+      currentPage * TOURNAMENTS_PER_PAGE +
+        TOURNAMENTS_PER_PAGE
     );
-  const filterTitle =
-    statusFilter === "all"
-      ? "All Tournaments"
-      : statusFilter === "live"
-      ? "Live Tournaments"
-      : statusFilter === "past"
-        ? "Past Tournaments"
-        : "Upcoming Tournaments";
   const liveTournamentCount =
     savedTournaments.filter(
       tournament => tournamentState(tournament).isLive
@@ -604,21 +619,37 @@ export default function TournamentCentre() {
         tournamentState(tournament).isUpcoming
     ).length;
 
+  function changeTournamentPage(nextPage: number) {
+    setPage(nextPage);
+    setExpandedTournamentId(null);
+
+    window.setTimeout(() => {
+      tournamentListRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }
+
+  function changeStatusFilter(
+    nextStatus: TournamentFilter
+  ) {
+    setStatusFilter(nextStatus);
+    setPage(0);
+    setExpandedTournamentId(null);
+  }
+
   function renderTournamentSection(
-    title: string,
     tournaments: SavedTournament[],
-    emptyText: string,
-    totalCount = tournaments.length
+    emptyText: string
   ) {
     return (
-      <section className="rounded-3xl border bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <h2 className="text-xl font-bold">
-            {title}
-          </h2>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
-            {totalCount}
-          </span>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(7rem,1fr)] items-center gap-x-5 border-b bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:grid">
+          <span>Tournament</span>
+          <span className="text-center">Date</span>
+          <span className="text-center">Format</span>
+          <span className="text-center">Status</span>
         </div>
 
         {tournaments.length === 0 ? (
@@ -626,8 +657,9 @@ export default function TournamentCentre() {
             {emptyText}
           </div>
         ) : (
-          <div className="divide-y">
-            {tournaments.map(tournament => {
+          <>
+            <div className="divide-y">
+              {tournaments.map(tournament => {
               const state =
                 tournamentState(tournament);
               const expanded =
@@ -667,49 +699,68 @@ export default function TournamentCentre() {
                           : tournament.id
                       )
                     }
-                    className="flex w-full items-center justify-between gap-4 px-5 py-3 text-left transition hover:bg-slate-50"
+                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 text-left transition hover:bg-slate-50 md:grid-cols-[minmax(0,2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(7rem,1fr)] md:gap-x-5"
                   >
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-base font-medium">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h3 className="min-w-0 truncate text-base font-medium">
                           {tournament.settings.name}
                         </h3>
-                        {(state.isFinished ||
-                          state.isCancelled) && (
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                            {state.isFinished
-                              ? "Finished"
-                              : "Cancelled"}
-                          </span>
-                        )}
-                        {state.isLive && (
-                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
-                            Live
-                          </span>
+                        {expanded ? (
+                          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
                         )}
                       </div>
-                      <p className="text-sm text-slate-500">
-                        {new Date(
-                          tournament.settings.date
-                        ).toLocaleDateString()}
-                        {tournament.settings.startTime && (
-                          <> at {formatStartTime(tournament.settings.startTime)}</>
-                        )}
-                        {" "}·{" "}
+                      <p className="truncate text-xs text-slate-500 sm:text-sm">
                         {clubNameById.get(
                           tournament.settings.clubId
                         ) ?? "Club"}
-                        {" "}·{" "}
-                        {tournamentFormatLabel(
-                          tournament
-                        )}
                       </p>
                     </div>
-                    {expanded ? (
-                      <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
-                    )}
+
+                    <div className="col-start-1 row-start-2 mt-1 text-xs text-slate-500 md:col-start-auto md:row-start-auto md:mt-0 md:text-center md:text-sm">
+                      <div className="font-medium text-slate-700">
+                        {new Date(
+                          tournament.settings.date
+                        ).toLocaleDateString()}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {tournament.settings.startTime
+                          ? formatStartTime(
+                              tournament.settings.startTime
+                            )
+                          : "Time not set"}
+                      </div>
+                    </div>
+
+                    <div className="col-start-2 row-start-2 mt-1 flex justify-end md:col-start-auto md:row-start-auto md:mt-0 md:justify-center">
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        {tournamentFormatLabel(tournament)}
+                      </span>
+                    </div>
+
+                    <div className="col-span-2 mt-1 flex justify-start md:col-span-1 md:mt-0 md:justify-center">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          state.isLive
+                            ? "bg-green-100 text-green-700"
+                            : state.isUpcoming
+                              ? "bg-indigo-100 text-indigo-700"
+                              : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {state.isFinished
+                          ? "Finished"
+                          : state.isCancelled
+                            ? "Cancelled"
+                            : state.isLive
+                              ? "Live"
+                              : state.isUpcoming
+                                ? "Upcoming"
+                                : "Past"}
+                      </span>
+                    </div>
                   </button>
 
                   {expanded && (
@@ -819,7 +870,7 @@ export default function TournamentCentre() {
                           Viewer
                         </Link>
 
-                        {state.signUpsOpen && signedUp && (
+                        {signedUp && (
                           <button
                             type="button"
                             disabled
@@ -955,9 +1006,7 @@ export default function TournamentCentre() {
                             className="inline-flex items-center gap-2 rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
                           >
                             <Pencil className="h-4 w-4" />
-                            {tournament.status === "active"
-                              ? "Match Input"
-                              : "Edit Draws"}
+                            Match Centre
                           </Link>
                         )}
                       </div>
@@ -965,8 +1014,46 @@ export default function TournamentCentre() {
                   )}
                 </div>
               );
-            })}
-          </div>
+              })}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">
+                Showing{" "}
+                {currentPage * TOURNAMENTS_PER_PAGE + 1}
+                –
+                {Math.min(
+                  (currentPage + 1) *
+                    TOURNAMENTS_PER_PAGE,
+                  statusFilteredTournaments.length
+                )}{" "}
+                of {statusFilteredTournaments.length}
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage === 0}
+                  onClick={() =>
+                    changeTournamentPage(currentPage - 1)
+                  }
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous 10
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= pageCount - 1}
+                  onClick={() =>
+                    changeTournamentPage(currentPage + 1)
+                  }
+                  className="rounded-lg bg-blue-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  View Next 10
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </section>
     );
@@ -1009,7 +1096,7 @@ export default function TournamentCentre() {
         <button
           type="button"
           aria-pressed={statusFilter === "all"}
-          onClick={() => setStatusFilter("all")}
+          onClick={() => changeStatusFilter("all")}
           className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-400 hover:bg-slate-50 ${
             statusFilter === "all"
               ? "border-slate-500 ring-2 ring-slate-200"
@@ -1030,7 +1117,7 @@ export default function TournamentCentre() {
         <button
           type="button"
           aria-pressed={statusFilter === "live"}
-          onClick={() => setStatusFilter("live")}
+          onClick={() => changeStatusFilter("live")}
           className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-green-400 hover:bg-green-50 ${
             statusFilter === "live"
               ? "border-green-500 ring-2 ring-green-100"
@@ -1051,7 +1138,7 @@ export default function TournamentCentre() {
         <button
           type="button"
           aria-pressed={statusFilter === "upcoming"}
-          onClick={() => setStatusFilter("upcoming")}
+          onClick={() => changeStatusFilter("upcoming")}
           className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-amber-400 hover:bg-amber-50 ${
             statusFilter === "upcoming"
               ? "border-amber-500 ring-2 ring-amber-100"
@@ -1070,83 +1157,124 @@ export default function TournamentCentre() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div
+        ref={tournamentListRef}
+        className="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      >
+        <div className="relative">
 
-        <div>
-          <h2 className="text-2xl font-bold">
-            Tournament Lists
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Choose a tournament to expand its details.
-          </p>
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(0);
+              setExpandedTournamentId(null);
+            }}
+            placeholder="Search tournaments by name, club or date"
+            className="w-full rounded-xl border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+          />
         </div>
 
-        <div className="grid w-full gap-3 md:w-auto md:grid-cols-[280px_220px_180px]">
-
-          <div className="relative">
-
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-            <input
-              type="search"
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              placeholder="Search tournaments"
-              className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-            />
-
-          </div>
-
-          <select
-            value={clubFilter}
-            onChange={(event) =>
-              setClubFilter(event.target.value)
-            }
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-          >
-
-            <option value="">
-              All clubs
-            </option>
-
-            {clubs.map(club => (
-              <option
-                key={club.id}
-                value={club.id}
-              >
-                {club.name}
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="block">
+            <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+              <Building2 className="h-4 w-4" />
+              Club
+            </span>
+            <select
+              value={clubFilter}
+              onChange={(event) => {
+                setClubFilter(event.target.value);
+                setPage(0);
+                setExpandedTournamentId(null);
+              }}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">
+                All Clubs
               </option>
-            ))}
 
-          </select>
+              {clubs.map(club => (
+                <option
+                  key={club.id}
+                  value={club.id}
+                >
+                  {club.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(
-                event.target.value as TournamentFilter
-              )
-            }
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-          >
-            <option value="all">
-              All
-            </option>
-            <option value="upcoming">
-              Upcoming
-            </option>
-            <option value="live">
-              Live
-            </option>
-            <option value="past">
-              Past
-            </option>
-          </select>
+          <label className="block">
+            <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+              <CalendarDays className="h-4 w-4" />
+              Status
+            </span>
+            <select
+              value={statusFilter}
+              onChange={(event) =>
+                changeStatusFilter(
+                  event.target.value as TournamentFilter
+                )
+              }
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="all">
+                Past, Live, or Upcoming
+              </option>
+              <option value="upcoming">
+                Upcoming
+              </option>
+              <option value="live">
+                Live
+              </option>
+              <option value="past">
+                Past
+              </option>
+            </select>
+          </label>
 
+          <label className="block">
+            <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+              <SlidersHorizontal className="h-4 w-4" />
+              Format
+            </span>
+            <select
+              value={formatFilter}
+              onChange={(event) => {
+                setFormatFilter(
+                  event.target
+                    .value as TournamentFormatFilter
+                );
+                setPage(0);
+                setExpandedTournamentId(null);
+              }}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="all">
+                All Formats
+              </option>
+              <option value="knockout">
+                Straight Knockout
+              </option>
+              <option value="double-knockout">
+                Double Knockout
+              </option>
+              <option value="doubles">
+                Doubles Knockout
+              </option>
+              <option value="pools">
+                Pools to Knockout
+              </option>
+              <option value="pool-ratings">
+                Pool Only Ratings
+              </option>
+            </select>
+          </label>
         </div>
-
       </div>
 
       {savedTournaments.length === 0 ? (
@@ -1183,58 +1311,17 @@ export default function TournamentCentre() {
 
             <p className="mt-2 text-slate-500">
 
-              Try another search or club filter.
+              Try another search or filter.
 
             </p>
 
           </div>
 
       ) : (
-        <div className="space-y-6">
-          {renderTournamentSection(
-            filterTitle,
-            paginatedTournaments,
-            `No ${statusFilter} tournaments match your filters.`,
-            statusFilteredTournaments.length
-          )}
-
-          {statusFilteredTournaments.length > pageSize && (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm font-medium text-slate-500">
-                Page {page + 1} of {pageCount}
-              </div>
-              <div className="flex gap-3">
-                {page > 0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPage(current =>
-                        Math.max(0, current - 1)
-                      )
-                    }
-                    className="rounded-xl border bg-white px-4 py-3 font-semibold hover:bg-slate-50"
-                  >
-                    Previous Page
-                  </button>
-                )}
-
-                {page < pageCount - 1 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPage(current =>
-                        current + 1
-                      )
-                    }
-                    className="rounded-xl bg-blue-900 px-4 py-3 font-semibold text-white hover:bg-blue-800"
-                  >
-                    Next Page
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        renderTournamentSection(
+          paginatedTournaments,
+          `No ${statusFilter} tournaments match your filters.`
+        )
       )}
 
       {editingTournament && editForm && (

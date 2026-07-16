@@ -2,56 +2,47 @@ import { createBrowserRouter } from "react-router-dom";
 
 import AppLayout from "./pages/AppLayout";
 
-import Dashboard from "./pages/Dashboard";
-import Home from "./pages/Home";
-
-import Clubs from "./pages/Clubs";
-import ClubProfile from "./pages/ClubProfile";
-
-import Rankings from "./pages/Rankings";
-
-import Events from "./pages/Events";
-import EventProfile from "./pages/EventProfile";
-
-import TournamentCentre from "./pages/TournamentCentre";
-import NewTournament from "./pages/NewTournament";
-import TournamentPlayerSelection from "./pages/TournamentPlayerSelection";
-import TournamentLive from "./pages/TournamentLive";
-import TournamentViewer from "./pages/TournamentViewer";
-import MultiLiveViewer from "./pages/MultiLiveViewer";
-import TeamGames from "./pages/TeamGames";
-import TeamMatchType from "./pages/TeamMatchType";
-import NewTeamGameEvent from "./pages/NewTeamGameEvent";
-import TeamGameLive from "./pages/TeamGameLive";
-import TeamGameManage from "./pages/TeamGameManage";
-
-import PlayerManagement from "./pages/PlayerManagement";
-import PlayerProfile from "./pages/PlayerProfile";
-import MyProfile from "./pages/MyProfile";
-
-import Matches from "./pages/Matches";
-
-import Simulator from "./pages/Simulator";
-import FlappyBat from "./pages/FlappyBat";
-import About from "./pages/About";
-import HowWeCalculate from "./pages/HowWeCalculate";
-import SeoMetadataSettings from "./pages/SeoMetadataSettings";
-import NoticeSettings from "./pages/NoticeSettings";
-import HomepageSettingsPage from "./pages/HomepageSettings";
-
-import Settings from "./pages/Settings";
-import UserManagement from "./pages/UserManagement";
-import ClubSettings from "./pages/ClubSettings";
-
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ResetPassword from "./pages/ResetPassword";
-
-import Admin from "./pages/Admin";
-
 import AdminRoute from "./components/auth/AdminRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
+import {
+  About,
+  Admin,
+  ClubProfile,
+  Clubs,
+  ClubSettings,
+  Dashboard,
+  EventProfile,
+  Events,
+  FlappyBat,
+  Home,
+  HomepageSettingsPage,
+  HowWeCalculate,
+  Login,
+  Matches,
+  MultiLiveViewer,
+  MyProfile,
+  NewTeamGameEvent,
+  NewTournament,
+  NoticeSettings,
+  PlayerManagement,
+  PlayerProfile,
+  Rankings,
+  Register,
+  ResetPassword,
+  SeoMetadataSettings,
+  Settings,
+  Simulator,
+  TeamGameLive,
+  TeamGameManage,
+  TeamGames,
+  TeamMatchType,
+  TournamentCentre,
+  TournamentLive,
+  TournamentPlayerSelection,
+  TournamentViewer,
+  UserManagement,
+} from "./lazyPages";
 
 export const router = createBrowserRouter([
   {

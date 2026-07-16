@@ -420,7 +420,7 @@ useEffect(() => {
 
             <SettingSectionHeading
               title="Tournament Details"
-              information="Set the tournament name, public description, hosting club and date. Sign ups are enabled by default so players can enter before you build the draw."
+              information="Set the tournament name, public description, hosting club and date. Sign ups stay open through the close date, or until you take the tournament live."
             />
 
             <div className="space-y-5">
@@ -498,73 +498,72 @@ useEffect(() => {
 
 </div>
 
-              <input
-                type="date"
-                value={date}
-                onChange={(e) =>
-                  setDate(e.target.value)
-                }
-                className="w-full rounded-xl border p-3"
-              />
-
-              <div>
-                <label className="font-medium">
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(event) =>
-                    setStartTime(event.target.value)
-                  }
-                  className="mt-2 w-full rounded-xl border p-3"
-                />
-              </div>
-
-              <label className="flex items-center gap-3 rounded-xl border bg-slate-50 p-3">
-
-                <input
-                  type="checkbox"
-                  checked={allowSignUp}
-                  onChange={() =>
-                    setAllowSignUp(
-                      !allowSignUp
-                    )
-                  }
-                />
-
-                <span className="font-medium">
-
-                  Allow Sign Up
-
-                </span>
-
-              </label>
-
-              {allowSignUp && (
-
-                <div>
-
-                  <label className="font-medium">
-
-                    Sign Up Close Date
-
-                  </label>
-
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="font-medium">
+                    Tournament Date
+                  </span>
                   <input
                     type="date"
-                    value={signUpClosesAt}
-                    onChange={(event) =>
-                      setSignUpClosesAt(
-                        event.target.value
-                      )
+                    value={date}
+                    onChange={(e) =>
+                      setDate(e.target.value)
                     }
                     className="mt-2 w-full rounded-xl border p-3"
                   />
+                </label>
 
-                </div>
+                <label className="block">
+                  <span className="font-medium">
+                    Start Time
+                  </span>
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(event) =>
+                      setStartTime(event.target.value)
+                    }
+                    className="mt-2 w-full rounded-xl border p-3"
+                  />
+                </label>
 
-              )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)] md:items-end">
+                <label className="flex min-h-12 items-center gap-3 rounded-xl border bg-slate-50 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allowSignUp}
+                    onChange={() =>
+                      setAllowSignUp(
+                        !allowSignUp
+                      )
+                    }
+                  />
+                  <span className="whitespace-nowrap font-medium">
+                    Allow Sign Up
+                  </span>
+                </label>
+
+                {allowSignUp && (
+                  <label className="block">
+                    <span className="font-medium">
+                      Sign Up Close Date
+                    </span>
+
+                    <input
+                      type="date"
+                      value={signUpClosesAt}
+                      onChange={(event) =>
+                        setSignUpClosesAt(
+                          event.target.value
+                        )
+                      }
+                      className="mt-2 w-full rounded-xl border p-3"
+                    />
+                  </label>
+                )}
+              </div>
 
             </div>
 

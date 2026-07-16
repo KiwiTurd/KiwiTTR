@@ -251,7 +251,7 @@ export default function Dashboard() {
 
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
 
@@ -259,7 +259,7 @@ export default function Dashboard() {
 
               <Users className="h-5 w-5 text-blue-700" />
 
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
 
                 Players
 
@@ -267,13 +267,13 @@ export default function Dashboard() {
 
             </div>
 
-            <h2 className="mt-3 text-3xl font-black">
+            <h2 className="mt-3 text-2xl font-black sm:text-3xl">
 
               {activePlayers}
 
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
 
               Active Players
 
@@ -287,7 +287,7 @@ export default function Dashboard() {
 
               <Building2 className="h-5 w-5 text-indigo-600" />
 
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
 
                 Clubs
 
@@ -295,13 +295,13 @@ export default function Dashboard() {
 
             </div>
 
-            <h2 className="mt-3 text-3xl font-black">
+            <h2 className="mt-3 text-2xl font-black sm:text-3xl">
 
               {clubs}
 
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
 
               Registered Clubs
 
@@ -315,7 +315,7 @@ export default function Dashboard() {
 
               <CalendarDays className="h-5 w-5 text-emerald-600" />
 
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
 
                 Events
 
@@ -323,13 +323,13 @@ export default function Dashboard() {
 
             </div>
 
-            <h2 className="mt-3 text-3xl font-black">
+            <h2 className="mt-3 text-2xl font-black sm:text-3xl">
 
               {events}
 
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
 
               Total Events
 
@@ -343,7 +343,7 @@ export default function Dashboard() {
 
               <ShieldCheck className="h-5 w-5 text-green-600" />
 
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
 
                 Status
 
@@ -351,7 +351,7 @@ export default function Dashboard() {
 
             </div>
 
-            <h2 className="mt-3 text-xl font-bold">
+            <h2 className="mt-3 text-lg font-bold sm:text-xl">
 
               {loading
                 ? "Checking..."
@@ -361,7 +361,7 @@ export default function Dashboard() {
 
             </h2>
 
-            <p className="mt-1 truncate text-sm text-slate-500">
+            <p className="mt-1 truncate text-xs text-slate-500 sm:text-sm">
 
               {session?.user.email ?? "Not signed in"}
 
@@ -369,6 +369,14 @@ export default function Dashboard() {
 
           </div>
 
+        </div>
+
+        <div className="md:hidden">
+          <QuickActions
+            isAdmin
+            isClubLeader={false}
+            isPlayer={false}
+          />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -461,11 +469,13 @@ export default function Dashboard() {
 
         </div>
 
-        <QuickActions
-          isAdmin
-          isClubLeader={false}
-          isPlayer={false}
-        />
+        <div className="hidden md:block">
+          <QuickActions
+            isAdmin
+            isClubLeader={false}
+            isPlayer={false}
+          />
+        </div>
 
       </div>
 
@@ -513,7 +523,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 xl:grid-cols-4">
 
         <StatCard
           icon={<User className="h-8 w-8 text-blue-700" />}
@@ -563,6 +573,14 @@ export default function Dashboard() {
           caption="Active club roster"
         />
 
+      </div>
+
+      <div className="md:hidden">
+        <QuickActions
+          isAdmin={false}
+          isClubLeader={isClubLeader}
+          isPlayer={isPlayer}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -692,11 +710,13 @@ export default function Dashboard() {
 
       </div>
 
-      <QuickActions
-        isAdmin={false}
-        isClubLeader={isClubLeader}
-        isPlayer={isPlayer}
-      />
+      <div className="hidden md:block">
+        <QuickActions
+          isAdmin={false}
+          isClubLeader={isClubLeader}
+          isPlayer={isPlayer}
+        />
+      </div>
 
     </div>
 
@@ -716,17 +736,17 @@ function StatCard({
   caption: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex items-center justify-between">
         {icon}
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
           {label}
         </span>
       </div>
-      <h2 className="mt-6 text-4xl font-black">
+      <h2 className="mt-4 text-2xl font-black sm:mt-6 sm:text-4xl">
         {value}
       </h2>
-      <p className="mt-2 text-slate-500">
+      <p className="mt-1 text-xs leading-tight text-slate-500 sm:mt-2 sm:text-base sm:leading-normal">
         {caption}
       </p>
     </div>
@@ -848,24 +868,23 @@ function QuickActions({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-5 text-xl font-bold">
+      <h2 className="mb-4 text-base font-bold sm:mb-5 sm:text-xl">
         Quick Actions
       </h2>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
         {actions.map((action) => (
           <Link
             key={action.to}
             to={action.to}
-            className="group flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
+            className="group flex aspect-square min-w-0 flex-col items-start justify-start gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2.5 transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:flex-row sm:items-center sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3"
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 max-w-full flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
               {action.icon}
-              <span className="truncate font-semibold">
+              <span className="max-w-full break-words text-[10px] font-semibold leading-tight sm:truncate sm:text-base sm:leading-normal">
                 {action.title}
               </span>
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-700" />
           </Link>
         ))}
       </div>

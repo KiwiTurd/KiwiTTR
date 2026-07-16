@@ -46,6 +46,16 @@ export interface PlayerSearchResult
   clubName: string;
 }
 
+export type PlayerGender =
+  | "female"
+  | "male"
+  | "prefer-not-to-say";
+
+export type PlayerPrivateDetails = {
+  birthDate: string;
+  gender: PlayerGender | "";
+};
+
 function fromRow(row: PlayerRow): Player {
   return {
     id: row.id,
@@ -233,6 +243,45 @@ export async function updateOwnPlayerContact({
       new_email: email,
       new_mobile_public_to_club: mobilePublicToClub,
       new_email_public_to_club: emailPublicToClub,
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function getOwnPlayerPrivateDetails(): Promise<
+  PlayerPrivateDetails
+> {
+  const { data, error } = await supabase
+    .rpc("get_own_player_private_details")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const details = data as {
+    birth_date: string | null;
+    gender: PlayerGender | null;
+  } | null;
+
+  return {
+    birthDate: details?.birth_date ?? "",
+    gender: details?.gender ?? "",
+  };
+}
+
+export async function updateOwnPlayerPrivateDetails({
+  birthDate,
+  gender,
+}: PlayerPrivateDetails): Promise<void> {
+  const { error } = await supabase.rpc(
+    "update_own_player_private_details",
+    {
+      new_birth_date: birthDate || null,
+      new_gender: gender || null,
     }
   );
 

@@ -22,6 +22,7 @@ import type {
   TournamentState,
 } from "../../types/tournament";
 import { generatePoolMatches } from "../tournament/matchGenerator";
+import { getNewZealandDate } from "../../utils/newZealandDate";
 
 type TournamentRow = {
   id: string;
@@ -1124,10 +1125,7 @@ export async function signUpForTournament(
     );
   }
 
-  if (
-    tournament.status === "completed" ||
-    tournament.status === "cancelled"
-  ) {
+  if (tournament.status !== "draft") {
     throw new Error(
       "This tournament is not open for sign ups."
     );
@@ -1135,21 +1133,11 @@ export async function signUpForTournament(
 
   if (
     tournament.settings.signUpClosesAt &&
-    new Date(tournament.settings.signUpClosesAt) <
-      new Date(new Date().toISOString().slice(0, 10))
+    tournament.settings.signUpClosesAt <
+      getNewZealandDate()
   ) {
     throw new Error(
       "Sign ups have closed for this tournament."
-    );
-  }
-
-  if (
-    tournament.pools.length > 0 ||
-    tournament.matches.length > 0 ||
-    tournament.knockout.length > 0
-  ) {
-    throw new Error(
-      "Sign ups are closed once the draw has been built."
     );
   }
 

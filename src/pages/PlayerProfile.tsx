@@ -14,7 +14,6 @@ import {
   Mail,
   Pencil,
   Phone,
-  Star,
   Trophy,
   TrendingUp,
   Users,
@@ -114,6 +113,7 @@ export default function PlayerProfile() {
     try {
 
       setLoading(true);
+      setRecentMatchPage(0);
 
       const [
 
@@ -193,13 +193,6 @@ export default function PlayerProfile() {
     };
 
   }, [loadData]);
-
-  useEffect(() => {
-    setRecentMatchPage(0);
-  }, [
-    id,
-    matches.length,
-  ]);
 
   const winPercentage = useMemo(() => {
 
@@ -549,13 +542,13 @@ return (
 
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
 
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3 sm:gap-4">
 
             <PlayerAvatar
               firstName={player.firstName}
               lastName={player.lastName}
               imageUrl={player.avatarUrl}
-              size="profile"
+              size="profileResponsive"
             />
 
             <div className="player-profile-header">
@@ -612,9 +605,7 @@ return (
 
           </div>
 
-          <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-5 py-4 text-right xl:min-w-52">
-
-            <Star className="h-7 w-7 fill-amber-400 text-amber-400" />
+          <div className="flex items-center justify-end gap-4 rounded-xl bg-slate-50 px-5 py-4 text-right xl:min-w-52">
 
             <div>
 
@@ -696,27 +687,21 @@ return (
 
     {/* Stat Cards */}
 
-    <div
-      className="grid gap-3"
-      style={{
-        gridTemplateColumns:
-          "repeat(auto-fit, minmax(220px, 1fr))",
-      }}
-    >
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
 
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
 
         <TrendingUp className="h-5 w-5 shrink-0 text-blue-700" />
 
         <div className="min-w-0">
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 sm:text-xs sm:leading-normal">
 
             Current Rating
 
           </p>
 
-          <h3 className="text-2xl font-black">
+          <h3 className="text-xl font-black sm:text-2xl">
 
             {player.rating}
 
@@ -726,19 +711,19 @@ return (
 
       </div>
 
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
 
         <Trophy className="h-5 w-5 shrink-0 text-amber-500" />
 
         <div className="min-w-0">
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 sm:text-xs sm:leading-normal">
 
             Highest Rating
 
           </p>
 
-          <h3 className="text-2xl font-black">
+          <h3 className="text-xl font-black sm:text-2xl">
 
             {player.highestRating}
 
@@ -748,19 +733,19 @@ return (
 
       </div>
 
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
 
         <Users className="h-5 w-5 shrink-0 text-indigo-600" />
 
         <div className="min-w-0">
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 sm:text-xs sm:leading-normal">
 
             Club Rank
 
           </p>
 
-          <h3 className="text-2xl font-black">
+          <h3 className="text-xl font-black sm:text-2xl">
 
             {clubRank}
 
@@ -772,25 +757,25 @@ return (
 
       {showHeadToHead && headToHead && linkedPlayer && (
 
-      <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 shadow-sm">
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
 
         <Users className="h-5 w-5 shrink-0 text-blue-700" />
 
         <div className="min-w-0">
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+          <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-blue-700 sm:text-xs sm:leading-normal">
 
             Head to Head
 
           </p>
 
-          <h3 className="text-2xl font-black">
+          <h3 className="text-xl font-black sm:text-2xl">
 
             {headToHead.linkedWins}-{headToHead.viewedWins}
 
           </h3>
 
-          <p className="truncate text-xs text-blue-900/70">
+          <p className="truncate text-[10px] text-blue-900/70 sm:text-xs">
             You vs {player.firstName}
             {" "}· {headToHead.played} played
           </p>

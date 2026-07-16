@@ -44,6 +44,7 @@ const benefits = [
 export default function Home() {
   const { session, loading: authLoading } = useAuth();
   const [hero, setHero] = useState<HomepageSettings | null>(null);
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
   useEffect(() => {
@@ -55,6 +56,24 @@ export default function Home() {
       });
   }, []);
 
+  const heroSlideCount = hero?.heroSlides.length ?? 0;
+  const currentHeroIndex = Math.min(
+    activeHeroIndex,
+    Math.max(0, heroSlideCount - 1)
+  );
+
+  useEffect(() => {
+    if (heroSlideCount < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveHeroIndex((current) =>
+        (current + 1) % heroSlideCount
+      );
+    }, 7000);
+
+    return () => window.clearInterval(timer);
+  }, [heroSlideCount]);
+
   if (isMobile && authLoading) {
     return <LoadingScreen label="Loading dashboard..." />;
   }
@@ -65,43 +84,110 @@ export default function Home() {
 
   return (
     <div className="-mx-4 -mt-4 space-y-16 pb-8 md:-mx-8 md:-mt-8 md:space-y-24">
-      <section
-        className="relative flex min-h-[620px] items-center overflow-hidden bg-slate-900 bg-cover bg-center py-20 text-white md:min-h-[680px]"
-        style={{ backgroundImage: `url(${hero?.heroImageUrl || "/kiwittr-home-hero.jpg"})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" />
-        <KiwiTtrIcon
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-[34%] top-1/2 w-[clamp(54rem,80vw,84rem)] max-w-none -translate-y-1/2 fill-slate-500 opacity-40 mix-blend-multiply md:-right-[14%]"
-          focusable="false"
-        />
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 md:px-8">
-          <div className="home-hero-copy max-w-3xl">
-          {hero ? (
-            <>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-300">
-                {hero.eyebrowText}
-              </p>
-              <h1 className="home-page-heading mt-5 text-5xl font-normal leading-tight tracking-tight text-white md:text-7xl">
-                {hero.headingText}
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl">
-                {hero.subheadingText}
-              </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Link className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 transition hover:bg-blue-50" to={hero.primaryButtonUrl}>
-                  {hero.primaryButtonText} <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20" to={hero.secondaryButtonUrl}>
-                  {hero.secondaryButtonText}
-                </Link>
+      <section className="relative min-h-[620px] overflow-hidden bg-slate-900 text-white md:min-h-[680px]">
+        {hero ? (
+          hero.heroSlides.map((slide, index) => {
+            const active = index === currentHeroIndex;
+            const Heading = index === 0 ? "h1" : "h2";
+
+            return (
+              <div
+                key={slide.id}
+                aria-hidden={!active}
+                className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${
+                  active
+                    ? "z-10 opacity-100"
+                    : "pointer-events-none opacity-0"
+                }`}
+              >
+                <picture className="absolute inset-0">
+                  {slide.mobileHeroImageUrl && (
+                    <source
+                      media="(max-width: 767px)"
+                      srcSet={slide.mobileHeroImageUrl}
+                    />
+                  )}
+                  <img
+                    alt=""
+                    className="h-full w-full object-cover object-center"
+                    src={
+                      slide.heroImageUrl ||
+                      "/kiwittr-home-hero.jpg"
+                    }
+                  />
+                </picture>
+
+                {slide.slateFade && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" />
+                )}
+
+                {slide.showKoru && (
+                  <KiwiTtrIcon
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-[34%] top-1/2 z-[1] w-[clamp(54rem,80vw,84rem)] max-w-none -translate-y-1/2 fill-slate-500 opacity-40 mix-blend-multiply md:-right-[14%]"
+                    focusable="false"
+                  />
+                )}
+
+                <div className="relative z-10 mx-auto flex min-h-[620px] w-full max-w-7xl items-center px-4 py-20 md:min-h-[680px] md:px-8">
+                  <div className="home-hero-copy max-w-3xl">
+                    <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-300">
+                      {slide.eyebrowText}
+                    </p>
+                    <Heading className="home-page-heading mt-5 text-5xl font-normal leading-tight tracking-tight text-white md:text-7xl">
+                      {slide.headingText}
+                    </Heading>
+                    <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl">
+                      {slide.subheadingText}
+                    </p>
+                    <div className="mt-9 flex flex-wrap gap-3">
+                      <Link
+                        className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 transition hover:bg-blue-50"
+                        tabIndex={active ? undefined : -1}
+                        to={slide.primaryButtonUrl}
+                      >
+                        {slide.primaryButtonText}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                      <Link
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                        tabIndex={active ? undefined : -1}
+                        to={slide.secondaryButtonUrl}
+                      >
+                        {slide.secondaryButtonText}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </>
-          ) : (
-            <LoadingScreen label="Loading homepage..." />
-          )}
+            );
+          })
+        ) : (
+          <LoadingScreen label="Loading homepage..." />
+        )}
+
+        {heroSlideCount > 1 && (
+          <div className="absolute bottom-7 left-1/2 z-30 flex -translate-x-1/2 gap-2">
+            {hero?.heroSlides.map((slide, index) => (
+              <button
+                key={slide.id}
+                type="button"
+                aria-label={`Show header ${index + 1}`}
+                aria-current={
+                  index === currentHeroIndex
+                    ? "true"
+                    : undefined
+                }
+                onClick={() => setActiveHeroIndex(index)}
+                className={`h-2.5 rounded-full border border-white/70 transition-all ${
+                  index === currentHeroIndex
+                    ? "w-8 bg-white"
+                    : "w-2.5 bg-white/35 hover:bg-white/70"
+                }`}
+              />
+            ))}
           </div>
-        </div>
+        )}
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-10 px-4 md:grid-cols-[0.85fr_1.15fr] md:px-8">

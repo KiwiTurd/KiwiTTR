@@ -15,8 +15,6 @@ import {
   Phone,
   Plus,
   Search,
-  Trophy,
-  Users,
 } from "lucide-react";
 
 import type { Club } from "../types/club";
@@ -170,19 +168,6 @@ export default function Clubs() {
     });
   }, [clubCards, search]);
 
-  const totalPlayers = useMemo(() => {
-    return clubCards.reduce(
-      (sum, item) => sum + item.playerCount,
-      0
-    );
-  }, [clubCards]);
-
-  const topClub = useMemo(() => {
-    return [...clubCards].sort(
-      (a, b) => b.playerCount - a.playerCount
-    )[0];
-  }, [clubCards]);
-
   return (
     <div className="mx-auto w-full max-w-7xl space-y-10 overflow-x-hidden">
 
@@ -210,48 +195,6 @@ export default function Clubs() {
             {createOpen ? "Close" : "Create Club"}
           </button>
         )}
-
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <Building2 className="h-6 w-6 text-blue-700" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Clubs
-            </p>
-            <p className="text-3xl font-black">
-              {clubs.length}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <Users className="h-6 w-6 text-indigo-600" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Active Players
-            </p>
-            <p className="text-3xl font-black">
-              {totalPlayers}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <Trophy className="h-6 w-6 text-amber-500" />
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Largest Club
-            </p>
-            <p className="truncate text-2xl font-black">
-              {topClub?.club.shortName ||
-                topClub?.club.name ||
-                "-"}
-            </p>
-          </div>
-        </div>
 
       </div>
 

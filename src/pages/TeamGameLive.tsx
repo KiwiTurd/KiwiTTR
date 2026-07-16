@@ -210,7 +210,7 @@ export default function TeamGameLive() {
               className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800"
             >
               <ClipboardPen className="h-5 w-5" />
-              Match Input
+              Match Centre
             </Link>
           )}
         </div>

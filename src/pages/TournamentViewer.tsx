@@ -420,7 +420,7 @@ export default function TournamentViewer() {
             className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
           >
             <ClipboardPen className="h-4 w-4" />
-            Match Input
+            Match Centre
           </Link>
         )}
         </div>

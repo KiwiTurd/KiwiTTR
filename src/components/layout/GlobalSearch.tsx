@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,44 @@ import { getPlayers } from "../../services/supabase/playerService";
 import { getClubs } from "../../services/supabase/clubService";
 import { getEvents } from "../../services/supabase/eventService";
 import { KiwiTtrLoadingAnimation } from "../shared/LoadingScreen";
+
+type SearchData = {
+  players: Player[];
+  clubs: Club[];
+  events: Event[];
+};
+
+let cachedSearchData: SearchData | null = null;
+let searchDataRequest: Promise<SearchData> | null = null;
+
+function getSearchData() {
+  if (cachedSearchData) {
+    return Promise.resolve(cachedSearchData);
+  }
+
+  if (!searchDataRequest) {
+    searchDataRequest = Promise.all([
+      getPlayers(),
+      getClubs(),
+      getEvents(),
+    ])
+      .then(([players, clubs, events]) => {
+        cachedSearchData = {
+          players,
+          clubs,
+          events,
+        };
+
+        return cachedSearchData;
+      })
+      .catch((error) => {
+        searchDataRequest = null;
+        throw error;
+      });
+  }
+
+  return searchDataRequest;
+}
 
 export default function GlobalSearch({
   resultsPlacement = "down",
@@ -26,25 +64,16 @@ export default function GlobalSearch({
   const [clubs, setClubs] = useState<Club[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [playerData, clubData, eventData] =
-          await Promise.all([
-            getPlayers(),
-            getClubs(),
-            getEvents(),
-          ]);
+  const loadData = useCallback(async () => {
+    try {
+      const data = await getSearchData();
 
-        setPlayers(playerData);
-        setClubs(clubData);
-        setEvents(eventData);
-      } catch (error) {
-        console.error(error);
-      }
+      setPlayers(data.players);
+      setClubs(data.clubs);
+      setEvents(data.events);
+    } catch (error) {
+      console.error(error);
     }
-
-    void loadData();
   }, []);
 
   const results = useMemo(() => {
@@ -133,6 +162,7 @@ export default function GlobalSearch({
         type="text"
         placeholder="Search..."
         value={query}
+        onFocus={() => void loadData()}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"

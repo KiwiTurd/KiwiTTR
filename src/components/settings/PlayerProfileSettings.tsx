@@ -1,10 +1,13 @@
 import {
+  CalendarDays,
   ChevronDown,
   Eye,
   EyeOff,
+  LockKeyhole,
   Mail,
   Phone,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import {
   useCallback,
@@ -16,9 +19,13 @@ import {
 import { notify } from "../../services/notificationService";
 import {
   getPlayer,
+  getOwnPlayerPrivateDetails,
   updateOwnPlayerContact,
+  updateOwnPlayerPrivateDetails,
+  type PlayerGender,
 } from "../../services/supabase/playerService";
 import PlayerAvatarUploader from "../player/PlayerAvatarUploader";
+import { getNewZealandDate } from "../../utils/newZealandDate";
 
 export default function PlayerProfileSettings({
   playerId,
@@ -33,6 +40,8 @@ export default function PlayerProfileSettings({
   const [email, setEmail] = useState("");
   const [mobilePublicToClub, setMobilePublicToClub] = useState(false);
   const [emailPublicToClub, setEmailPublicToClub] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
+  const [gender, setGender] = useState<PlayerGender | "">("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -44,7 +53,10 @@ export default function PlayerProfileSettings({
     }
 
     try {
-      const player = await getPlayer(playerId);
+      const [player, privateDetails] = await Promise.all([
+        getPlayer(playerId),
+        getOwnPlayerPrivateDetails(),
+      ]);
 
       if (player) {
         setPlayerName(`${player.firstName} ${player.lastName}`.trim());
@@ -56,6 +68,9 @@ export default function PlayerProfileSettings({
         setMobilePublicToClub(player.mobilePublicToClub);
         setEmailPublicToClub(player.emailPublicToClub);
       }
+
+      setBirthDate(privateDetails.birthDate);
+      setGender(privateDetails.gender);
     } catch (error) {
       console.error(error);
       notify.error("Unable to load your linked player details.");
@@ -82,13 +97,19 @@ export default function PlayerProfileSettings({
     setIsSaving(true);
 
     try {
-      await updateOwnPlayerContact({
-        mobile: mobile.trim(),
-        email: email.trim(),
-        mobilePublicToClub,
-        emailPublicToClub,
-      });
-      notify.success("Your profile details and club visibility have been saved.");
+      await Promise.all([
+        updateOwnPlayerContact({
+          mobile: mobile.trim(),
+          email: email.trim(),
+          mobilePublicToClub,
+          emailPublicToClub,
+        }),
+        updateOwnPlayerPrivateDetails({
+          birthDate,
+          gender,
+        }),
+      ]);
+      notify.success("Your profile details have been saved.");
     } catch (error) {
       console.error(error);
       notify.error("Unable to save your profile details.");
@@ -164,6 +185,51 @@ export default function PlayerProfileSettings({
             onToggle={() => setEmailPublicToClub(current => !current)}
             inputMode="email"
           />
+
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
+            <div className="mb-4 flex items-start gap-3">
+              <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0 text-indigo-700" />
+              <div>
+                <h3 className="font-bold text-indigo-950">Private Tournament Details</h3>
+                <p className="mt-1 text-sm text-indigo-800">
+                  These details are not shown on your public profile. They are available only to you and authorised admins for tournament filtering.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <CalendarDays className="h-5 w-5 text-blue-800" />
+                  Birthdate (for age)
+                </span>
+                <input
+                  type="date"
+                  value={birthDate}
+                  max={getNewZealandDate()}
+                  onChange={event => setBirthDate(event.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <UsersRound className="h-5 w-5 text-blue-800" />
+                  Gender
+                </span>
+                <select
+                  value={gender}
+                  onChange={event => setGender(event.target.value as PlayerGender | "")}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">Not set</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
+              </label>
+            </div>
+          </div>
 
           <div className="flex justify-end border-t border-slate-200 pt-5">
             <button

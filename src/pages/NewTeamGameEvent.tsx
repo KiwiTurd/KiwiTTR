@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -56,6 +57,8 @@ const emptyDoubles: Classic6Team["doubles"] = [
 
 export default function NewTeamGameEvent() {
   const navigate = useNavigate();
+  const eventDetailsRef = useRef<HTMLDivElement | null>(null);
+  const [eventDetailsHeight, setEventDetailsHeight] = useState<number>();
   const { format: routeFormat } =
     useParams();
   const [searchParams] = useSearchParams();
@@ -74,6 +77,19 @@ export default function NewTeamGameEvent() {
         : "classic-6";
   const formatLabel =
     classicTeamFormatLabel(teamFormat);
+
+  useEffect(() => {
+    const details = eventDetailsRef.current;
+    if (!details) return;
+
+    const updateHeight = () =>
+      setEventDetailsHeight(details.offsetHeight);
+    const observer = new ResizeObserver(updateHeight);
+
+    observer.observe(details);
+    return () => observer.disconnect();
+  }, []);
+
   const draftPrefix = `team-game.${editId ?? teamFormat}`;
   const {
     isAdmin,
@@ -821,6 +837,17 @@ export default function NewTeamGameEvent() {
         ? abcHomeLabels[index]
         : abcAwayLabels[index]
       : `${side === "home" ? "Home" : "Away"} ${index + 1}`;
+    const options = availablePlayers(
+      side,
+      index,
+      value
+    ).map((player) => ({
+      ...player,
+      clubName:
+        clubs.find(
+          (club) => club.id === player.clubId
+        )?.shortName ?? "",
+    }));
 
     return (
       <label
@@ -831,13 +858,9 @@ export default function NewTeamGameEvent() {
           {label}
         </span>
         <PlayerSelector
-          players={availablePlayers(
-            side,
-            index,
-            value
-          )}
+          players={options}
           value={
-            players.find(
+            options.find(
               (player) => player.id === value
             ) ?? null
           }
@@ -889,13 +912,17 @@ export default function NewTeamGameEvent() {
                   firstName: player.name,
                   lastName: "",
                   rating: player.rating,
-                  clubName: team.name,
+                  clubName:
+                    clubs.find(
+                      (club) => club.id === player.clubId
+                    )?.shortName ?? player.clubName,
                 }));
 
                 return (
                   <PlayerSelector
                     key={playerIndex}
                     players={options}
+                    showRating={false}
                     value={
                       options.find(
                         (player) =>
@@ -933,25 +960,28 @@ export default function NewTeamGameEvent() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-7xl space-y-8">
+      <div className="border-b border-slate-300 pb-6">
+        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800">
+          <UsersRound className="h-4 w-4" />
+          {editId
+            ? `Edit ${formatLabel} Setup`
+            : `${formatLabel} Setup`}
+        </div>
+        <h1 className="mt-4 text-5xl font-normal">
+          {formatLabel}
+        </h1>
+        <p className="mt-3 text-lg text-slate-500">
+          Confirm and save setup before opening the match builder.
+        </p>
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800">
-              <UsersRound className="h-4 w-4" />
-              {editId
-                ? `Edit ${formatLabel} Setup`
-                : `${formatLabel} Setup`}
-            </div>
-            <h1 className="mt-4 text-5xl font-normal">
-              {formatLabel}
-            </h1>
-            <p className="mt-3 text-lg text-slate-500">
-              Confirm and save setup before opening the match builder.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border bg-white p-8 shadow-sm">
+          <div
+            ref={eventDetailsRef}
+            className="rounded-3xl border bg-white p-8 shadow-sm"
+          >
             <h2 className="mb-6 text-xl font-bold">
               Event Details
             </h2>
@@ -1367,7 +1397,10 @@ export default function NewTeamGameEvent() {
         </div>
 
         <div>
-          <div className="sticky top-24 rounded-3xl border bg-white p-5 shadow-sm">
+          <div
+            className="sticky top-24 overflow-y-auto rounded-3xl border bg-white p-5 shadow-sm"
+            style={{ maxHeight: eventDetailsHeight }}
+          >
             <h2 className="text-lg font-bold">
               Setup Preview
             </h2>

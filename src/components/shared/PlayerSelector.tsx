@@ -16,11 +16,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
-
 import { cn } from "@/lib/utils";
 
 import {
@@ -46,6 +41,7 @@ interface Props<T extends PlayerSelectorOption> {
   placeholder?: string;
   onClear?: () => void;
   disabled?: boolean;
+  showRating?: boolean;
 }
 
 export default function PlayerSelector<
@@ -58,6 +54,7 @@ export default function PlayerSelector<
   placeholder = "Select Player...",
   onClear,
   disabled = false,
+  showRating = true,
 }: Props<T>) {
   const [open, setOpen] =
     useState(false);
@@ -109,15 +106,6 @@ export default function PlayerSelector<
       excludePlayerId,
     ]);
 
-  function initials(
-    player: PlayerSelectorOption
-  ) {
-    return (
-      player.firstName[0] +
-      player.lastName[0]
-    ).toUpperCase();
-  }
-
   return (
     <Popover
       open={disabled ? false : open}
@@ -145,39 +133,17 @@ export default function PlayerSelector<
 
   {value ? (
 
-    <div className="flex items-center gap-3">
+    <div className="min-w-0 flex-1 text-left">
 
-      <Avatar>
+      <p className="truncate font-semibold">
 
-        <AvatarFallback>
+        {value.firstName} {value.lastName}
 
-          {initials(value)}
+      </p>
 
-        </AvatarFallback>
-
-      </Avatar>
-
-      <div className="text-left">
-
-        <p className="font-semibold">
-
-          {value.firstName} {value.lastName}
-
-        </p>
-
-        <p className="text-sm text-muted-foreground">
-
-          {value.clubName || "Player"}
-
-        </p>
-
-        <p className="text-xs font-medium text-blue-700">
-
-          {value.rating} TTR
-
-        </p>
-
-      </div>
+      <p className="truncate text-sm font-medium text-muted-foreground">
+        {value.clubName || "Player"}
+      </p>
 
     </div>
 
@@ -191,7 +157,15 @@ export default function PlayerSelector<
 
   )}
 
-  <ChevronsUpDown className="h-4 w-4 opacity-60" />
+  <div className="ml-auto flex shrink-0 items-center gap-2">
+    {value && showRating && (
+      <span className="text-sm font-semibold text-slate-600">
+        {value.rating}
+      </span>
+    )}
+
+    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-60" />
+  </div>
 
 </PopoverTrigger>
 
@@ -263,15 +237,17 @@ export default function PlayerSelector<
 
                     </div>
 
-                    <div className="text-right mr-3">
+                    {showRating && (
+                      <div className="mr-3 text-right">
 
-                      <p className="font-semibold">
+                        <p className="font-semibold">
 
-                        {player.rating}
+                          {player.rating}
 
-                      </p>
+                        </p>
 
-                    </div>
+                      </div>
+                    )}
 
                     <Check
                       className={cn(
