@@ -36,7 +36,9 @@ export default function SidebarHeader() {
           </Link>
 
           <button
+            type="button"
             onClick={toggle}
+            aria-label="Expand navigation sidebar"
             className="
               rounded-lg
               p-2
@@ -47,7 +49,7 @@ export default function SidebarHeader() {
               duration-200
             "
           >
-            <PanelLeft className="w-5 h-5" />
+            <PanelLeft aria-hidden="true" className="w-5 h-5" />
           </button>
 
         </div>
@@ -67,7 +69,9 @@ export default function SidebarHeader() {
           </Link>
 
           <button
+            type="button"
             onClick={toggle}
+            aria-label="Collapse navigation sidebar"
             className="
               rounded-lg
               p-2
@@ -78,7 +82,7 @@ export default function SidebarHeader() {
               duration-200
             "
           >
-            <PanelLeftClose className="w-5 h-5" />
+            <PanelLeftClose aria-hidden="true" className="w-5 h-5" />
           </button>
 
         </div>
