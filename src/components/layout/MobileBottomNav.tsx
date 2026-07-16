@@ -555,6 +555,7 @@ export default function MobileBottomNav() {
     <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
       <div
         aria-hidden={!panelOpen}
+        inert={!panelOpen}
         className={`absolute inset-x-0 bottom-0 transform-gpu border-t border-slate-200 bg-white px-4 pb-4 pt-3 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] transition-all duration-300 ease-out ${
           panelOpen
             ? "translate-y-0 opacity-100"
@@ -589,6 +590,7 @@ export default function MobileBottomNav() {
 
       <nav
         aria-hidden={panelOpen}
+        inert={panelOpen}
         className={`${
           installedApp
             ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-white/65 bg-white/55 px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.20)] backdrop-blur-2xl backdrop-saturate-150"

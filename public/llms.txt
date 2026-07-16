@@ -1,0 +1,20 @@
+# KiwiTTR
+
+> KiwiTTR is a transparent New Zealand table tennis rating platform for players, clubs, events, match results, and national rankings.
+
+## Main pages
+
+- [Home](https://kiwittr.com/): Overview of KiwiTTR and recent activity.
+- [Player rankings](https://kiwittr.com/rankings): Current New Zealand table tennis player ratings and rankings.
+- [Clubs](https://kiwittr.com/clubs): New Zealand table tennis clubs and their players.
+- [Events](https://kiwittr.com/events): Table tennis events, results, and rated matches.
+- [Tournaments](https://kiwittr.com/tournaments): Tournament draws, standings, and results.
+- [Team games](https://kiwittr.com/team-games): Interclub fixtures, line-ups, and live team scores.
+- [Rating calculator](https://kiwittr.com/simulator): Estimate KiwiTTR rating changes for a matchup.
+- [How ratings are calculated](https://kiwittr.com/how-we-calculate): Explanation of expected outcomes, rating changes, and provisional ratings.
+- [About KiwiTTR](https://kiwittr.com/about): Background and purpose of the platform.
+
+## Site information
+
+- [Sitemap](https://kiwittr.com/sitemap.xml): Index of public pages intended for crawling.
+- [Robots policy](https://kiwittr.com/robots.txt): Crawler access rules.

@@ -94,6 +94,7 @@ export default function Home() {
               <div
                 key={slide.id}
                 aria-hidden={!active}
+                inert={!active}
                 className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${
                   active
                     ? "z-10 opacity-100"
