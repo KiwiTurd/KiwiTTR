@@ -54,6 +54,15 @@ import { getTeamGames } from "../services/teams/teamGameService";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import { formatStartTime } from "../utils/tournamentTime";
 import { getNewZealandDate } from "../utils/newZealandDate";
+import {
+  getPlayer,
+  getOwnPlayerPrivateDetails,
+  type PlayerPrivateDetails,
+} from "../services/supabase/playerService";
+import {
+  getEligibilityReasons,
+  hasEligibilityRestrictions,
+} from "../utils/tournamentEligibility";
 
 type EventStatusFilter =
   | "all"
@@ -160,11 +169,59 @@ export default function Events() {
   const [signingUpTournamentId, setSigningUpTournamentId] =
     useState<string | null>(null);
 
+  const [privateDetails, setPrivateDetails] =
+    useState<PlayerPrivateDetails | null>(null);
+
+  const [privateDetailsPlayerId, setPrivateDetailsPlayerId] =
+    useState<string | null>(null);
+
+  const [linkedPlayerRating, setLinkedPlayerRating] =
+    useState<number | null>(null);
+
+  const privateDetailsLoading = Boolean(
+    linkedPlayerId &&
+    privateDetailsPlayerId !== linkedPlayerId
+  );
+
   const [editForm, setEditForm] =
     useState<EventEditForm | null>(null);
 
   const [savingEdit, setSavingEdit] =
     useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!linkedPlayerId) {
+      return;
+    }
+
+    void Promise.all([
+      getOwnPlayerPrivateDetails(),
+      getPlayer(linkedPlayerId),
+    ])
+      .then(([details, linkedPlayer]) => {
+        if (active) {
+          setPrivateDetails(details);
+          setLinkedPlayerRating(
+            linkedPlayer?.rating ?? null
+          );
+          setPrivateDetailsPlayerId(linkedPlayerId);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        if (active) {
+          setPrivateDetails(null);
+          setLinkedPlayerRating(null);
+          setPrivateDetailsPlayerId(linkedPlayerId);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [linkedPlayerId]);
 
   const [
     standardEventOpen,
@@ -1136,6 +1193,26 @@ export default function Events() {
                 tournament.players.length >=
                   tournament.settings.playerCount
               );
+              const eligibilityReasons = tournament
+                  ? getEligibilityReasons(
+                      tournament,
+                      privateDetails,
+                      linkedPlayerRating
+                    )
+                : [];
+              const checkingEligibility = Boolean(
+                tournament &&
+                privateDetailsLoading &&
+                hasEligibilityRestrictions(tournament)
+              );
+              const unavailableForEligibility = Boolean(
+                tournament &&
+                signUpsOpen &&
+                !signedUp &&
+                !tournamentFull &&
+                (checkingEligibility ||
+                  eligibilityReasons.length > 0)
+              );
               const editing = editForm?.itemId === item.id;
 
               return (
@@ -1298,6 +1375,32 @@ export default function Events() {
                                   : "None"
                               }
                             />
+                            <EventDetail
+                              label="Age"
+                              value={
+                                tournament.settings.ageMinimum ||
+                                tournament.settings.ageLimit
+                                  ? [
+                                      tournament.settings.ageMinimum
+                                        ? `O${tournament.settings.ageMinimum}`
+                                        : null,
+                                      tournament.settings.ageLimit
+                                        ? `U${tournament.settings.ageLimit}`
+                                        : null,
+                                    ].filter(Boolean).join(" · ")
+                                  : "Open"
+                              }
+                            />
+                            <EventDetail
+                              label="Gender"
+                              value={
+                                tournament.settings.gender === "open"
+                                  ? "Open"
+                                  : tournament.settings.gender === "female"
+                                    ? "Female"
+                                    : "Male"
+                              }
+                            />
                           </>
                         )}
 
@@ -1342,7 +1445,9 @@ export default function Events() {
                         {tournament &&
                           signUpsOpen &&
                           !signedUp &&
-                          !tournamentFull && (
+                          !tournamentFull &&
+                          !checkingEligibility &&
+                          eligibilityReasons.length === 0 && (
                             <button
                               type="button"
                               disabled={
@@ -1363,6 +1468,16 @@ export default function Events() {
                                 : "Sign Up"}
                             </button>
                           )}
+
+                        {unavailableForEligibility && (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700"
+                          >
+                            Unavailable
+                          </button>
+                        )}
 
                         {tournament &&
                           signUpsOpen &&
@@ -1425,6 +1540,28 @@ export default function Events() {
                           </>
                         )}
                       </div>
+
+                      {unavailableForEligibility && (
+                        <div className="space-y-1 text-sm text-red-700">
+                          {checkingEligibility ? (
+                            <p>Checking your profile eligibility…</p>
+                          ) : (
+                            eligibilityReasons.map(reason => (
+                              <p key={reason}>{reason}</p>
+                            ))
+                          )}
+                          {eligibilityReasons.some(reason =>
+                            reason.includes("Settings")
+                          ) && (
+                            <Link
+                              to="/settings"
+                              className="inline-flex font-semibold underline underline-offset-2"
+                            >
+                              Update Profile Settings
+                            </Link>
+                          )}
+                        </div>
+                      )}
 
                       {editing && editForm && (
                         <div className="rounded-xl border bg-white p-4">

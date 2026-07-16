@@ -34,9 +34,18 @@ import { useTournament } from "../context/TournamentContext";
 import type { Club } from "../types/club";
 import type { SavedTournament } from "../types/tournament";
 import { getClubs } from "../services/supabase/clubService";
+import {
+  getPlayer,
+  getOwnPlayerPrivateDetails,
+  type PlayerPrivateDetails,
+} from "../services/supabase/playerService";
 import { notify } from "../services/notificationService";
 import { formatStartTime } from "../utils/tournamentTime";
 import { getNewZealandDate } from "../utils/newZealandDate";
+import {
+  getEligibilityReasons,
+  hasEligibilityRestrictions,
+} from "../utils/tournamentEligibility";
 
 type EditForm = {
   name: string;
@@ -91,6 +100,20 @@ export default function TournamentCentre() {
 
   const [clubs, setClubs] =
     useState<Club[]>([]);
+
+  const [privateDetails, setPrivateDetails] =
+    useState<PlayerPrivateDetails | null>(null);
+
+  const [privateDetailsPlayerId, setPrivateDetailsPlayerId] =
+    useState<string | null>(null);
+
+  const [linkedPlayerRating, setLinkedPlayerRating] =
+    useState<number | null>(null);
+
+  const privateDetailsLoading = Boolean(
+    linkedPlayerId &&
+    privateDetailsPlayerId !== linkedPlayerId
+  );
 
   const [search, setSearch] =
     useState("");
@@ -155,6 +178,40 @@ export default function TournamentCentre() {
 
     void loadClubs();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!linkedPlayerId) {
+      return;
+    }
+
+    void Promise.all([
+      getOwnPlayerPrivateDetails(),
+      getPlayer(linkedPlayerId),
+    ])
+      .then(([details, linkedPlayer]) => {
+        if (active) {
+          setPrivateDetails(details);
+          setLinkedPlayerRating(
+            linkedPlayer?.rating ?? null
+          );
+          setPrivateDetailsPlayerId(linkedPlayerId);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        if (active) {
+          setPrivateDetails(null);
+          setLinkedPlayerRating(null);
+          setPrivateDetailsPlayerId(linkedPlayerId);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [linkedPlayerId]);
 
   const clubNameById = useMemo(() => {
     return new Map(
@@ -682,11 +739,29 @@ export default function TournamentCentre() {
                   userClubId ===
                     tournament.settings.clubId
                 );
+              const eligibilityReasons =
+                getEligibilityReasons(
+                  tournament,
+                  privateDetails,
+                  linkedPlayerRating
+                );
+              const checkingEligibility =
+                privateDetailsLoading &&
+                hasEligibilityRestrictions(tournament);
               const canSignUp =
                 state.signUpsOpen &&
                 Boolean(linkedPlayerId) &&
                 !signedUp &&
-                !isFull;
+                !isFull &&
+                !checkingEligibility &&
+                eligibilityReasons.length === 0;
+              const unavailableForEligibility =
+                state.signUpsOpen &&
+                Boolean(linkedPlayerId) &&
+                !signedUp &&
+                !isFull &&
+                (checkingEligibility ||
+                  eligibilityReasons.length > 0);
 
               return (
                 <div key={tournament.id}>
@@ -799,16 +874,6 @@ export default function TournamentCentre() {
                           )}
                         />
                         <DetailItem
-                          label="Player Limit"
-                          value={
-                            tournament.settings
-                              .playerLimitEnabled
-                              ? tournament.settings
-                                  .playerCount
-                              : "Dynamic"
-                          }
-                        />
-                        <DetailItem
                           label="Sign Ups"
                           value={
                             state.signUpsOpen
@@ -820,7 +885,7 @@ export default function TournamentCentre() {
                           }
                         />
                         <DetailItem
-                          label="Close Date"
+                          label="Sign Up Close Date"
                           value={
                             tournament.settings
                               .signUpClosesAt
@@ -840,23 +905,29 @@ export default function TournamentCentre() {
                           }
                         />
                         <DetailItem
-                          label="Seeding"
+                          label="Age"
                           value={
-                            tournament.settings.seedByTTR
-                              ? "KiwiTTR Rating"
-                              : "Random"
+                            tournament.settings.ageMinimum ||
+                            tournament.settings.ageLimit
+                              ? [
+                                  tournament.settings.ageMinimum
+                                    ? `O${tournament.settings.ageMinimum}`
+                                    : null,
+                                  tournament.settings.ageLimit
+                                    ? `U${tournament.settings.ageLimit}`
+                                    : null,
+                                ].filter(Boolean).join(" · ")
+                              : "Open"
                           }
                         />
                         <DetailItem
-                          label="Status"
+                          label="Gender"
                           value={
-                            state.isFinished
-                              ? "Finished"
-                              : state.isCancelled
-                                ? "Cancelled"
-                                : state.isLive
-                                  ? "Live"
-                                  : "Upcoming"
+                            tournament.settings.gender === "open"
+                              ? "Open"
+                              : tournament.settings.gender === "female"
+                                ? "Female"
+                                : "Male"
                           }
                         />
                       </div>
@@ -900,6 +971,16 @@ export default function TournamentCentre() {
                             tournament.id
                               ? "Signing Up"
                               : "Sign Up"}
+                          </button>
+                        )}
+
+                        {unavailableForEligibility && (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700"
+                          >
+                            Unavailable
                           </button>
                         )}
 
@@ -1010,6 +1091,28 @@ export default function TournamentCentre() {
                           </Link>
                         )}
                       </div>
+
+                      {unavailableForEligibility && (
+                        <div className="space-y-1 text-sm text-red-700">
+                          {checkingEligibility ? (
+                            <p>Checking your profile eligibility…</p>
+                          ) : (
+                            eligibilityReasons.map(reason => (
+                              <p key={reason}>{reason}</p>
+                            ))
+                          )}
+                          {eligibilityReasons.some(reason =>
+                            reason.includes("Settings")
+                          ) && (
+                            <Link
+                              to="/settings"
+                              className="inline-flex font-semibold underline underline-offset-2"
+                            >
+                              Update Profile Settings
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

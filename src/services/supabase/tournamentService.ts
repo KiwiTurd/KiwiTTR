@@ -32,6 +32,9 @@ type TournamentRow = {
   tournament_date: string;
   start_time: string | null;
   signup_closes_at: string | null;
+  age_limit: number | null;
+  age_minimum: number | null;
+  gender: TournamentState["settings"]["gender"];
   player_count: number;
   player_limit_enabled: boolean;
   format: TournamentState["settings"]["format"];
@@ -258,6 +261,9 @@ function fromTournamentRow(
       startTime: row.start_time?.slice(0, 5) ?? "",
       signUpClosesAt:
         row.signup_closes_at ?? null,
+      ageLimit: row.age_limit ?? null,
+      ageMinimum: row.age_minimum ?? null,
+      gender: row.gender ?? "open",
       playerCount: row.player_count,
       playerLimitEnabled:
         row.player_limit_enabled ?? true,
@@ -293,6 +299,9 @@ function toTournamentRow(tournament: TournamentState) {
     start_time: tournament.settings.startTime || null,
     signup_closes_at:
       tournament.settings.signUpClosesAt,
+    age_limit: tournament.settings.ageLimit,
+    age_minimum: tournament.settings.ageMinimum,
+    gender: tournament.settings.gender,
     player_count: tournament.settings.playerCount,
     player_limit_enabled:
       tournament.settings.playerLimitEnabled,
@@ -1028,6 +1037,9 @@ export async function updateTournamentMetadata(
       start_time: tournament.settings.startTime || null,
       signup_closes_at:
         tournament.settings.signUpClosesAt,
+      age_limit: tournament.settings.ageLimit,
+      age_minimum: tournament.settings.ageMinimum,
+      gender: tournament.settings.gender,
       player_count: tournament.settings.playerCount,
       player_limit_enabled:
         tournament.settings.playerLimitEnabled,

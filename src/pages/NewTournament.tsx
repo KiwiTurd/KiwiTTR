@@ -112,6 +112,18 @@ const [allowSignUp, setAllowSignUp] =
 const [signUpClosesAt, setSignUpClosesAt] =
   useFormDraftState("tournament.new.signUpClosesAt", "");
 
+const [ageLimit, setAgeLimit] =
+  useFormDraftState("tournament.new.ageLimit", "");
+
+const [ageMinimum, setAgeMinimum] =
+  useFormDraftState("tournament.new.ageMinimum", "");
+
+const [gender, setGender] =
+  useFormDraftState<"open" | "female" | "male">(
+    "tournament.new.gender",
+    "open"
+  );
+
 const [ttrLimitEnabled, setTtrLimitEnabled] =
   useFormDraftState("tournament.new.ttrLimitEnabled", false);
 
@@ -282,6 +294,40 @@ useEffect(() => {
     const parsedTtrLimit =
       Number(ttrLimit);
 
+    const parsedAgeLimit = ageLimit
+      ? Number(ageLimit)
+      : null;
+    const parsedAgeMinimum = ageMinimum
+      ? Number(ageMinimum)
+      : null;
+
+    if (
+      (parsedAgeLimit !== null &&
+        (!Number.isInteger(parsedAgeLimit) ||
+          parsedAgeLimit < 1 ||
+          parsedAgeLimit > 120)) ||
+      (parsedAgeMinimum !== null &&
+        (!Number.isInteger(parsedAgeMinimum) ||
+          parsedAgeMinimum < 1 ||
+          parsedAgeMinimum > 120))
+    ) {
+      notify.timeout(
+        "Please enter ages between 1 and 120."
+      );
+      return;
+    }
+
+    if (
+      parsedAgeLimit !== null &&
+      parsedAgeMinimum !== null &&
+      parsedAgeMinimum > parsedAgeLimit
+    ) {
+      notify.timeout(
+        "The age minimum cannot be higher than the age limit."
+      );
+      return;
+    }
+
     if (
       ttrLimitEnabled &&
       (
@@ -311,6 +357,12 @@ useEffect(() => {
         allowSignUp && signUpClosesAt
           ? signUpClosesAt
           : null,
+
+      ageLimit: parsedAgeLimit,
+
+      ageMinimum: parsedAgeMinimum,
+
+      gender,
 
       playerCount:
         parsedPlayerCount,
@@ -565,6 +617,91 @@ useEffect(() => {
                 )}
               </div>
 
+            </div>
+
+          </div>
+
+          {/* Tournament Eligibility */}
+
+          <div className="rounded-3xl border bg-white p-8 shadow-sm">
+
+            <SettingSectionHeading
+              title="Eligibility"
+              information="Set optional age boundaries and a gender category. Age limits are displayed using familiar U and O labels, such as U18 and O40."
+            />
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <label className="block">
+                <span className="font-medium">
+                  Age Limit
+                </span>
+                <div className="relative mt-2">
+                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 font-bold text-slate-500">
+                    U
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={ageLimit}
+                    onChange={(event) =>
+                      setAgeLimit(event.target.value)
+                    }
+                    placeholder="None"
+                    className="w-full rounded-xl border py-3 pl-8 pr-3"
+                  />
+                </div>
+                <span className="mt-2 block text-sm text-slate-500">
+                  {ageLimit ? `Displayed as U${ageLimit}` : "No upper age limit"}
+                </span>
+              </label>
+
+              <label className="block">
+                <span className="font-medium">
+                  Age Minimum
+                </span>
+                <div className="relative mt-2">
+                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 font-bold text-slate-500">
+                    O
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={ageMinimum}
+                    onChange={(event) =>
+                      setAgeMinimum(event.target.value)
+                    }
+                    placeholder="None"
+                    className="w-full rounded-xl border py-3 pl-8 pr-3"
+                  />
+                </div>
+                <span className="mt-2 block text-sm text-slate-500">
+                  {ageMinimum ? `Displayed as O${ageMinimum}` : "No minimum age"}
+                </span>
+              </label>
+
+              <label className="block">
+                <span className="font-medium">
+                  Gender
+                </span>
+                <select
+                  value={gender}
+                  onChange={(event) =>
+                    setGender(
+                      event.target.value as "open" | "female" | "male"
+                    )
+                  }
+                  className="mt-2 w-full rounded-xl border p-3"
+                >
+                  <option value="open">Open</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                </select>
+                <span className="mt-2 block text-sm text-slate-500">
+                  Tournament gender category
+                </span>
+              </label>
             </div>
 
           </div>
@@ -1102,6 +1239,43 @@ useEffect(() => {
                 </div>
 
               )}
+
+              <div className="flex items-center justify-between">
+
+                <span className="text-slate-500">
+
+                  Age
+
+                </span>
+
+                <strong>
+
+                  {ageMinimum || ageLimit
+                    ? [
+                        ageMinimum ? `O${ageMinimum}` : null,
+                        ageLimit ? `U${ageLimit}` : null,
+                      ].filter(Boolean).join(" · ")
+                    : "Open"}
+
+                </strong>
+
+              </div>
+
+              <div className="flex items-center justify-between">
+
+                <span className="text-slate-500">
+
+                  Gender
+
+                </span>
+
+                <strong className="capitalize">
+
+                  {gender}
+
+                </strong>
+
+              </div>
 
               <hr className="border-slate-200" />
 

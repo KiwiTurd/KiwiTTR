@@ -290,6 +290,21 @@ export default function PlayerProfile() {
       : "-";
   }, [players, player]);
 
+  const nationalRank = useMemo(() => {
+    if (!player || !player.isActive) {
+      return "-";
+    }
+
+    const rank = players
+      .filter((item) => item.isActive)
+      .sort((a, b) => b.rating - a.rating)
+      .findIndex((item) => item.id === player.id) + 1;
+
+    return rank > 0
+      ? `#${rank}`
+      : "-";
+  }, [players, player]);
+
   const linkedPlayer = useMemo(() => {
     if (!linkedPlayerId) {
       return null;
@@ -561,13 +576,13 @@ return (
 
               <div className="mt-2 flex items-center gap-2 text-slate-500">
 
-                <Building2 className="h-4 w-4" />
+                <Building2 className="hidden h-4 w-4 sm:block" />
 
                 {club?.name ?? "No Club"}
 
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
 
                 <div
                   className={`
@@ -605,9 +620,25 @@ return (
 
           </div>
 
-          <div className="flex items-center justify-end gap-4 rounded-xl bg-slate-50 px-5 py-4 text-right xl:min-w-52">
+          <div className="grid w-full grid-cols-2 items-center rounded-xl bg-slate-50 px-5 py-4 text-right sm:flex sm:w-auto sm:justify-end xl:min-w-52">
 
-            <div>
+            <div className="border-r border-slate-200 pr-5">
+
+              <p className="text-sm text-slate-500">
+
+                NZ Ranking
+
+              </p>
+
+              <h2 className="text-4xl font-black tracking-tight">
+
+                {nationalRank}
+
+              </h2>
+
+            </div>
+
+            <div className="translate-x-2 pl-5 sm:pl-0">
 
             <p className="text-sm text-slate-500">
 

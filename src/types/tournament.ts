@@ -13,6 +13,12 @@ export interface TournamentSettings {
 
   signUpClosesAt: string | null;
 
+  ageLimit: number | null;
+
+  ageMinimum: number | null;
+
+  gender: "open" | "female" | "male";
+
   playerCount: number;
 
   playerLimitEnabled: boolean;
@@ -163,6 +169,12 @@ export const defaultTournament: TournamentState = {
     startTime: "",
 
     signUpClosesAt: null,
+
+    ageLimit: null,
+
+    ageMinimum: null,
+
+    gender: "open",
 
     playerCount: 32,
 
