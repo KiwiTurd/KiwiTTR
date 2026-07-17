@@ -812,7 +812,7 @@ function QuickActions({
           {
             to: "/matches",
             icon: <ClipboardPen className="h-5 w-5 text-blue-700" />,
-            title: "Record Match",
+            title: "Match Input",
           },
         ]
       : []),

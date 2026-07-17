@@ -26,7 +26,13 @@ import useRole from "../../hooks/useRole";
 
 const MIN_SETS_TO_WIN = 2;
 
-export default function MatchForm() {
+export default function MatchForm({
+  fixedEventId,
+  onRecorded,
+}: {
+  fixedEventId?: string;
+  onRecorded?: () => void | Promise<void>;
+} = {}) {
   const {
     isAdmin,
     isClubLeader,
@@ -68,12 +74,16 @@ export default function MatchForm() {
       setEvents(manageableEvents);
 
       setEventId((currentEventId) =>
-        currentEventId &&
-        !manageableEvents.some(
-          (event) => event.id === currentEventId
+        fixedEventId && manageableEvents.some(
+          (event) => event.id === fixedEventId
         )
-          ? ""
-          : currentEventId
+          ? fixedEventId
+          : currentEventId &&
+              !manageableEvents.some(
+                (event) => event.id === currentEventId
+              )
+            ? ""
+            : currentEventId
       );
     } catch (error) {
       console.error(error);
@@ -82,6 +92,7 @@ export default function MatchForm() {
   }, [
     isAdmin,
     isClubLeader,
+    fixedEventId,
     setEventId,
     userClubId,
   ]);
@@ -307,6 +318,7 @@ export default function MatchForm() {
       setSavedSets([false]);
 
       await loadData();
+      await onRecorded?.();
 
     } catch (error) {
       console.error(error);
@@ -355,7 +367,8 @@ export default function MatchForm() {
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
               disabled={
-                isClubLeader && !userClubId
+                Boolean(fixedEventId) ||
+                (isClubLeader && !userClubId)
               }
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
             >

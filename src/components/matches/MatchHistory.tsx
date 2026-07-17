@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   History,
@@ -8,33 +8,47 @@ import {
 import type { Match } from "../../types/match";
 import type { Player } from "../../types/player";
 
-import { getRecentMatches } from "../../services/supabase/matchService";
+import { getMatches, getRecentMatches } from "../../services/supabase/matchService";
 import { getPlayers } from "../../services/supabase/playerService";
 
-export default function MatchHistory() {
+export default function MatchHistory({
+  eventId,
+  refreshKey = 0,
+}: {
+  eventId?: string;
+  refreshKey?: number;
+} = {}) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const [matchData, playerData] = await Promise.all([
-        getRecentMatches(10),
+        eventId ? getMatches() : getRecentMatches(10),
         getPlayers(),
       ]);
 
-      setMatches(matchData);
+      setMatches(
+        eventId
+          ? matchData.filter((match) => match.eventId === eventId)
+          : matchData
+      );
       setPlayers(playerData);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [eventId]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadData, refreshKey]);
 
   if (loading) {
     return (
@@ -45,7 +59,7 @@ export default function MatchHistory() {
           <History className="h-6 w-6 text-blue-700" />
 
           <h2 className="text-2xl font-bold">
-            Recent Matches
+            {eventId ? "Club Night Matches" : "Recent Matches"}
           </h2>
 
         </div>
@@ -68,13 +82,13 @@ export default function MatchHistory() {
           <History className="h-6 w-6 text-blue-700" />
 
           <h2 className="text-2xl font-bold">
-            Recent Matches
+            {eventId ? "Club Night Matches" : "Recent Matches"}
           </h2>
 
         </div>
 
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Last 10
+          {eventId ? "This event" : "Last 10"}
         </span>
 
       </div>

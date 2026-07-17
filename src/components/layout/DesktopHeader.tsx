@@ -30,7 +30,7 @@ import { supabase } from "../../lib/supabase";
 import GlobalSearch from "./GlobalSearch";
 import NavigationProfilePicture from "./NavigationProfilePicture";
 
-type MenuName = "competition" | "management" | "tools";
+type MenuName = "my-club" | "competition" | "management" | "tools";
 
 type HeaderLink = {
   to: string;
@@ -97,7 +97,7 @@ export default function DesktopHeader() {
   }
 
   const managementLinks: HeaderLink[] = [
-    { to: "/matches", label: "Record Match", description: "Enter a completed result", icon: <ClipboardPen className="h-5 w-5" />, colour: "bg-green-100 text-green-700" },
+    { to: "/matches", label: "Match Input", description: "Choose and enter match results", icon: <ClipboardPen className="h-5 w-5" />, colour: "bg-green-100 text-green-700" },
     { to: "/players", label: "Player Management", description: "Create and manage players", icon: <Users className="h-5 w-5" />, colour: "bg-violet-100 text-violet-700" },
   ];
 
@@ -106,7 +106,13 @@ export default function DesktopHeader() {
     { to: "/settings", label: "Settings", description: "Navigation preferences", icon: <Settings className="h-5 w-5" />, colour: "bg-slate-200 text-slate-700" },
   ];
 
+  const myClubLinks: HeaderLink[] = [
+    { to: "/my-club", label: "Club Profile", description: "View your associated club", icon: <Building2 className="h-5 w-5" />, colour: "bg-indigo-100 text-indigo-700" },
+    { to: "/club-events", label: "Club Events", description: "Club nights and round robins", icon: <CalendarDays className="h-5 w-5" />, colour: "bg-emerald-100 text-emerald-700" },
+  ];
+
   const menus: Record<MenuName, { title: string; icon: ReactNode; links: HeaderLink[] }> = {
+    "my-club": { title: "My Club", icon: <Building2 className="h-4 w-4" />, links: myClubLinks },
     competition: { title: "Competition", icon: <Medal className="h-4 w-4" />, links: competitionLinks },
     management: { title: "Management", icon: <Paperclip className="h-4 w-4" />, links: managementLinks },
     tools: { title: "Tools", icon: <Wrench className="h-4 w-4" />, links: toolLinks },
@@ -141,6 +147,7 @@ export default function DesktopHeader() {
 
         <nav aria-label="Main navigation" className="flex items-center gap-1">
           {(Object.keys(menus) as MenuName[]).map((name) => {
+            if (name === "my-club" && !session) return null;
             if (name === "management" && !(isAdmin || isClubLeader)) return null;
             const menu = menus[name];
             const isOpen = openMenu === name;

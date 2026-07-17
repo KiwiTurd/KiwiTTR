@@ -68,7 +68,7 @@ export default function SidebarLink({
             collapsed
               ? "justify-center px-0"
               : "gap-3 px-4"
-          } py-3 rounded-xl font-medium transition-all duration-200 ${
+          } py-2.5 rounded-xl font-medium transition-all duration-200 ${
             isActive
               ? "bg-blue-900 text-white"
               : "text-slate-700 hover:bg-slate-100"

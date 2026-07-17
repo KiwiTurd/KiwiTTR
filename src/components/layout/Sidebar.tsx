@@ -28,6 +28,12 @@ import SidebarFooter from "./SidebarFooter";
 import SidebarSection from "./SidebarSection";
 import SidebarLink from "./SidebarLink";
 
+type SidebarDropdown =
+  | "my-club"
+  | "competition"
+  | "management"
+  | "tools";
+
 export default function Sidebar() {
   const { collapsed } = useSidebar();
   const { session } = useAuth();
@@ -37,14 +43,14 @@ export default function Sidebar() {
     isClubLeader,
   } = useRole();
 
-  const [competitionOpen, setCompetitionOpen] =
-    useState(true);
+  const [openDropdown, setOpenDropdown] =
+    useState<SidebarDropdown | null>("competition");
 
-  const [matchCentreOpen, setMatchCentreOpen] =
-    useState(true);
-
-  const [toolsOpen, setToolsOpen] =
-    useState(false);
+  function toggleDropdown(dropdown: SidebarDropdown) {
+    setOpenDropdown((current) =>
+      current === dropdown ? null : dropdown
+    );
+  }
 
   return (
     <aside
@@ -57,12 +63,21 @@ export default function Sidebar() {
       <SidebarHeader />
 
       {!collapsed && (
-        <div className="border-b px-4 py-5">
+        <div className="border-b px-4 py-4">
           <GlobalSearch />
         </div>
       )}
 
-      <nav className="flex-1 overflow-y-auto px-4 py-4">
+      <nav className="flex-1 overflow-y-auto px-4 py-3">
+
+        <SidebarLink
+          to="/dashboard"
+          label="Dashboard"
+          icon={
+            <LayoutDashboard className="h-5 w-5" />
+          }
+          collapsed={collapsed}
+        />
 
         {session && (
           <SidebarLink
@@ -75,24 +90,33 @@ export default function Sidebar() {
           />
         )}
 
-        <SidebarLink
-          to="/dashboard"
-          label="Dashboard"
-          icon={
-            <LayoutDashboard className="h-5 w-5" />
-          }
-          collapsed={collapsed}
-        />
+        {session && (
+          <SidebarSection
+            title="My Club"
+            icon={<Building2 className="h-4 w-4" />}
+            open={openDropdown === "my-club"}
+            onToggle={() => toggleDropdown("my-club")}
+          >
+            <SidebarLink
+              to="/my-club"
+              label="Club Profile"
+              icon={<Building2 className="h-4 w-4" />}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/club-events"
+              label="Club Events"
+              icon={<CalendarDays className="h-4 w-4" />}
+              collapsed={collapsed}
+            />
+          </SidebarSection>
+        )}
 
         <SidebarSection
           title="Competition"
           icon={<Medal className="h-4 w-4" />}
-          open={competitionOpen}
-          onToggle={() =>
-            setCompetitionOpen(
-              !competitionOpen
-            )
-          }
+          open={openDropdown === "competition"}
+          onToggle={() => toggleDropdown("competition")}
         >
 
           <SidebarLink
@@ -126,9 +150,7 @@ export default function Sidebar() {
             <SidebarLink
               to="/tournaments"
               label="Tournaments"
-              icon={
-                <Trophy className="h-4 w-4" />
-              }
+              icon={<Trophy className="h-4 w-4" />}
               collapsed={collapsed}
             />
           )}
@@ -137,9 +159,7 @@ export default function Sidebar() {
             <SidebarLink
               to="/team-games"
               label="Team Games"
-              icon={
-                <UsersRound className="h-4 w-4" />
-              }
+              icon={<UsersRound className="h-4 w-4" />}
               collapsed={collapsed}
             />
           )}
@@ -153,17 +173,13 @@ export default function Sidebar() {
             icon={
               <Paperclip className="h-4 w-4" />
             }
-            open={matchCentreOpen}
-            onToggle={() =>
-              setMatchCentreOpen(
-                !matchCentreOpen
-              )
-            }
+            open={openDropdown === "management"}
+            onToggle={() => toggleDropdown("management")}
           >
 
             <SidebarLink
               to="/matches"
-              label="Record Match"
+              label="Match Input"
               icon={
                 <ClipboardPen className="h-4 w-4" />
               }
@@ -188,10 +204,8 @@ export default function Sidebar() {
           icon={
             <Wrench className="h-4 w-4" />
           }
-          open={toolsOpen}
-          onToggle={() =>
-            setToolsOpen(!toolsOpen)
-          }
+          open={openDropdown === "tools"}
+          onToggle={() => toggleDropdown("tools")}
         >
 
           <SidebarLink

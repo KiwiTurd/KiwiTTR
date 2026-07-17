@@ -25,7 +25,7 @@ export default function SidebarSection({
   const { collapsed } = useSidebar();
 
   return (
-    <div className="mb-3">
+    <div className="mb-2">
 
       <button
         onClick={onToggle}
@@ -42,7 +42,7 @@ export default function SidebarSection({
           rounded-xl
 
           px-4
-          py-2.5
+          py-2
 
           text-xs
           font-semibold
@@ -116,7 +116,7 @@ export default function SidebarSection({
         `}
       >
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
 
           {children}
 

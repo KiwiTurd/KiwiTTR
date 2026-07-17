@@ -9,6 +9,8 @@ import {
   About,
   Admin,
   ClubProfile,
+  ClubEvents,
+  ClubEventType,
   Clubs,
   ClubSettings,
   Dashboard,
@@ -22,6 +24,7 @@ import {
   Matches,
   MultiLiveViewer,
   MyProfile,
+  MyClub,
   NewTeamGameEvent,
   NewTournament,
   NoticeSettings,
@@ -85,12 +88,29 @@ export const router = createBrowserRouter([
 
       {
         path: "clubs",
-        element: <Clubs />,
+        element: (
+          <ProtectedRoute>
+            <Clubs />
+          </ProtectedRoute>
+        ),
       },
 
       {
         path: "clubs/:id",
-        element: <ClubProfile />,
+        element: (
+          <ProtectedRoute>
+            <ClubProfile />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: "my-club",
+        element: (
+          <ProtectedRoute>
+            <MyClub />
+          </ProtectedRoute>
+        ),
       },
 
       {
@@ -220,6 +240,24 @@ export const router = createBrowserRouter([
         element: (
           <RoleRoute allowedRoles={["admin", "club_admin"]}>
             <TeamGameManage />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "club-events",
+        element: (
+          <ProtectedRoute>
+            <ClubEvents />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: "club-events/new",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <ClubEventType />
           </RoleRoute>
         ),
       },
