@@ -576,9 +576,7 @@ export default function MobileBottomNav() {
           openPanel(panel);
         }}
         aria-label={label}
-        className={`flex min-w-0 flex-1 items-center justify-center text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14 ${
-          installedApp ? "h-16" : "h-14"
-        } ${
+        className={`flex h-14 min-w-0 flex-1 items-center justify-center text-slate-700 transition hover:bg-slate-100 hover:text-black focus:outline-none focus:ring-4 focus:ring-blue-100 sm:max-w-14 ${
           installedApp
             ? `rounded-[1.4rem] ${
                 active
@@ -635,7 +633,7 @@ export default function MobileBottomNav() {
         inert={panelOpen}
         className={`${
           installedApp
-            ? "mx-auto mb-[calc(0.75rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-white/65 bg-white/55 px-3 py-3.5 shadow-[0_12px_40px_rgba(15,23,42,0.20)] backdrop-blur-2xl backdrop-saturate-150"
+            ? "mx-auto mb-[calc(1.5rem+env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-xl rounded-[2.25rem] border border-white/65 bg-white/55 px-3 py-2 shadow-[0_12px_40px_rgba(15,23,42,0.20)] backdrop-blur-2xl backdrop-saturate-150"
             : "border-t border-slate-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)]"
         } origin-bottom transition-all duration-300 ease-out ${
           installedApp && mobileNavCompact

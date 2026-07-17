@@ -20,6 +20,8 @@ export const TeamGameLive = lazy(() => import("./pages/TeamGameLive"));
 export const TeamGameManage = lazy(() => import("./pages/TeamGameManage"));
 export const ClubEvents = lazy(() => import("./pages/ClubEvents"));
 export const ClubEventType = lazy(() => import("./pages/ClubEventType"));
+export const NewClubRoundRobin = lazy(() => import("./pages/NewClubRoundRobin"));
+export const ClubRoundRobinPlayers = lazy(() => import("./pages/ClubRoundRobinPlayers"));
 export const PlayerManagement = lazy(() => import("./pages/PlayerManagement"));
 export const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 export const MyProfile = lazy(() => import("./pages/MyProfile"));

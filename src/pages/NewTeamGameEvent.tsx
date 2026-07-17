@@ -562,6 +562,19 @@ export default function NewTeamGameEvent() {
     );
   }
 
+  function updateTeamClub(side: Side, clubId: string) {
+    if (side === "home") {
+      setHomeClubId(clubId);
+      setHomePlayerIds(Array(playerCount).fill(""));
+      setHomeDoubles(emptyDoubles);
+      return;
+    }
+
+    setAwayClubId(clubId);
+    setAwayPlayerIds(Array(playerCount).fill(""));
+    setAwayDoubles(emptyDoubles);
+  }
+
   function updateDoubles(
     side: Side,
     pairIndex: number,
@@ -676,6 +689,13 @@ export default function NewTeamGameEvent() {
     if (!startTime) {
       notify.timeout(
         "Please choose a start time."
+      );
+      return;
+    }
+
+    if (!selectedHomeClub || !selectedAwayClub) {
+      notify.timeout(
+        "Please choose both a home club and an away club."
       );
       return;
     }
@@ -1247,7 +1267,8 @@ export default function NewTeamGameEvent() {
                   <select
                     value={homeClubId}
                     onChange={(event) =>
-                      setHomeClubId(
+                      updateTeamClub(
+                        "home",
                         event.target.value
                       )
                     }
@@ -1311,7 +1332,8 @@ export default function NewTeamGameEvent() {
                 <select
                   value={awayClubId}
                   onChange={(event) =>
-                    setAwayClubId(
+                    updateTeamClub(
+                      "away",
                       event.target.value
                     )
                   }

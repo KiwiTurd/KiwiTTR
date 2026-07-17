@@ -9,7 +9,6 @@ import { Link, useParams } from "react-router-dom";
 import {
   Building2,
   CalendarDays,
-  ChevronRight,
   Pencil,
 } from "lucide-react";
 
@@ -32,9 +31,8 @@ import EditClubModal from "../components/clubs/EditClubModal";
 import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
 import { useTournament } from "../context/TournamentContext";
-import type { SavedTournament } from "../types/tournament";
 import LoadingScreen from "../components/shared/LoadingScreen";
-import { formatStartTime } from "../utils/tournamentTime";
+import UpcomingTournamentAccordion from "../components/tournaments/UpcomingTournamentAccordion";
 
 function externalUrl(url: string) {
   return /^https?:\/\//i.test(url)
@@ -385,14 +383,10 @@ export default function ClubProfile() {
 
           <div className="divide-y">
 
-            {upcomingTournaments.map(tournament => (
-
-              <TournamentListRow
-                key={tournament.id}
-                tournament={tournament}
-              />
-
-            ))}
+            <UpcomingTournamentAccordion
+              tournaments={upcomingTournaments}
+              clubNameFor={() => club.name}
+            />
 
           </div>
 
@@ -493,18 +487,6 @@ export default function ClubProfile() {
   );
 }
 
-function tournamentFormatLabel(
-  tournament: SavedTournament
-) {
-  return tournament.settings.format === "pools"
-    ? "Pools -> Knockout"
-    : tournament.settings.format === "pool-ratings"
-      ? "Pool Only Ratings"
-    : tournament.settings.format === "doubles"
-      ? "Doubles Knockout"
-      : "Straight Knockout";
-}
-
 function ClubStatCard({
   label,
   value,
@@ -521,53 +503,5 @@ function ClubStatCard({
         {value}
       </p>
     </div>
-  );
-}
-
-function TournamentListRow({
-  tournament,
-}: {
-  tournament: SavedTournament;
-}) {
-  const totalMatches =
-    tournament.matches.length +
-    tournament.knockout.length;
-  const completedMatches = [
-    ...tournament.matches,
-    ...tournament.knockout,
-  ].filter(match => match.completed).length;
-  const live =
-    totalMatches > 0 &&
-    completedMatches < totalMatches;
-
-  return (
-    <Link
-      to={`/tournaments/${tournament.id}/viewer`}
-      className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
-    >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate text-base font-medium">
-            {tournament.settings.name}
-          </h3>
-          {live && (
-            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
-              Live
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-slate-500">
-          {new Date(
-            tournament.settings.date
-          ).toLocaleDateString()}
-          {tournament.settings.startTime &&
-            ` at ${formatStartTime(tournament.settings.startTime)}`}
-          {" "}·{" "}
-          {tournamentFormatLabel(tournament)}
-        </p>
-      </div>
-
-      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
-    </Link>
   );
 }

@@ -358,11 +358,11 @@ export default function TournamentViewer() {
       <div className="flex flex-wrap items-start justify-between gap-5 border-b border-slate-300 pb-6 md:items-end">
         <div className="tournament-page-header-copy">
           <Link
-            to="/events"
+            to={tournament.settings.eventType === "club-round-robin" ? "/club-events" : "/events"}
             className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 font-semibold hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Events
+            {tournament.settings.eventType === "club-round-robin" ? "Club Events" : "Events"}
           </Link>
 
           <h1 className="mt-6 text-5xl font-normal">
@@ -416,7 +416,9 @@ export default function TournamentViewer() {
         )}
         {canManageTournament && tournament.id && (
           <Link
-            to={`/tournaments/${tournament.id}/live`}
+            to={tournament.settings.eventType === "club-round-robin"
+              ? `/club-events/${tournament.id}/live`
+              : `/tournaments/${tournament.id}/live`}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
           >
             <ClipboardPen className="h-4 w-4" />
@@ -654,8 +656,34 @@ function PoolViewer({
   matches: TournamentMatch[];
   tournamentIsLive: boolean;
 }) {
+  const additionalMatches = matches.filter((match) => match.isAdditional);
+
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="space-y-4">
+      {additionalMatches.length > 0 && (
+        <section className="rounded-3xl border border-blue-200 bg-white shadow-sm">
+          <div className="border-b bg-blue-50 px-4 py-3">
+            <h2 className="text-lg font-bold text-blue-950">Additional Club Matches</h2>
+            <p className="mt-1 text-xs text-blue-700">Singles and non-TTR doubles played alongside the round robins.</p>
+          </div>
+          <div className="grid gap-1.5 p-2">
+            {additionalMatches.map((match) => (
+              <div key={match.id}>
+                <div className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  {match.matchType === "doubles"
+                    ? "Doubles · Non-TTR"
+                    : match.countsForTTR
+                      ? "Individual Singles · TTR"
+                      : "Individual Singles · Non-TTR"}
+                </div>
+                <PoolMatchRow match={match} tournamentIsLive={tournamentIsLive} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="grid gap-4 xl:grid-cols-2">
       {pools.map(pool => {
         const standings = calculatePoolStandings(
           pool,
@@ -725,6 +753,7 @@ function PoolViewer({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

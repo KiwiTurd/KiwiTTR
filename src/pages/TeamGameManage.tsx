@@ -12,6 +12,7 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
+  Download,
   GripVertical,
   Pencil,
   Trash2,
@@ -37,6 +38,10 @@ import {
   recordTeamGameTtrMatches,
 } from "../services/teams/teamSubmission";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import {
+  downloadPlayCard,
+  downloadTeamGameSheet,
+} from "../utils/playCard";
 
 export default function TeamGameManage() {
   const { id } = useParams();
@@ -677,6 +682,69 @@ export default function TeamGameManage() {
       .join(" / ");
   }
 
+  function downloadTeamMatchCard(match: Classic6Match) {
+    if (!game) return;
+
+    const playersFor = (side: "home" | "away", ids: string[]) => {
+      const team = side === "home" ? game.home : game.away;
+      return ids.map((id) => {
+        const player = team.players.find((candidate) => candidate.id === id);
+        return {
+          name: player?.name ?? "TBC",
+          club: player?.clubName ?? team.clubName,
+          ttr: player?.rating ?? "-",
+        };
+      });
+    };
+
+    downloadPlayCard({
+      eventName: game.name,
+      matchName: match.label,
+      sideOne: playersFor("home", match.homePlayerIds),
+      sideTwo: playersFor("away", match.awayPlayerIds),
+    });
+  }
+
+  function downloadFullTeamGameSheet() {
+    if (!game) return;
+
+    downloadTeamGameSheet({
+      eventName: game.name,
+      date: new Date(game.date).toLocaleDateString(),
+      venue: game.locationClubName,
+      home: {
+        name: game.home.name,
+        club: game.home.clubName,
+        players: game.home.players.map((player) => ({
+          name: player.name,
+          club: player.clubName,
+          ttr: player.rating,
+        })),
+      },
+      away: {
+        name: game.away.name,
+        club: game.away.clubName,
+        players: game.away.players.map((player) => ({
+          name: player.name,
+          club: player.clubName,
+          ttr: player.rating,
+        })),
+      },
+      matches: game.matches.map((match) => ({
+        order: match.order,
+        label: match.label,
+        sideOne: playerNames("home", match.homePlayerIds),
+        sideTwo: playerNames("away", match.awayPlayerIds),
+        sets: match.sets.map((set) => ({
+          sideOne: set.home,
+          sideTwo: set.away,
+        })),
+        winner: match.winner,
+        countsForTeamScore: match.countsForTeamScore,
+      })),
+    });
+  }
+
   if (!game) {
     return <LoadingScreen label="Loading team game..." />;
   }
@@ -742,6 +810,14 @@ export default function TeamGameManage() {
         >
           Open Live Viewer
         </Link>
+        <button
+          type="button"
+          onClick={downloadFullTeamGameSheet}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          <Download className="h-4 w-4" />
+          Download Full Scoresheet
+        </button>
         {isAdmin && (
           <button
             type="button"
@@ -916,9 +992,19 @@ export default function TeamGameManage() {
         <div>
       {selectedMatch && (
         <section className="sticky top-24 rounded-3xl border bg-white p-5 shadow-sm">
-          <h2 className="mb-2 text-xl font-bold">
-            {selectedMatch.label}
-          </h2>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold">
+              {selectedMatch.label}
+            </h2>
+            <button
+              type="button"
+              onClick={() => downloadTeamMatchCard(selectedMatch)}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Download className="h-4 w-4" />
+              Download Play Card
+            </button>
+          </div>
           <p className="mb-6 text-sm text-slate-500">
             {!canInputMatches
               ? "Go live before entering sets or confirming match winners."

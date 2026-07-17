@@ -4,12 +4,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type DragEvent,
 } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
   ChevronDown,
+  GripVertical,
   Trophy,
 } from "lucide-react";
 import {
@@ -87,6 +89,62 @@ function createDoublesPair(
 
 }
 
+function parseDoublesPairId(value: string) {
+  const match = value.match(
+    /^pair-([0-9a-f-]{36})-([0-9a-f-]{36})$/i
+  );
+
+  return match
+    ? [match[1], match[2]] as const
+    : null;
+}
+
+function restorePairMember(
+  savedPair: Player,
+  id: string,
+  fullName: string
+): Player {
+  const nameParts = fullName.trim().split(/\s+/);
+  const firstName = nameParts.shift() ?? "Player";
+
+  return {
+    ...savedPair,
+    id,
+    profileId: null,
+    firstName,
+    lastName: nameParts.join(" "),
+  };
+}
+
+function restoreDoublesPairs(
+  savedPlayers: Player[],
+  availablePlayers: Player[]
+) {
+  const availableById = new Map(
+    availablePlayers.map((player) => [player.id, player])
+  );
+
+  return savedPlayers.flatMap((savedPlayer) => {
+    const pairIds = parseDoublesPairId(savedPlayer.id);
+
+    if (!pairIds) {
+      return [];
+    }
+
+    const playerOneName = savedPlayer.firstName.trim();
+    const playerTwoName = savedPlayer.lastName
+      .replace(/^\s*\/\s*/, "")
+      .trim();
+
+    return [[
+      availableById.get(pairIds[0]) ??
+        restorePairMember(savedPlayer, pairIds[0], playerOneName),
+      availableById.get(pairIds[1]) ??
+        restorePairMember(savedPlayer, pairIds[1], playerTwoName),
+    ]];
+  });
+}
+
 export default function TournamentPlayerSelection() {
 
   const navigate =
@@ -113,13 +171,26 @@ const [clubs, setClubs] =
 
 const [selectedPlayers, setSelectedPlayers] =
   useState<Player[]>(
-    tournament.players
+    tournament.settings.format === "doubles" &&
+    tournament.players.some((player) =>
+      Boolean(parseDoublesPairId(player.id))
+    )
+      ? []
+      : tournament.players
   );
 
 const [doublesPairs, setDoublesPairs] =
   useState<Player[][]>(() => {
     if (
       tournament.settings.format !== "doubles"
+    ) {
+      return [];
+    }
+
+    if (
+      tournament.players.some((player) =>
+        Boolean(parseDoublesPairId(player.id))
+      )
     ) {
       return [];
     }
@@ -138,6 +209,15 @@ const [doublesPairs, setDoublesPairs] =
 
     return pairs;
   });
+
+const [draggedDoublesSlot, setDraggedDoublesSlot] =
+  useState<{
+    pairIndex: number;
+    playerIndex: number;
+  } | null>(null);
+
+const [doublesDropTarget, setDoublesDropTarget] =
+  useState<string | null>(null);
 
 const isDoubles =
   tournament.settings.format === "doubles";
@@ -196,9 +276,25 @@ const hasValidPlayerTotal =
 
   setClubs(clubData);
 
+  if (
+    tournament.settings.format === "doubles" &&
+    tournament.players.some((player) =>
+      Boolean(parseDoublesPairId(player.id))
+    )
+  ) {
+    const restoredPairs = restoreDoublesPairs(
+      tournament.players,
+      playerData
+    );
+
+    setDoublesPairs(restoredPairs);
+    setSelectedPlayers(restoredPairs.flat());
+  }
+
 }, [
   tournament.settings.format,
   tournament.settings.socialPlay,
+  tournament.players,
 ]);
 
   useEffect(() => {
@@ -325,6 +421,95 @@ const hasValidPlayerTotal =
 
     }
 
+  }
+
+  function beginDoublesDrag(
+    event: DragEvent<HTMLDivElement>,
+    pairIndex: number,
+    playerIndex: number
+  ) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData(
+      "text/plain",
+      `${pairIndex}:${playerIndex}`
+    );
+    setDraggedDoublesSlot({ pairIndex, playerIndex });
+  }
+
+  function finishDoublesDrag() {
+    setDraggedDoublesSlot(null);
+    setDoublesDropTarget(null);
+  }
+
+  function swapDoublesPlayers(
+    targetPairIndex: number,
+    targetPlayerIndex: number
+  ) {
+    if (!draggedDoublesSlot) {
+      return;
+    }
+
+    const source = draggedDoublesSlot;
+
+    if (
+      source.pairIndex === targetPairIndex &&
+      source.playerIndex === targetPlayerIndex
+    ) {
+      finishDoublesDrag();
+      return;
+    }
+
+    setDoublesPairs((currentPairs) => {
+      const nextPairs = currentPairs.map((pair) => [...pair]);
+      const sourcePlayer =
+        nextPairs[source.pairIndex]?.[source.playerIndex];
+      const targetPlayer =
+        nextPairs[targetPairIndex]?.[targetPlayerIndex];
+
+      if (!sourcePlayer || !targetPlayer) {
+        return currentPairs;
+      }
+
+      nextPairs[source.pairIndex][source.playerIndex] = targetPlayer;
+      nextPairs[targetPairIndex][targetPlayerIndex] = sourcePlayer;
+      return nextPairs;
+    });
+
+    finishDoublesDrag();
+  }
+
+  function moveDoublesPlayerToOpenPair(
+    targetPairIndex: number
+  ) {
+    if (!draggedDoublesSlot) {
+      return;
+    }
+
+    const source = draggedDoublesSlot;
+
+    setDoublesPairs((currentPairs) => {
+      if (
+        source.pairIndex === targetPairIndex ||
+        currentPairs[targetPairIndex]?.length >= 2
+      ) {
+        return currentPairs;
+      }
+
+      const nextPairs = currentPairs.map((pair) => [...pair]);
+      const [sourcePlayer] = nextPairs[source.pairIndex].splice(
+        source.playerIndex,
+        1
+      );
+
+      if (!sourcePlayer) {
+        return currentPairs;
+      }
+
+      nextPairs[targetPairIndex].push(sourcePlayer);
+      return nextPairs.filter((pair) => pair.length > 0);
+    });
+
+    finishDoublesDrag();
   }
 function getClubName(
   clubId: string
@@ -534,13 +719,19 @@ function getClubName(
 
             </h2>
 
-            <p className="mt-2 text-slate-500">
+<p className="mt-2 text-slate-500">
 
   {hasPlayerLimit
     ? `${selectedPlayers.length} selected · limit ${tournament.settings.playerCount}`
     : `${selectedPlayers.length} selected`}
 
 </p>
+
+{isDoubles && doublesPairs.length > 1 && (
+  <p className="mt-2 text-xs font-medium text-blue-700">
+    Drag a player onto another player to swap them between pairs.
+  </p>
+)}
 
 <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
 
@@ -570,10 +761,32 @@ function getClubName(
 
                 doublesPairs.map((pair, index) => (
                   <div
-                    key={pair
-                      .map(player => player.id)
-                      .join("-")}
-                    className="rounded-xl border px-4 py-3"
+                    key={`pair-${index}`}
+                    onDragOver={(event) => {
+                      if (
+                        draggedDoublesSlot &&
+                        pair.length < 2 &&
+                        draggedDoublesSlot.pairIndex !== index
+                      ) {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        setDoublesDropTarget(`pair-${index}`);
+                      }
+                    }}
+                    onDragLeave={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                        setDoublesDropTarget(null);
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      moveDoublesPlayerToOpenPair(index);
+                    }}
+                    className={`rounded-xl border px-4 py-3 transition ${
+                      doublesDropTarget === `pair-${index}`
+                        ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
+                        : "border-slate-200"
+                    }`}
                   >
                     <div className="mb-3 flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
@@ -585,15 +798,52 @@ function getClubName(
                     </div>
 
                     <div className="space-y-2">
-                      {pair.map(player => (
+                      {pair.map((player, playerIndex) => (
                         <div
                           key={player.id}
-                          className="flex items-center justify-between gap-3 text-sm"
+                          draggable
+                          onDragStart={(event) =>
+                            beginDoublesDrag(
+                              event,
+                              index,
+                              playerIndex
+                            )
+                          }
+                          onDragEnd={finishDoublesDrag}
+                          onDragOver={(event) => {
+                            if (draggedDoublesSlot) {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              event.dataTransfer.dropEffect = "move";
+                              setDoublesDropTarget(
+                                `player-${index}-${playerIndex}`
+                              );
+                            }
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            swapDoublesPlayers(index, playerIndex);
+                          }}
+                          className={`flex cursor-grab items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition active:cursor-grabbing ${
+                            doublesDropTarget ===
+                            `player-${index}-${playerIndex}`
+                              ? "bg-blue-100 ring-2 ring-blue-300"
+                              : draggedDoublesSlot?.pairIndex === index &&
+                                  draggedDoublesSlot.playerIndex === playerIndex
+                                ? "opacity-40"
+                                : "hover:bg-slate-50"
+                          }`}
+                          title="Drag onto a player in another pair to swap them"
                         >
-                          <span>
-                            {player.firstName} {player.lastName}
+                          <span className="flex min-w-0 items-center gap-2">
+                            <GripVertical className="h-4 w-4 shrink-0 text-slate-400" />
+                            <span className="truncate">
+                              {player.firstName} {player.lastName}
+                            </span>
                           </span>
                           <button
+                            type="button"
                             onClick={() =>
                               removePlayer(player.id)
                             }

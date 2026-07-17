@@ -315,6 +315,10 @@ async function clearTeamGameDetails(teamGameId: string) {
 export async function saveTeamGame(
   game: Classic6Game
 ): Promise<Classic6Game> {
+  if (!game.home.clubId || !game.away.clubId) {
+    throw new Error("Please select both a home club and an away club.");
+  }
+
   const { data, error } = await supabase
     .from("team_games")
     .upsert(toTeamGameRow(game))

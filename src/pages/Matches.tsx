@@ -12,6 +12,7 @@ import MatchForm from "../components/matches/MatchForm";
 import MatchHistory from "../components/matches/MatchHistory";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import { useTournament } from "../context/TournamentContext";
+import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
 import { getTeamGames } from "../services/teams/teamGameService";
 import { getNewZealandDate } from "../utils/newZealandDate";
@@ -31,6 +32,7 @@ export default function Matches() {
   const [teamGames, setTeamGames] = useState<Awaited<ReturnType<typeof getTeamGames>>>([]);
   const [loading, setLoading] = useState(true);
   const { savedTournaments, isLoadingTournaments } = useTournament();
+  const { isAdmin, clubId } = useRole();
   const today = getNewZealandDate();
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function Matches() {
   const tournamentItems = useMemo(
     () => savedTournaments
       .filter((tournament) =>
+        tournament.settings.eventType !== "club-round-robin" &&
         tournament.status !== "completed" &&
         tournament.status !== "cancelled" &&
         (tournament.status === "active" || tournament.settings.date >= today)
@@ -88,6 +91,28 @@ export default function Matches() {
         to: `/team-games/${game.id}/live`,
       })),
     [teamGames]
+  );
+
+  const clubItems = useMemo(
+    () => savedTournaments
+      .filter((event) =>
+        event.settings.eventType === "club-round-robin" &&
+        (isAdmin || event.settings.clubId === clubId) &&
+        event.status !== "completed" &&
+        event.status !== "cancelled" &&
+        (event.status === "active" || event.settings.date >= today)
+      )
+      .sort((a, b) => a.settings.date.localeCompare(b.settings.date))
+      .map((event) => ({
+        id: event.id,
+        name: event.settings.name,
+        date: event.settings.date,
+        startTime: event.settings.startTime,
+        status: event.status === "active" ? "Live" : "Upcoming",
+        meta: `${event.pools.length || event.settings.roundRobinCount || 1} round robins`,
+        to: `/club-events/${event.id}/${event.status === "active" ? "live" : "viewer"}`,
+      })),
+    [clubId, isAdmin, savedTournaments, today]
   );
 
   return (
@@ -139,8 +164,8 @@ export default function Matches() {
         ) : (
           <CondensedEventList
             title={INPUT_OPTIONS.find((option) => option.id === selected)?.label ?? "Events"}
-            items={selected === "tournament" ? tournamentItems : selected === "team" ? teamItems : []}
-            emptyLabel={selected === "club" ? "Club events will be available shortly." : "No live or upcoming events are available."}
+            items={selected === "tournament" ? tournamentItems : selected === "team" ? teamItems : clubItems}
+            emptyLabel="No live or upcoming events are available."
             action={selected === "club" ? { label: "View Club Events", to: "/club-events" } : undefined}
           />
         )

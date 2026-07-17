@@ -26,7 +26,7 @@ import useRole from "../hooks/useRole";
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
 import LoadingScreen from "../components/shared/LoadingScreen";
-import { formatStartTime } from "../utils/tournamentTime";
+import UpcomingTournamentAccordion from "../components/tournaments/UpcomingTournamentAccordion";
 
 import type { Club } from "../types/club";
 import type { Player } from "../types/player";
@@ -435,32 +435,15 @@ export default function Dashboard() {
                 No upcoming tournaments.
               </p>
             ) : (
-              upcomingTournaments.map((tournament) => (
-                <Link
-                  key={tournament.id}
-                  to={`/tournaments/${tournament.id}/viewer`}
-                  className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-slate-50"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {tournament.settings.name}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {new Date(
-                        tournament.settings.date
-                      ).toLocaleDateString()}
-                      {tournament.settings.startTime &&
-                        ` at ${formatStartTime(tournament.settings.startTime)}`}
-                      {" "}·{" "}
-                      {tournament.settings.playerLimitEnabled
-                        ? `${tournament.settings.playerCount} players`
-                        : `${tournament.players.length} players signed up`}
-                    </p>
-                  </div>
-
-                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
-                </Link>
-              ))
+              <UpcomingTournamentAccordion
+                tournaments={upcomingTournaments}
+                clubNameFor={(tournamentClubId) =>
+                  dashboard?.clubs.find(
+                    (dashboardClub) => dashboardClub.id === tournamentClubId
+                  )?.name ??
+                  (club?.id === tournamentClubId ? club.name : undefined)
+                }
+              />
             )}
 
           </div>

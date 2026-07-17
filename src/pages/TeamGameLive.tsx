@@ -5,6 +5,7 @@ import {
 import {
   ArrowLeft,
   ClipboardPen,
+  Download,
   Trophy,
   UsersRound,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import {
 import { getTeamGame } from "../services/teams/teamGameService";
 import useRole from "../hooks/useRole";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import { downloadTeamGameSheet } from "../utils/playCard";
 
 function namesFor(
   team: Classic6Team,
@@ -72,6 +74,15 @@ function setLine(match: Classic6Match) {
   return match.sets
     .map((set) => `${set.home}-${set.away}`)
     .join(", ");
+}
+
+function plainNamesFor(team: Classic6Team, ids: string[]) {
+  return ids
+    .map(
+      (id) =>
+        team.players.find((player) => player.id === id)?.name ?? "TBC"
+    )
+    .join(" / ");
 }
 
 export default function TeamGameLive() {
@@ -191,6 +202,44 @@ export default function TeamGameLive() {
       : "",
   ].filter(Boolean);
 
+  function downloadFullTeamGameSheet() {
+    downloadTeamGameSheet({
+      eventName: game.name,
+      date: new Date(game.date).toLocaleDateString(),
+      venue: game.locationClubName,
+      home: {
+        name: game.home.name,
+        club: game.home.clubName,
+        players: game.home.players.map((player) => ({
+          name: player.name,
+          club: player.clubName,
+          ttr: player.rating,
+        })),
+      },
+      away: {
+        name: game.away.name,
+        club: game.away.clubName,
+        players: game.away.players.map((player) => ({
+          name: player.name,
+          club: player.clubName,
+          ttr: player.rating,
+        })),
+      },
+      matches: game.matches.map((match) => ({
+        order: match.order,
+        label: match.label,
+        sideOne: plainNamesFor(game.home, match.homePlayerIds),
+        sideTwo: plainNamesFor(game.away, match.awayPlayerIds),
+        sets: match.sets.map((set) => ({
+          sideOne: set.home,
+          sideTwo: set.away,
+        })),
+        winner: match.winner,
+        countsForTeamScore: match.countsForTeamScore,
+      })),
+    });
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
 
@@ -204,15 +253,25 @@ export default function TeamGameLive() {
             Team Games
           </Link>
 
-          {canManage && id && (
-            <Link
-              to={`/team-games/${id}/manage`}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={downloadFullTeamGameSheet}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
-              <ClipboardPen className="h-5 w-5" />
-              Match Centre
-            </Link>
-          )}
+              <Download className="h-5 w-5" />
+              Download Full Scoresheet
+            </button>
+            {canManage && id && (
+              <Link
+                to={`/team-games/${id}/manage`}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+              >
+                <ClipboardPen className="h-5 w-5" />
+                Match Centre
+              </Link>
+            )}
+          </div>
         </div>
 
         <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-emerald-700">

@@ -11,6 +11,8 @@ import {
   ClubProfile,
   ClubEvents,
   ClubEventType,
+  NewClubRoundRobin,
+  ClubRoundRobinPlayers,
   Clubs,
   ClubSettings,
   Dashboard,
@@ -259,6 +261,42 @@ export const router = createBrowserRouter([
           <RoleRoute allowedRoles={["admin", "club_admin"]}>
             <ClubEventType />
           </RoleRoute>
+        ),
+      },
+
+      {
+        path: "club-events/round-robin/new",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <NewClubRoundRobin />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "club-events/round-robin/players",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <ClubRoundRobinPlayers />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "club-events/:id/live",
+        element: (
+          <RoleRoute allowedRoles={["admin", "club_admin"]}>
+            <TournamentLive />
+          </RoleRoute>
+        ),
+      },
+
+      {
+        path: "club-events/:id/viewer",
+        element: (
+          <ProtectedRoute>
+            <TournamentViewer />
+          </ProtectedRoute>
         ),
       },
 

@@ -52,6 +52,7 @@ import {
 } from "../services/teams/teamEngine";
 import { getTeamGames } from "../services/teams/teamGameService";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import ExpandableDescription from "../components/shared/ExpandableDescription";
 import { formatStartTime } from "../utils/tournamentTime";
 import { getNewZealandDate } from "../utils/newZealandDate";
 import {
@@ -1297,10 +1298,13 @@ export default function Events() {
                     <div className="space-y-3 bg-slate-50 px-4 py-3">
                       {(tournament?.settings.eventDescription ||
                         teamGame?.description) && (
-                        <p className="whitespace-pre-line rounded-xl border bg-white px-3 py-2 text-sm text-slate-700">
-                          {tournament?.settings.eventDescription ??
-                            teamGame?.description}
-                        </p>
+                        <ExpandableDescription
+                          description={
+                            tournament?.settings.eventDescription ||
+                            teamGame?.description ||
+                            ""
+                          }
+                        />
                       )}
 
                       <div className="grid gap-2 md:grid-cols-3">

@@ -31,6 +31,7 @@ import {
 
 import useRole from "../hooks/useRole";
 import { useTournament } from "../context/TournamentContext";
+import ExpandableDescription from "../components/shared/ExpandableDescription";
 import type { Club } from "../types/club";
 import type { SavedTournament } from "../types/tournament";
 import { getClubs } from "../services/supabase/clubService";
@@ -841,9 +842,7 @@ export default function TournamentCentre() {
                   {expanded && (
                     <div className="space-y-3 bg-slate-50 px-4 py-3">
                       {tournament.settings.eventDescription && (
-                        <p className="whitespace-pre-line rounded-xl border bg-white px-3 py-2 text-sm text-slate-700">
-                          {tournament.settings.eventDescription}
-                        </p>
+                        <ExpandableDescription description={tournament.settings.eventDescription} />
                       )}
 
                       <div className="grid gap-2 md:grid-cols-3">

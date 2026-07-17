@@ -1,6 +1,10 @@
 import type { Player } from "./player";
 
 export interface TournamentSettings {
+  eventType?: "tournament" | "club-round-robin";
+
+  roundRobinCount?: number;
+
   name: string;
 
   eventDescription: string;
@@ -62,6 +66,12 @@ export interface TournamentMatch {
     | "knockout";
 
   poolId?: string;
+
+  matchType?: "singles" | "doubles";
+
+  countsForTTR?: boolean;
+
+  isAdditional?: boolean;
 
   round?: string;
 

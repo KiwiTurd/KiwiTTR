@@ -21,8 +21,8 @@ import type {
   TournamentMatch,
   TournamentState,
 } from "../../types/tournament";
-import { generatePoolMatches } from "../tournament/matchGenerator";
 import { getNewZealandDate } from "../../utils/newZealandDate";
+import { generatePoolMatches } from "../tournament/matchGenerator";
 
 type TournamentRow = {
   id: string;
@@ -48,6 +48,8 @@ type TournamentRow = {
   status: "draft" | "active" | "completed" | "cancelled";
   created_at: string;
   updated_at: string;
+  event_type: "tournament" | "club-round-robin" | null;
+  round_robin_count: number | null;
 };
 
 type TournamentPlayerRow = {
@@ -111,6 +113,9 @@ type TournamentMatchRow = {
   completed: boolean;
   bracket: "winners" | "losers" | "grand-final" | null;
   recorded_match_id: string | null;
+  match_type: "singles" | "doubles";
+  counts_for_ttr: boolean;
+  is_additional: boolean;
 };
 
 type TournamentMatchSetRow = {
@@ -253,6 +258,8 @@ function fromTournamentRow(
     updatedAt: row.updated_at,
     status: row.status,
     settings: {
+      eventType: row.event_type ?? "tournament",
+      roundRobinCount: row.round_robin_count ?? undefined,
       name: row.name,
       eventDescription:
         row.event_description ?? "",
@@ -278,6 +285,9 @@ function fromTournamentRow(
       ttrLimit: row.ttr_limit ?? 2000,
     },
     ...details,
+    players: row.event_type === "club-round-robin"
+      ? details.players.filter((player) => isUuid(player.id))
+      : details.players,
     knockout:
       row.format === "double-knockout"
         ? details.knockout
@@ -291,6 +301,8 @@ function fromTournamentRow(
 function toTournamentRow(tournament: TournamentState) {
   return {
     id: tournament.id || crypto.randomUUID(),
+    event_type: tournament.settings.eventType ?? "tournament",
+    round_robin_count: tournament.settings.roundRobinCount ?? null,
     club_id: tournament.settings.clubId,
     name: tournament.settings.name,
     event_description:
@@ -560,6 +572,9 @@ async function loadTournamentDetails(
       return {
         id: row.app_match_id,
         stage: "pool",
+        matchType: row.match_type ?? "singles",
+        countsForTTR: row.counts_for_ttr ?? true,
+        isAdditional: row.is_additional ?? false,
         poolId: row.pool_id
           ? poolsByRowId.get(row.pool_id)?.app_pool_id
           : undefined,
@@ -870,6 +885,9 @@ export async function saveTournamentRecord(
       position: index + 1,
       table_number: match.table ?? null,
       completed: match.completed,
+      match_type: match.matchType ?? "singles",
+      counts_for_ttr: match.countsForTTR ?? true,
+      is_additional: match.isAdditional ?? false,
       completed_at: match.completed
         ? new Date().toISOString()
         : null,
@@ -1030,6 +1048,8 @@ export async function updateTournamentMetadata(
     .from("tournaments")
     .update({
       club_id: tournament.settings.clubId,
+      event_type: tournament.settings.eventType ?? "tournament",
+      round_robin_count: tournament.settings.roundRobinCount ?? null,
       name: tournament.settings.name,
       event_description:
         tournament.settings.eventDescription,
@@ -1383,6 +1403,7 @@ export async function finishTournamentAndRecordRatings(
       .select("*")
       .eq("tournament_id", tournamentId)
       .eq("completed", true)
+      .eq("counts_for_ttr", true)
       .is("recorded_match_id", null)
       .order("created_at");
 

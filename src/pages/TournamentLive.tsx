@@ -14,14 +14,19 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronDown,
+  Download,
   Eye,
   Crown,
   Pencil,
+  Plus,
+  Printer,
   Save,
   Trash2,
+  X,
 } from "lucide-react";
 
 import { useTournament } from "../context/TournamentContext";
+import PlayerSelector from "../components/shared/PlayerSelector";
 import useRole from "../hooks/useRole";
 import { advanceWinner } from "../services/tournament/advanceKnockout";
 import { getQualifiers } from "../services/tournament/getQualifiers";
@@ -36,14 +41,43 @@ import {
   getDoubleKnockoutChampion,
 } from "../services/tournament/doubleKnockout";
 import { calculatePoolStandings } from "../services/tournament/standings";
-import type { TournamentMatch } from "../types/tournament";
+import type { Pool, TournamentMatch } from "../types/tournament";
+import type { Player } from "../types/player";
 import { finishTournamentAndRecordRatings } from "../services/supabase/tournamentService";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import { formatStartTime } from "../utils/tournamentTime";
+import { getClubs } from "../services/supabase/clubService";
+import type { Club } from "../types/club";
+import { downloadPlayCard, downloadPoolLineup } from "../utils/playCard";
 
 const emptyGames = ["", "", "", "", ""];
 const emptyConfirmedGames = [false, false, false, false, false];
+
+function createAdditionalDoublesPair(
+  playerOne: Player,
+  playerTwo: Player
+): Player {
+  return {
+    ...playerOne,
+    id: `pair-${playerOne.id}-${playerTwo.id}`,
+    profileId: null,
+    firstName: `${playerOne.firstName} ${playerOne.lastName}`,
+    lastName: `/ ${playerTwo.firstName} ${playerTwo.lastName}`,
+    mobile: "",
+    email: "",
+    mobilePublicToClub: false,
+    emailPublicToClub: false,
+    avatarUrl: "",
+    rating: 0,
+    highestRating: 0,
+    wins: 0,
+    losses: 0,
+    matchesPlayed: 0,
+    provisionalMatchesRemaining: 0,
+    ratingReliability: 0,
+  };
+}
 
 function playerName(
   player: { firstName: string; lastName: string } | null
@@ -179,10 +213,15 @@ export default function TournamentLive() {
   const [winnerId, setWinnerId] = useState("");
   const [games, setGames] = useState(emptyGames);
   const [confirmedGames, setConfirmedGames] = useState(emptyConfirmedGames);
-  const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
+  const [collapsedPoolIds, setCollapsedPoolIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const [focusedPoolId, setFocusedPoolId] = useState("");
   const [finishing, setFinishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [additionalMatchType, setAdditionalMatchType] = useState<"singles" | "doubles" | null>(null);
+  const [additionalPlayers, setAdditionalPlayers] = useState<Array<Player | null>>([]);
 
   const standings = useMemo(
     () =>
@@ -240,6 +279,18 @@ export default function TournamentLive() {
 
   const totalMatches =
     tournament.matches.length + tournament.knockout.length;
+  const additionalMatches = tournament.matches.filter((match) => match.isAdditional);
+  const clubEventPlayers = tournament.players.filter(
+    (player) => !player.id.startsWith("pair-")
+  );
+  const clubNameById = useMemo(
+    () => new Map(clubs.map((club) => [club.id, club.name])),
+    [clubs]
+  );
+
+  useEffect(() => {
+    void getClubs().then(setClubs).catch(console.error);
+  }, []);
 
   const championMatch =
     tournament.knockout.find(
@@ -268,9 +319,25 @@ export default function TournamentLive() {
     tournament.status === "completed" ||
     tournament.status === "cancelled";
   const canInputMatches = tournament.status === "active";
+  const assignedPoolPlayerIds = new Set(
+    tournament.pools.flatMap((pool) =>
+      pool.players.map((player) => player.id)
+    )
+  );
+  const hasUnassignedClubPlayers =
+    tournament.settings.eventType === "club-round-robin" &&
+    tournament.players.some(
+      (player) => !assignedPoolPlayerIds.has(player.id)
+    );
 
   function markLive() {
     if (!tournament.id || tournamentLocked || canInputMatches) return;
+    if (hasUnassignedClubPlayers) {
+      notify.timeout(
+        "New sign-ups need to be placed into a round robin. Open Edit, review the groups, then go live."
+      );
+      return;
+    }
 
     setTournamentState({
       ...tournament,
@@ -283,6 +350,117 @@ export default function TournamentLive() {
     notify.edgeBall(
       `${tournament.settings.name || "Tournament"} is now live. Match Centre is enabled.`
     );
+  }
+
+  function openAdditionalMatch(type: "singles" | "doubles") {
+    setAdditionalMatchType(type);
+    setAdditionalPlayers(Array(type === "singles" ? 2 : 4).fill(null));
+  }
+
+  function closeAdditionalMatch() {
+    setAdditionalMatchType(null);
+    setAdditionalPlayers([]);
+  }
+
+  function addAdditionalMatch() {
+    if (!additionalMatchType || additionalPlayers.some((player) => !player)) {
+      notify.timeout("Select every player for this match.");
+      return;
+    }
+
+    const players = additionalPlayers as Player[];
+    if (new Set(players.map((player) => player.id)).size !== players.length) {
+      notify.timeout("Each player can only appear once in the match.");
+      return;
+    }
+
+    const playerOne = additionalMatchType === "doubles"
+      ? createAdditionalDoublesPair(players[0], players[1])
+      : players[0];
+    const playerTwo = additionalMatchType === "doubles"
+      ? createAdditionalDoublesPair(players[2], players[3])
+      : players[1];
+    const match: TournamentMatch = {
+      id: `club-additional-${crypto.randomUUID()}`,
+      stage: "pool",
+      matchType: additionalMatchType,
+      countsForTTR:
+        additionalMatchType === "singles" &&
+        !tournament.settings.socialPlay,
+      isAdditional: true,
+      playerOne,
+      playerTwo,
+      completed: false,
+      games: [],
+    };
+
+    setMatches([match, ...tournament.matches]);
+    setSelectedPoolMatch(match);
+    setActiveTab("pools");
+    restoreEntry(match);
+    closeAdditionalMatch();
+    notify.success(
+      additionalMatchType === "singles"
+        ? tournament.settings.socialPlay
+          ? "Non-TTR individual singles match added."
+          : "Individual singles match added."
+        : "Non-TTR doubles match added."
+    );
+  }
+
+  function tournamentCardPlayers(player: Player | null) {
+    if (!player) return [];
+    const realPlayers = new Map(
+      [
+        ...tournament.players,
+        ...tournament.pools.flatMap((pool) => pool.players),
+      ].map((player) => [player.id, player])
+    );
+    const pair = player.id.match(/^pair-([0-9a-f-]{36})-([0-9a-f-]{36})$/i);
+    const members = pair
+      ? [realPlayers.get(pair[1]), realPlayers.get(pair[2])].filter(Boolean) as Player[]
+      : [player];
+
+    return members.map((member) => ({
+      name: playerName(member),
+      club: clubNameById.get(member.clubId) ?? "Club not listed",
+      ttr: member.rating || "-",
+    }));
+  }
+
+  function downloadTournamentMatchCard(
+    match: TournamentMatch | { playerOne: Player | null; playerTwo: Player | null },
+    matchName: string
+  ) {
+
+    downloadPlayCard({
+      eventName: tournament.settings.name || "Match",
+      matchName,
+      sideOne: tournamentCardPlayers(match.playerOne),
+      sideTwo: tournamentCardPlayers(match.playerTwo),
+    });
+  }
+
+  function downloadPoolCard(pool: Pool) {
+    const ordered = orderPoolMatchesForPlay(pool, tournament.matches);
+    const playerNumberById = new Map(
+      pool.players.map((player, index) => [player.id, index + 1])
+    );
+    const matchesPerRound = Math.max(1, Math.floor(pool.players.length / 2));
+    downloadPoolLineup({
+      eventName: tournament.settings.name || "Tournament",
+      poolName: pool.name,
+      table: tournament.matches.find((match) => match.poolId === pool.id)?.table,
+      players: pool.players.map((player) => tournamentCardPlayers(player)[0]),
+      matches: ordered.map((match, index) => ({
+        round: Math.floor(index / matchesPerRound) + 1,
+        playerOneNumber: playerNumberById.get(match.playerOne.id) ?? 0,
+        playerTwoNumber: playerNumberById.get(match.playerTwo.id) ?? 0,
+        sideOne: playerName(match.playerOne),
+        sideTwo: playerName(match.playerTwo),
+        table: match.table,
+      })),
+    });
   }
 
   async function deleteCurrentTournament() {
@@ -346,7 +524,13 @@ export default function TournamentLive() {
 
   function focusPool(poolId: string) {
     setFocusedPoolId(poolId);
-    setExpandedPoolId(poolId || null);
+    if (poolId) {
+      setCollapsedPoolIds((current) => {
+        const next = new Set(current);
+        next.delete(poolId);
+        return next;
+      });
+    }
     if (!poolId) return;
 
     window.requestAnimationFrame(() => {
@@ -354,6 +538,22 @@ export default function TournamentLive() {
         .querySelector<HTMLElement>(`[data-pool-card="${poolId}"]`)
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
+  }
+
+  function togglePool(poolId: string) {
+    setCollapsedPoolIds((current) => {
+      const next = new Set(current);
+      if (next.has(poolId)) {
+        next.delete(poolId);
+      } else {
+        next.add(poolId);
+      }
+      return next;
+    });
+  }
+
+  function poolIsExpanded(poolId: string) {
+    return !collapsedPoolIds.has(poolId);
   }
 
   function ensureKnockoutFromPools(
@@ -427,6 +627,14 @@ export default function TournamentLive() {
         match.poolId === poolId
           ? { ...match, table }
           : match
+      )
+    );
+  }
+
+  function saveAdditionalMatchTable(matchId: string, table?: number) {
+    setMatches(
+      tournament.matches.map((match) =>
+        match.id === matchId ? { ...match, table } : match
       )
     );
   }
@@ -534,7 +742,7 @@ export default function TournamentLive() {
           Choose a saved tournament from the Tournament Centre.
         </p>
         <Link
-          to="/tournaments"
+          to={tournament.settings.eventType === "club-round-robin" ? "/club-events" : "/tournaments"}
           className="mt-6 inline-flex rounded-xl bg-blue-900 px-5 py-3 font-semibold text-white hover:bg-blue-800"
         >
           Open Tournaments
@@ -576,12 +784,14 @@ export default function TournamentLive() {
           className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Tournaments
+          {tournament.settings.eventType === "club-round-robin" ? "Club Events" : "Tournaments"}
         </Link>
         <div className="mt-6 flex items-start justify-between gap-6 border-b border-slate-300 pb-6">
           <div className="tournament-page-header-copy">
             <p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">
-              {tournamentFormatLabel(tournament.settings.format)} Tournament Builder
+              {tournament.settings.eventType === "club-round-robin"
+                ? "Club Round Robin Match Centre"
+                : `${tournamentFormatLabel(tournament.settings.format)} Tournament Builder`}
             </p>
             <h1 className="mt-2 text-5xl font-normal tracking-tight">
             {tournament.settings.name || "Tournament"}
@@ -633,7 +843,11 @@ export default function TournamentLive() {
                 disabled={finishing}
                 className="mt-3 rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {finishing ? "Finishing..." : "Finish & Update Ratings"}
+                {finishing
+                  ? "Finishing..."
+                  : tournament.settings.socialPlay
+                    ? "Finish Club Event"
+                    : "Finish & Update Ratings"}
               </button>
             </div>
           )}
@@ -643,7 +857,11 @@ export default function TournamentLive() {
       <div className="flex flex-wrap gap-3">
         {tournament.status === "draft" && (
           <Link
-            to="/tournaments/players"
+            to={
+              tournament.settings.eventType === "club-round-robin"
+                ? "/club-events/round-robin/players"
+                : "/tournaments/players"
+            }
             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <Pencil className="h-4 w-4" />
@@ -661,7 +879,11 @@ export default function TournamentLive() {
           </button>
         )}
         <Link
-          to={`/tournaments/${tournament.id}/viewer`}
+          to={
+            tournament.settings.eventType === "club-round-robin"
+              ? `/club-events/${tournament.id}/viewer`
+              : `/tournaments/${tournament.id}/viewer`
+          }
           className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           <Eye className="h-4 w-4" />
@@ -683,6 +905,80 @@ export default function TournamentLive() {
       {tournamentLocked && (
         <div className="rounded-2xl border bg-slate-50 px-5 py-4 font-semibold text-slate-700">
           This tournament is {tournament.status}. Results and draw management are locked.
+        </div>
+      )}
+
+      {tournament.settings.eventType === "club-round-robin" && canInputMatches && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => openAdditionalMatch("singles")}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+            >
+              <Plus className="h-4 w-4" />
+              Add Individual Singles
+            </button>
+            <button
+              type="button"
+              onClick={() => openAdditionalMatch("doubles")}
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-3 font-semibold text-blue-900 shadow-sm transition hover:bg-blue-50"
+            >
+              <Plus className="h-4 w-4" />
+              Add Doubles
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">Non-TTR</span>
+            </button>
+          </div>
+
+          {additionalMatchType && (
+            <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold">
+                    Add {additionalMatchType === "singles" ? "Individual Singles" : "Doubles"} Match
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {additionalMatchType === "singles"
+                      ? tournament.settings.socialPlay
+                        ? "TTR is disabled for this event, so this match will not affect ratings."
+                        : "This match will count toward TTR when the club event is completed."
+                      : "Select two players for each pair. This match will not affect TTR."}
+                  </p>
+                </div>
+                <button type="button" onClick={closeAdditionalMatch} aria-label="Close add match" className="rounded-lg p-2 text-slate-500 hover:bg-white">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className={`mt-4 grid gap-3 ${additionalMatchType === "doubles" ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-2"}`}>
+                {additionalPlayers.map((player, index) => {
+                  const selectedIds = new Set(
+                    additionalPlayers.filter(Boolean).map((selected) => selected?.id)
+                  );
+                  return <div key={index}>
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {additionalMatchType === "doubles"
+                        ? `${index < 2 ? "Pair 1" : "Pair 2"} · Player ${(index % 2) + 1}`
+                        : `Player ${index + 1}`}
+                    </p>
+                    <PlayerSelector
+                      value={player}
+                      players={clubEventPlayers.filter((candidate) => candidate.id === player?.id || !selectedIds.has(candidate.id))}
+                      onChange={(selected) => setAdditionalPlayers((current) => current.map((item, itemIndex) => itemIndex === index ? selected : item))}
+                      onClear={() => setAdditionalPlayers((current) => current.map((item, itemIndex) => itemIndex === index ? null : item))}
+                      placeholder="Select player..."
+                    />
+                  </div>;
+                })}
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button type="button" onClick={addAdditionalMatch} className="rounded-xl bg-blue-900 px-5 py-2.5 font-semibold text-white hover:bg-blue-800">
+                  Add Match
+                </button>
+              </div>
+            </section>
+          )}
         </div>
       )}
 
@@ -710,7 +1006,6 @@ export default function TournamentLive() {
       </div>
 
       <div className={`grid gap-6 ${
-        canInputMatches &&
         (
           (activeTab === "pools" && selectedPoolMatch) ||
           (activeTab === "knockout" && selectedKnockoutMatch)
@@ -721,6 +1016,56 @@ export default function TournamentLive() {
         <div className="space-y-6">
           {activeTab === "pools" && (
             <div className="space-y-3">
+            {additionalMatches.length > 0 && (
+              <section className="overflow-hidden rounded-xl border border-blue-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between gap-3 border-b bg-blue-50 px-4 py-3">
+                  <div>
+                    <h2 className="font-bold text-blue-950">Additional Club Matches</h2>
+                    <p className="text-xs text-blue-700">Individual matches added alongside the round robins.</p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-800">{additionalMatches.length} matches</span>
+                </div>
+                <div className="divide-y">
+                  {additionalMatches.map((match) => (
+                    <div
+                      key={match.id}
+                      className={`grid gap-2 px-4 py-3 transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${selectedPoolMatch?.id === match.id ? "bg-blue-50" : match.completed ? "bg-slate-50" : "hover:bg-slate-50"}`}
+                    >
+                      <button
+                        type="button"
+                        disabled={match.completed}
+                        onClick={() => {
+                          setSelectedPoolMatch(match);
+                          restoreEntry(match);
+                        }}
+                        className="grid min-w-0 gap-2 text-left sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center disabled:cursor-default"
+                      >
+                        <span className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ${match.matchType === "doubles" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
+                          {match.matchType === "doubles"
+                            ? "Doubles · Non-TTR"
+                            : match.countsForTTR
+                              ? "Singles · TTR"
+                              : "Singles · Non-TTR"}
+                        </span>
+                        <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_24px_minmax(0,1fr)] items-center text-sm font-semibold">
+                          <span className="truncate">{playerName(match.playerOne)}</span>
+                          <span className="text-center text-xs text-slate-400">vs</span>
+                          <span className="truncate text-right">{playerName(match.playerTwo)}</span>
+                        </span>
+                        <span className={`text-xs font-semibold ${match.completed ? "text-green-700" : "text-slate-500"}`}>
+                          {match.completed ? "Complete" : "Enter result"}
+                        </span>
+                      </button>
+                      <TableAssignment
+                        value={match.table}
+                        disabled={!canInputMatches || match.completed}
+                        onSave={(table) => saveAdditionalMatchTable(match.id, table)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
             <div className="flex items-center gap-3 rounded-xl border bg-white px-3 py-2 shadow-sm">
               <label htmlFor="pool-quick-select" className="text-xs font-bold uppercase tracking-wide text-slate-500">
                 Pool quick select
@@ -745,7 +1090,7 @@ export default function TournamentLive() {
                 key={pool.id}
                 data-pool-card={pool.id}
                 className={`overflow-hidden rounded-xl border bg-white shadow-sm transition ${
-                  expandedPoolId === pool.id ? "lg:col-span-2" : ""
+                  poolIsExpanded(pool.id) ? "lg:col-span-2" : ""
                 } ${
                   focusedPoolId === pool.id
                     ? "border-blue-400 ring-4 ring-blue-100"
@@ -769,19 +1114,26 @@ export default function TournamentLive() {
                     />
                     <button
                       type="button"
-                      onClick={() => setExpandedPoolId(
-                        expandedPoolId === pool.id ? null : pool.id
-                      )}
+                      onClick={() => downloadPoolCard(pool)}
+                      title={`Download ${pool.name} rotated line-up`}
+                      aria-label={`Download ${pool.name} rotated line-up`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border bg-white text-blue-800 transition hover:bg-blue-50"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => togglePool(pool.id)}
                       className="inline-flex items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                     >
                       {getRemainingPoolMatches(pool.id).length} remaining
                       <ChevronDown className={`h-3.5 w-3.5 transition-transform ${
-                        expandedPoolId === pool.id ? "rotate-180" : ""
+                        poolIsExpanded(pool.id) ? "rotate-180" : ""
                       }`} />
                     </button>
                   </div>
                 </div>
-                <div className={expandedPoolId === pool.id ? "lg:grid lg:grid-cols-2" : ""}>
+                <div className={poolIsExpanded(pool.id) ? "lg:grid lg:grid-cols-2" : ""}>
                 <div>
                   {standings.map(standing => (
                     <div
@@ -812,7 +1164,7 @@ export default function TournamentLive() {
                     </div>
                   ))}
                 </div>
-                {expandedPoolId === pool.id && (
+                {poolIsExpanded(pool.id) && (
                   <div className="border-t bg-slate-50 lg:border-l lg:border-t-0">
                     <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">
                       Remaining pool matches
@@ -827,12 +1179,11 @@ export default function TournamentLive() {
                           <button
                             key={match.id}
                             type="button"
-                            disabled={!canInputMatches}
                             onClick={() => {
                               setSelectedPoolMatch(match);
-                              restoreEntry(match);
+                              if (canInputMatches) restoreEntry(match);
                             }}
-                            className={`grid w-full grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] items-center gap-3 border-t px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 ${
+                            className={`grid w-full grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] items-center gap-3 border-t px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 ${
                               selectedPoolMatch?.id === match.id ? "bg-blue-50" : "bg-white"
                             }`}
                           >
@@ -891,10 +1242,9 @@ export default function TournamentLive() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (!canInputMatches) return;
                         if (match.playerOne && match.playerTwo && !match.completed) {
                           setSelectedKnockoutMatchId(match.id);
-                          restoreEntry(match);
+                          if (canInputMatches) restoreEntry(match);
                         }
                       }}
                       className="mt-3 w-full text-left"
@@ -933,9 +1283,13 @@ export default function TournamentLive() {
                       <ResultRow
                         key={match.id}
                         label={
-                          tournament.pools.find(
-                            pool => pool.id === match.poolId
-                          )?.name ?? "Pool"
+                          match.isAdditional
+                            ? match.matchType === "doubles"
+                              ? "Additional Doubles"
+                              : "Additional Singles"
+                            : tournament.pools.find(
+                                pool => pool.id === match.poolId
+                              )?.name ?? "Pool"
                         }
                         playerOne={playerName(match.playerOne)}
                         playerTwo={playerName(match.playerTwo)}
@@ -965,10 +1319,14 @@ export default function TournamentLive() {
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 xl:sticky xl:top-24 xl:max-h-[calc(100dvh-7rem)] xl:self-start xl:overflow-y-auto">
           {canInputMatches && activeTab === "pools" && selectedPoolMatch && (
             <ResultEntry
-              title="Enter Pool Result"
+              title={selectedPoolMatch.isAdditional
+                ? selectedPoolMatch.matchType === "doubles"
+                  ? "Enter Doubles Result"
+                  : "Enter Singles Result"
+                : "Enter Pool Result"}
               playerOne={selectedPoolMatch.playerOne}
               playerTwo={selectedPoolMatch.playerTwo}
               winnerId={winnerId}
@@ -979,6 +1337,14 @@ export default function TournamentLive() {
               onConfirmedGamesChange={setConfirmedGames}
               onSetsChange={savePoolSets}
               onSave={savePoolResult}
+              onDownload={() => downloadTournamentMatchCard(
+                selectedPoolMatch,
+                selectedPoolMatch.isAdditional
+                  ? selectedPoolMatch.matchType === "doubles"
+                    ? "Additional Doubles"
+                    : "Additional Singles"
+                  : tournament.pools.find((pool) => pool.id === selectedPoolMatch.poolId)?.name ?? "Pool Match"
+              )}
             />
           )}
 
@@ -995,11 +1361,70 @@ export default function TournamentLive() {
               onConfirmedGamesChange={setConfirmedGames}
               onSetsChange={saveKnockoutSets}
               onSave={saveKnockoutResult}
+              onDownload={() => downloadTournamentMatchCard(
+                selectedKnockoutMatch,
+                `Round ${selectedKnockoutMatch.round} Match ${selectedKnockoutMatch.position}`
+              )}
+            />
+          )}
+
+          {!canInputMatches && activeTab === "pools" && selectedPoolMatch && (
+            <PlayCardDownload
+              title={selectedPoolMatch.isAdditional
+                ? selectedPoolMatch.matchType === "doubles"
+                  ? "Additional Doubles"
+                  : "Additional Singles"
+                : tournament.pools.find((pool) => pool.id === selectedPoolMatch.poolId)?.name ?? "Pool Match"}
+              players={`${playerName(selectedPoolMatch.playerOne)} vs ${playerName(selectedPoolMatch.playerTwo)}`}
+              onDownload={() => downloadTournamentMatchCard(
+                selectedPoolMatch,
+                selectedPoolMatch.isAdditional
+                  ? selectedPoolMatch.matchType === "doubles"
+                    ? "Additional Doubles"
+                    : "Additional Singles"
+                  : tournament.pools.find((pool) => pool.id === selectedPoolMatch.poolId)?.name ?? "Pool Match"
+              )}
+            />
+          )}
+
+          {!canInputMatches && activeTab === "knockout" && selectedKnockoutMatch && (
+            <PlayCardDownload
+              title={`Round ${selectedKnockoutMatch.round} Match ${selectedKnockoutMatch.position}`}
+              players={`${playerName(selectedKnockoutMatch.playerOne)} vs ${playerName(selectedKnockoutMatch.playerTwo)}`}
+              onDownload={() => downloadTournamentMatchCard(
+                selectedKnockoutMatch,
+                `Round ${selectedKnockoutMatch.round} Match ${selectedKnockoutMatch.position}`
+              )}
             />
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function PlayCardDownload({
+  title,
+  players,
+  onDownload,
+}: {
+  title: string;
+  players: string;
+  onDownload: () => void;
+}) {
+  return (
+    <section className="rounded-2xl border bg-white p-4 shadow-sm">
+      <h2 className="text-xl font-bold">{title}</h2>
+      <p className="mt-2 text-sm text-slate-500">{players}</p>
+      <button
+        type="button"
+        onClick={onDownload}
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        <Download className="h-4 w-4" />
+        Download Play Card
+      </button>
+    </section>
   );
 }
 
@@ -1135,6 +1560,7 @@ function ResultEntry({
   onConfirmedGamesChange,
   onSetsChange,
   onSave,
+  onDownload,
 }: {
   title: string;
   playerOne: { id: string; firstName: string; lastName: string } | null;
@@ -1147,6 +1573,7 @@ function ResultEntry({
   onConfirmedGamesChange: (confirmed: boolean[]) => void;
   onSetsChange: (games: string[]) => void;
   onSave: () => void;
+  onDownload: () => void;
 }) {
   if (!playerOne || !playerTwo) {
     return null;
@@ -1240,9 +1667,19 @@ function ResultEntry({
 
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm">
-      <h2 className="text-xl font-bold">
-        {title}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold">
+          {title}
+        </h2>
+        <button
+          type="button"
+          onClick={onDownload}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          <Download className="h-4 w-4" />
+          Download Play Card
+        </button>
+      </div>
       <p className="mt-2 text-slate-500">
         {playerName(playerOne)} vs {playerName(playerTwo)}
       </p>

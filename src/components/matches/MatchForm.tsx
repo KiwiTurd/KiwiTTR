@@ -7,14 +7,17 @@ import {
 
 import {
   ClipboardPen,
+  Download,
   Plus,
 } from "lucide-react";
 
 import type { Event } from "../../types/event";
 import type { MatchSet } from "../../types/match";
 import type { Player } from "../../types/player";
+import type { Club } from "../../types/club";
 
 import { getEvents } from "../../services/supabase/eventService";
+import { getClubs } from "../../services/supabase/clubService";
 import { getPlayers } from "../../services/supabase/playerService";
 import { recordMatch } from "../../services/recordMatch";
 import { notify } from "../../services/notificationService";
@@ -23,6 +26,7 @@ import SetScoreInput from "./SetScoreInput";
 import useFormDraftState from "../../hooks/useFormDraftState";
 import PlayerSelector from "../shared/PlayerSelector";
 import useRole from "../../hooks/useRole";
+import { downloadPlayCard } from "../../utils/playCard";
 
 const MIN_SETS_TO_WIN = 2;
 
@@ -41,6 +45,7 @@ export default function MatchForm({
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
 
   const [eventId, setEventId] = useFormDraftState("matches.new.eventId", "");
   const [player1Id, setPlayer1Id] = useFormDraftState("matches.new.player1Id", "");
@@ -56,12 +61,14 @@ export default function MatchForm({
 
   const loadData = useCallback(async () => {
     try {
-      const [playerData, eventData] = await Promise.all([
+      const [playerData, eventData, clubData] = await Promise.all([
         getPlayers(),
         getEvents(),
+        getClubs(),
       ]);
 
       setPlayers(playerData);
+      setClubs(clubData);
 
       const manageableEvents = isAdmin
         ? eventData
@@ -246,6 +253,28 @@ export default function MatchForm({
     summary.player1Sets !== summary.player2Sets &&
     hasMinimumSetsWon &&
     allSetsSaved;
+
+  function downloadSingleMatchCard() {
+    const playerOne = players.find((player) => player.id === player1Id);
+    const playerTwo = players.find((player) => player.id === player2Id);
+    if (!playerOne || !playerTwo) {
+      notify.timeout("Select both players before downloading a play card.");
+      return;
+    }
+    const clubNames = new Map(clubs.map((club) => [club.id, club.name]));
+    const cardPlayer = (player: Player) => ({
+      name: `${player.firstName} ${player.lastName}`,
+      club: clubNames.get(player.clubId) ?? "Club not listed",
+      ttr: player.rating,
+    });
+
+    downloadPlayCard({
+      eventName: selectedEvent?.name ?? "Individual Match",
+      matchName: "Individual Singles",
+      sideOne: [cardPlayer(playerOne)],
+      sideTwo: [cardPlayer(playerTwo)],
+    });
+  }
 
   async function handleRecordMatch() {
     if (!eventId || !canEnterMatchDetails) {
@@ -510,6 +539,16 @@ export default function MatchForm({
             A player must win at least {MIN_SETS_TO_WIN} sets before this match can be recorded.
           </p>
         )}
+
+        <button
+          type="button"
+          onClick={downloadSingleMatchCard}
+          disabled={!player1Id || !player2Id || player1Id === player2Id}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" />
+          Download Play Card
+        </button>
 
         <button
           onClick={handleRecordMatch}
