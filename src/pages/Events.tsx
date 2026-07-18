@@ -405,48 +405,64 @@ export default function Events() {
   }, []);
 
   const eventFeedItems = useMemo(() => {
-    const matchItems: EventFeedItem[] =
-      events.map((event) => {
-        const club = clubs.find(
-          (c) => c.id === event.clubId
-        );
+    const clubEventIds = new Set(
+      savedTournaments
+        .filter(
+          (tournament) =>
+            tournament.settings.eventType === "club-round-robin"
+        )
+        .map((tournament) => tournament.id)
+    );
 
-        return {
-          id: `match-${event.id}`,
-          sourceId: event.id,
-          name: event.name,
-          date: event.date,
-          club,
-          clubName: club?.name,
-          type: "match",
-          status: dateStatus(event.date),
-          to: `/events/${event.id}`,
-          meta: "Match Event",
-        };
-      });
+    const matchItems: EventFeedItem[] =
+      events
+        .filter((event) => !clubEventIds.has(event.id))
+        .map((event) => {
+          const club = clubs.find(
+            (c) => c.id === event.clubId
+          );
+
+          return {
+            id: `match-${event.id}`,
+            sourceId: event.id,
+            name: event.name,
+            date: event.date,
+            club,
+            clubName: club?.name,
+            type: "match",
+            status: dateStatus(event.date),
+            to: `/events/${event.id}`,
+            meta: "Match Event",
+          };
+        });
 
     const tournamentItems: EventFeedItem[] =
-      savedTournaments.map((tournament) => {
-        const club = clubs.find(
-          (c) =>
-            c.id === tournament.settings.clubId
-        );
-        return {
-          id: `tournament-${tournament.id}`,
-          sourceId: tournament.id,
-          name:
-            tournament.settings.name ||
-            "Untitled Tournament",
-          date: tournament.settings.date,
-          startTime: tournament.settings.startTime,
-          club,
-          clubName: club?.name,
-          type: "tournament",
-          status: tournamentStatus(tournament),
-          to: `/tournaments/${tournament.id}/viewer`,
-          meta: "Tournament",
-        };
-      });
+      savedTournaments
+        .filter(
+          (tournament) =>
+            tournament.settings.eventType !== "club-round-robin"
+        )
+        .map((tournament) => {
+          const club = clubs.find(
+            (c) =>
+              c.id === tournament.settings.clubId
+          );
+          return {
+            id: `tournament-${tournament.id}`,
+            sourceId: tournament.id,
+            name:
+              tournament.settings.name ||
+              "Untitled Tournament",
+            date: tournament.settings.date,
+            startTime: tournament.settings.startTime,
+            club,
+            clubName: club?.name,
+            type: "tournament",
+            status: tournamentStatus(tournament),
+            to: `/tournaments/${tournament.id}/viewer`,
+            meta: "Tournament",
+          };
+        });
 
     const teamItems: EventFeedItem[] =
       teamGames.map((game) => ({

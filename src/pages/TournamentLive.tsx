@@ -1269,8 +1269,8 @@ export default function TournamentLive() {
                     </button>
                   </div>
                 </div>
-                <div className={poolIsExpanded(pool.id) ? "lg:grid lg:grid-cols-2" : ""}>
-                <div>
+                <div className={poolIsExpanded(pool.id) ? "lg:relative" : ""}>
+                <div className={poolIsExpanded(pool.id) ? "lg:w-1/2" : ""}>
                   {standings.map(standing => (
                     <div
                       key={standing.player.id}
@@ -1301,8 +1301,8 @@ export default function TournamentLive() {
                   ))}
                 </div>
                 {poolIsExpanded(pool.id) && (
-                  <div className="border-t bg-slate-50 lg:border-l lg:border-t-0">
-                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <div className="border-t bg-slate-50 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 lg:overflow-y-auto lg:overscroll-contain lg:border-l lg:border-t-0">
+                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-500 lg:sticky lg:top-0 lg:z-10 lg:bg-slate-50">
                       Remaining pool matches
                     </div>
                     {getRemainingPoolMatches(pool.id).length === 0 ? (

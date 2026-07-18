@@ -167,34 +167,26 @@ export default function RecentMatchCard({
               Set Scores
             </h3>
 
-            <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-x-1 text-base text-slate-500">
 
-              {match.sets.map((set, index) => (
+              {match.sets.map((set, index) => {
+                const playerScore = match.player1Id === player.id
+                  ? set.player1Score
+                  : set.player2Score;
+                const opponentScore = match.player1Id === player.id
+                  ? set.player2Score
+                  : set.player1Score;
+                const playerWonSet = playerScore > opponentScore;
 
-                <div
-                  key={index}
-                  className="flex justify-between rounded-md border bg-white px-3 py-1.5"
-                >
-
-                  <span>
-
-                    Set {index + 1}
-
+                return (
+                  <span key={index} className="inline-flex items-center gap-x-1">
+                    {index > 0 && <span aria-hidden="true">·</span>}
+                    <span className={playerWonSet ? "font-bold text-slate-900" : undefined}>
+                      {playerScore}-{opponentScore}
+                    </span>
                   </span>
-
-                  <strong>
-
-                    {set.player1Score}
-
-                    {" - "}
-
-                    {set.player2Score}
-
-                  </strong>
-
-                </div>
-
-              ))}
+                );
+              })}
 
             </div>
 

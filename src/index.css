@@ -246,4 +246,8 @@
   main .players-page-header-copy:has(> h1) {
     @apply border-b-0 pb-0;
   }
+
+  main .club-events-page-header-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
 }

@@ -70,7 +70,7 @@ export default function ClubEvents() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
-        <div>
+        <div className="club-events-page-header-copy">
           <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
             Club Events
           </h1>

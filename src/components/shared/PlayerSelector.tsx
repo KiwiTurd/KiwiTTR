@@ -42,6 +42,7 @@ interface Props<T extends PlayerSelectorOption> {
   onClear?: () => void;
   disabled?: boolean;
   showRating?: boolean;
+  closeOnSelect?: boolean;
 }
 
 export default function PlayerSelector<
@@ -55,6 +56,7 @@ export default function PlayerSelector<
   onClear,
   disabled = false,
   showRating = true,
+  closeOnSelect = true,
 }: Props<T>) {
   const [open, setOpen] =
     useState(false);
@@ -216,7 +218,9 @@ export default function PlayerSelector<
 
                       onChange(player);
 
-                      setOpen(false);
+                      if (closeOnSelect) {
+                        setOpen(false);
+                      }
 
                     }}
                   >

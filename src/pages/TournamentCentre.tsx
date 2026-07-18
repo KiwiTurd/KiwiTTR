@@ -99,6 +99,13 @@ export default function TournamentCentre() {
   } =
     useTournament();
 
+  const centreTournaments = useMemo(
+    () => savedTournaments.filter(
+      tournament => tournament.settings.eventType !== "club-round-robin"
+    ),
+    [savedTournaments]
+  );
+
   const [clubs, setClubs] =
     useState<Club[]>([]);
 
@@ -227,7 +234,7 @@ export default function TournamentCentre() {
     const query =
       search.trim().toLowerCase();
 
-    return savedTournaments.filter(tournament => {
+    return centreTournaments.filter(tournament => {
       if (
         clubFilter &&
         tournament.settings.clubId !== clubFilter
@@ -276,7 +283,7 @@ export default function TournamentCentre() {
     clubFilter,
     clubNameById,
     formatFilter,
-    savedTournaments,
+    centreTournaments,
     search,
   ]);
 
@@ -668,11 +675,11 @@ export default function TournamentCentre() {
         TOURNAMENTS_PER_PAGE
     );
   const liveTournamentCount =
-    savedTournaments.filter(
+    centreTournaments.filter(
       tournament => tournamentState(tournament).isLive
     ).length;
   const upcomingTournamentCount =
-    savedTournaments.filter(
+    centreTournaments.filter(
       tournament =>
         tournamentState(tournament).isUpcoming
     ).length;
@@ -1211,7 +1218,7 @@ export default function TournamentCentre() {
               Tournaments
             </p>
             <p className="text-xl font-black">
-              {savedTournaments.length}
+              {centreTournaments.length}
             </p>
           </div>
         </button>
@@ -1379,7 +1386,7 @@ export default function TournamentCentre() {
         </div>
       </div>
 
-      {savedTournaments.length === 0 ? (
+      {centreTournaments.length === 0 ? (
 
         <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center">
 

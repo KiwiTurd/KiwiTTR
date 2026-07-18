@@ -117,7 +117,6 @@ export default function ClubRoundRobinPlayers() {
         ? { ...group, players: [...group.players, player] }
         : group
     ));
-    setAddingTo(null);
   }
 
   function removePlayer(groupIndex: number, playerId: string) {
@@ -200,6 +199,7 @@ export default function ClubRoundRobinPlayers() {
                   onClear={() => setAddingTo(null)}
                   players={availablePlayers.filter((player) => !selectedIds.has(player.id))}
                   placeholder="Search for a player..."
+                  closeOnSelect={false}
                 />
               </div>
             )}

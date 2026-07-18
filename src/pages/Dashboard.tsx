@@ -506,7 +506,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:pb-0 md:grid-cols-2 xl:grid-cols-4">
 
         <StatCard
           icon={<User className="h-8 w-8 text-blue-700" />}
@@ -719,8 +719,8 @@ function StatCard({
   caption: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-40 w-32 shrink-0 snap-start flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:block sm:min-h-0 sm:w-auto sm:p-6 sm:text-left">
+      <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:gap-0">
         {icon}
         <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
           {label}
@@ -860,9 +860,9 @@ function QuickActions({
           <Link
             key={action.to}
             to={action.to}
-            className="group flex aspect-square min-w-0 flex-col items-start justify-start gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2.5 transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:flex-row sm:items-center sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3"
+            className="group flex aspect-square min-w-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2.5 text-center transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:flex-row sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3 sm:text-left"
           >
-            <div className="flex min-w-0 max-w-full flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div className="flex min-w-0 max-w-full flex-col items-center gap-2 sm:flex-row sm:gap-3">
               {action.icon}
               <span className="max-w-full break-words text-[10px] font-semibold leading-tight sm:truncate sm:text-base sm:leading-normal">
                 {action.title}
