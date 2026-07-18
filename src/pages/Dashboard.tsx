@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Link } from "react-router-dom";
@@ -251,125 +252,35 @@ export default function Dashboard() {
 
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-
-            <div className="flex items-center justify-between">
-
-              <Users className="h-5 w-5 text-blue-700" />
-
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
-
-                Players
-
-              </span>
-
-            </div>
-
-            <h2 className="mt-3 text-2xl font-black sm:text-3xl">
-
-              {activePlayers}
-
-            </h2>
-
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-
-              Active Players
-
-            </p>
-
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-
-            <div className="flex items-center justify-between">
-
-              <Building2 className="h-5 w-5 text-indigo-600" />
-
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
-
-                Clubs
-
-              </span>
-
-            </div>
-
-            <h2 className="mt-3 text-2xl font-black sm:text-3xl">
-
-              {clubs}
-
-            </h2>
-
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-
-              Registered Clubs
-
-            </p>
-
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-
-            <div className="flex items-center justify-between">
-
-              <CalendarDays className="h-5 w-5 text-emerald-600" />
-
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
-
-                Events
-
-              </span>
-
-            </div>
-
-            <h2 className="mt-3 text-2xl font-black sm:text-3xl">
-
-              {events}
-
-            </h2>
-
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-
-              Total Events
-
-            </p>
-
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-
-            <div className="flex items-center justify-between">
-
-              <ShieldCheck className="h-5 w-5 text-green-600" />
-
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
-
-                Status
-
-              </span>
-
-            </div>
-
-            <h2 className="mt-3 text-lg font-bold sm:text-xl">
-
-              {loading
-                ? "Checking..."
-                : session
-                  ? "Online"
-                  : "Offline"}
-
-            </h2>
-
-            <p className="mt-1 truncate text-xs text-slate-500 sm:text-sm">
-
-              {session?.user.email ?? "Not signed in"}
-
-            </p>
-
-          </div>
-
-        </div>
+        <ScrollableCardRow
+          itemCount={4}
+          desktopGridClassName="sm:grid-cols-2 sm:gap-4 xl:grid-cols-4"
+        >
+          <StatCard
+            icon={<Users className="h-10 w-10 text-blue-700 sm:h-8 sm:w-8" />}
+            label="Players"
+            value={activePlayers}
+            caption="Active Players"
+          />
+          <StatCard
+            icon={<Building2 className="h-10 w-10 text-indigo-600 sm:h-8 sm:w-8" />}
+            label="Clubs"
+            value={clubs}
+            caption="Registered Clubs"
+          />
+          <StatCard
+            icon={<CalendarDays className="h-10 w-10 text-emerald-600 sm:h-8 sm:w-8" />}
+            label="Events"
+            value={events}
+            caption="Total Events"
+          />
+          <StatCard
+            icon={<ShieldCheck className="h-10 w-10 text-green-600 sm:h-8 sm:w-8" />}
+            label="Status"
+            value={loading ? "Checking..." : session ? "Online" : "Offline"}
+            caption={session?.user.email ?? "Not signed in"}
+          />
+        </ScrollableCardRow>
 
         <div className="md:hidden">
           <QuickActions
@@ -506,7 +417,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:pb-0 md:grid-cols-2 xl:grid-cols-4">
+      <ScrollableCardRow
+        itemCount={4}
+        desktopGridClassName="sm:grid-cols-2 sm:gap-6 xl:grid-cols-4"
+      >
 
         <StatCard
           icon={<User className="h-10 w-10 text-blue-700 sm:h-8 sm:w-8" />}
@@ -556,7 +470,7 @@ export default function Dashboard() {
           caption="Active club roster"
         />
 
-      </div>
+      </ScrollableCardRow>
 
       <div className="md:hidden">
         <QuickActions
@@ -707,6 +621,83 @@ export default function Dashboard() {
 
 }
 
+function ScrollableCardRow({
+  children,
+  itemCount,
+  desktopGridClassName,
+}: {
+  children: React.ReactNode;
+  itemCount: number;
+  desktopGridClassName: string;
+}) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [indicator, setIndicator] = useState({
+    left: 0,
+    width: 100,
+    visible: false,
+  });
+
+  const updateIndicator = useCallback(() => {
+    const row = rowRef.current;
+
+    if (!row) {
+      return;
+    }
+
+    const maxScroll = row.scrollWidth - row.clientWidth;
+    const width = Math.min(
+      100,
+      Math.max(20, (row.clientWidth / row.scrollWidth) * 100)
+    );
+    const left = maxScroll > 0
+      ? (row.scrollLeft / maxScroll) * (100 - width)
+      : 0;
+
+    setIndicator({
+      left,
+      width,
+      visible: maxScroll > 1,
+    });
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(updateIndicator);
+    window.addEventListener("resize", updateIndicator);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateIndicator);
+    };
+  }, [itemCount, updateIndicator]);
+
+  return (
+    <div>
+      <div
+        ref={rowRef}
+        onScroll={updateIndicator}
+        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:overflow-visible sm:pb-0 ${desktopGridClassName}`}
+      >
+        {children}
+      </div>
+
+      <div
+        aria-hidden="true"
+        className={`relative mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 transition-opacity sm:hidden ${
+          indicator.visible ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <div
+          className="absolute inset-y-0 rounded-full bg-blue-800 transition-[left] duration-100"
+          style={{
+            left: `${indicator.left}%`,
+            width: `${indicator.width}%`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function StatCard({
   icon,
   label,
@@ -855,7 +846,10 @@ function QuickActions({
         Quick Actions
       </h2>
 
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
+      <ScrollableCardRow
+        itemCount={actions.length}
+        desktopGridClassName="sm:grid-cols-2 sm:gap-3 lg:grid-cols-3"
+      >
         {actions.map((action) => (
           <Link
             key={action.to}
@@ -870,7 +864,7 @@ function QuickActions({
             </div>
           </Link>
         ))}
-      </div>
+      </ScrollableCardRow>
     </div>
   );
 }
