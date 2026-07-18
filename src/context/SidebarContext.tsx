@@ -16,7 +16,7 @@ const SidebarContext =
   createContext<SidebarContextType>({
     collapsed: false,
     toggle: () => {},
-    navigationLayout: "sidebar",
+    navigationLayout: "header",
     setNavigationLayout: () => {},
   });
 
@@ -27,29 +27,15 @@ export function SidebarProvider({
 }) {
 
   const [collapsed, setCollapsed] =
-    useState(false);
+    useState(() =>
+      localStorage.getItem("sidebar-collapsed") === "true"
+    );
   const [navigationLayout, setNavigationLayout] =
-    useState<"sidebar" | "header">("sidebar");
-
-  useEffect(() => {
-
-    const saved =
-      localStorage.getItem(
-        "sidebar-collapsed"
-      );
-
-    if (saved !== null) {
-      setCollapsed(saved === "true");
-    }
-
-    const savedLayout =
-      localStorage.getItem("navigation-layout");
-
-    if (savedLayout === "header") {
-      setNavigationLayout("header");
-    }
-
-  }, []);
+    useState<"sidebar" | "header">(() =>
+      localStorage.getItem("navigation-layout") === "sidebar"
+        ? "sidebar"
+        : "header"
+    );
 
   useEffect(() => {
 
@@ -86,6 +72,7 @@ export function SidebarProvider({
 
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSidebar() {
   return useContext(SidebarContext);
 }

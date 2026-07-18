@@ -84,9 +84,9 @@ export default function Settings() {
                 type="button"
               >
                 <PanelLeft className="h-5 w-5" />
-                <span>
-                  <span className="block text-sm font-bold">Sidebar</span>
-                  <span className="block text-xs opacity-70">Default</span>
+                  <span>
+                    <span className="block text-sm font-bold">Sidebar</span>
+                  <span className="block text-xs opacity-70">Compact menus</span>
                 </span>
               </button>
 
@@ -102,7 +102,7 @@ export default function Settings() {
                 <LayoutPanelTop className="h-5 w-5" />
                 <span>
                   <span className="block text-sm font-bold">Top Header</span>
-                  <span className="block text-xs opacity-70">Dropdowns</span>
+                  <span className="block text-xs opacity-70">Default · Dropdowns</span>
                 </span>
               </button>
             </div>

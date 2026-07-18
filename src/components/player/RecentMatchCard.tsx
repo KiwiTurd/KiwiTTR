@@ -36,17 +36,20 @@ export default function RecentMatchCard({
     ? match.winnerRatingChange
     : match.loserRatingChange;
 
+  const opponentRatingBefore = won
+    ? match.loserRatingBefore
+    : match.winnerRatingBefore;
+
   return (
     <div className="overflow-hidden rounded-lg border">
 
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50"
-      >
+      <div className="flex w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50">
 
         <div className="min-w-0 text-left">
 
-          <p
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
             className={`text-sm font-semibold ${
               won ? "text-green-700" : "text-red-700"
             }`}
@@ -58,19 +61,34 @@ export default function RecentMatchCard({
 
             {won ? "Victory" : "Defeat"}
 
-          </p>
+          </button>
 
           <p className="truncate text-xs text-slate-500">
 
-            vs {opponent
-              ? `${opponent.firstName} ${opponent.lastName}`
-              : "Unknown"}
+            vs{" "}
+            {opponent ? (
+              <Link
+                to={`/players/${opponent.id}`}
+                className="font-semibold text-blue-700 underline-offset-2 hover:underline"
+              >
+                {opponent.firstName} {opponent.lastName}
+              </Link>
+            ) : (
+              "Unknown"
+            )}
+            {" · "}
+            {opponentRatingBefore} TTR
 
           </p>
 
         </div>
 
-        <div className="shrink-0 text-right">
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="shrink-0 text-right"
+          aria-label={expanded ? "Hide match details" : "Show match details"}
+        >
 
           <p
             className={`text-sm font-bold ${
@@ -88,9 +106,9 @@ export default function RecentMatchCard({
               .toLocaleDateString()}
           </p>
 
-        </div>
+        </button>
 
-      </button>
+      </div>
 
       {expanded && (
 

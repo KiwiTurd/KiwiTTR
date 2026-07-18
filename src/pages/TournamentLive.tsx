@@ -43,7 +43,10 @@ import {
 import { calculatePoolStandings } from "../services/tournament/standings";
 import type { Pool, TournamentMatch } from "../types/tournament";
 import type { Player } from "../types/player";
-import { finishTournamentAndRecordRatings } from "../services/supabase/tournamentService";
+import {
+  finishTournamentAndRecordRatings,
+  snapshotTournamentPlayerRatings,
+} from "../services/supabase/tournamentService";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import { formatStartTime } from "../utils/tournamentTime";
@@ -53,6 +56,12 @@ import { downloadPlayCard, downloadPoolLineup } from "../utils/playCard";
 
 const emptyGames = ["", "", "", "", ""];
 const emptyConfirmedGames = [false, false, false, false, false];
+
+type MatchEntryDraft = {
+  games: string[];
+  confirmedGames: boolean[];
+  winnerId: string;
+};
 
 function createAdditionalDoublesPair(
   playerOne: Player,
@@ -139,6 +148,7 @@ export default function TournamentLive() {
   const [activeTab, setActiveTab] = useState<
     "pools" | "knockout" | "results"
   >(initialTab);
+  const [startingTournament, setStartingTournament] = useState(false);
   const restoredTabForTournament = useRef("");
 
   useEffect(() => {
@@ -213,6 +223,8 @@ export default function TournamentLive() {
   const [winnerId, setWinnerId] = useState("");
   const [games, setGames] = useState(emptyGames);
   const [confirmedGames, setConfirmedGames] = useState(emptyConfirmedGames);
+  const entryDraftsRef = useRef<Record<string, MatchEntryDraft>>({});
+  const entryDraftTournamentIdRef = useRef("");
   const [collapsedPoolIds, setCollapsedPoolIds] = useState<Set<string>>(
     () => new Set()
   );
@@ -253,6 +265,147 @@ export default function TournamentLive() {
         Boolean(match.playerOne) &&
         Boolean(match.playerTwo)
     ) ?? null;
+
+  function activeEntryMatch() {
+    return activeTab === "pools"
+      ? selectedPoolMatch
+      : activeTab === "knockout"
+        ? selectedKnockoutMatch
+        : null;
+  }
+
+  function ensureEntryDraftsLoaded() {
+    if (
+      !tournament.id ||
+      entryDraftTournamentIdRef.current === tournament.id
+    ) return;
+
+    entryDraftTournamentIdRef.current = tournament.id;
+    entryDraftsRef.current = {};
+
+    try {
+      const saved = window.sessionStorage.getItem(
+        `tournament-match-entry-drafts:${tournament.id}`
+      );
+      if (!saved) return;
+
+      const parsed = JSON.parse(saved) as Record<string, MatchEntryDraft>;
+      if (parsed && typeof parsed === "object") {
+        entryDraftsRef.current = parsed;
+      }
+    } catch (error) {
+      console.error("Unable to restore match-entry drafts", error);
+    }
+  }
+
+  function persistEntryDrafts() {
+    if (!tournament.id) return;
+
+    window.sessionStorage.setItem(
+      `tournament-match-entry-drafts:${tournament.id}`,
+      JSON.stringify(entryDraftsRef.current)
+    );
+  }
+
+  function removeEntryDraft(matchId: string) {
+    ensureEntryDraftsLoaded();
+    delete entryDraftsRef.current[matchId];
+    persistEntryDrafts();
+  }
+
+  function updateEntryDraft(partial: Partial<MatchEntryDraft>) {
+    const match = activeEntryMatch();
+    if (!match) return;
+
+    ensureEntryDraftsLoaded();
+
+    const current = entryDraftsRef.current[match.id] ?? {
+      games,
+      confirmedGames,
+      winnerId,
+    };
+    entryDraftsRef.current[match.id] = {
+      ...current,
+      ...partial,
+    };
+    persistEntryDrafts();
+  }
+
+  function rememberCurrentEntry() {
+    const match = activeEntryMatch();
+    if (!match) return;
+
+    ensureEntryDraftsLoaded();
+
+    // Input handlers update this ref synchronously. Do not replace a newer
+    // draft with React state from the previous render during a rapid click.
+    if (entryDraftsRef.current[match.id]) return;
+
+    entryDraftsRef.current[match.id] = {
+      games: [...games],
+      confirmedGames: [...confirmedGames],
+      winnerId,
+    };
+    persistEntryDrafts();
+  }
+
+  function changeEntryTab(tab: "pools" | "knockout" | "results") {
+    rememberCurrentEntry();
+    setActiveTab(tab);
+  }
+
+  function selectPoolEntry(match: TournamentMatch) {
+    rememberCurrentEntry();
+    setSelectedPoolMatch(match);
+  }
+
+  function selectKnockoutEntry(match: (typeof tournament.knockout)[number]) {
+    rememberCurrentEntry();
+    setSelectedKnockoutMatchId(match.id);
+  }
+
+  function restoreEntry(match: {
+    id: string;
+    games: string[];
+    playerOne: { id: string } | null;
+    playerTwo: { id: string } | null;
+  }) {
+    ensureEntryDraftsLoaded();
+    const draft = entryDraftsRef.current[match.id];
+    if (draft) {
+      setGames([...draft.games]);
+      setConfirmedGames([...draft.confirmedGames]);
+      setWinnerId(draft.winnerId);
+      return;
+    }
+
+    const savedGames = match.games.slice(0, 5);
+    const nextGames = [
+      ...savedGames,
+      ...Array(Math.max(0, 5 - savedGames.length)).fill(""),
+    ];
+    const nextConfirmed = nextGames.map(
+      (game, index) => index < savedGames.length && game.trim() !== ""
+    );
+
+    let playerOneSets = 0;
+    let playerTwoSets = 0;
+    savedGames.forEach(game => {
+      const [one, two] = game.split("-").map(Number);
+      if (one > two) playerOneSets += 1;
+      if (two > one) playerTwoSets += 1;
+    });
+
+    setGames(nextGames);
+    setConfirmedGames(nextConfirmed);
+    setWinnerId(
+      playerOneSets >= 3
+        ? match.playerOne?.id ?? ""
+        : playerTwoSets >= 3
+          ? match.playerTwo?.id ?? ""
+          : ""
+    );
+  }
 
   useEffect(() => {
     const match = activeTab === "pools"
@@ -330,8 +483,13 @@ export default function TournamentLive() {
       (player) => !assignedPoolPlayerIds.has(player.id)
     );
 
-  function markLive() {
-    if (!tournament.id || tournamentLocked || canInputMatches) return;
+  async function markLive() {
+    if (
+      !tournament.id ||
+      tournamentLocked ||
+      canInputMatches ||
+      startingTournament
+    ) return;
     if (hasUnassignedClubPlayers) {
       notify.timeout(
         "New sign-ups need to be placed into a round robin. Open Edit, review the groups, then go live."
@@ -339,17 +497,28 @@ export default function TournamentLive() {
       return;
     }
 
-    setTournamentState({
-      ...tournament,
-      status: "active",
-      settings: {
-        ...tournament.settings,
-        allowSignUp: false,
-      },
-    });
-    notify.edgeBall(
-      `${tournament.settings.name || "Tournament"} is now live. Match Centre is enabled.`
-    );
+    setStartingTournament(true);
+    try {
+      const tournamentWithStartRatings =
+        await snapshotTournamentPlayerRatings(tournament);
+
+      setTournamentState({
+        ...tournamentWithStartRatings,
+        status: "active",
+        settings: {
+          ...tournamentWithStartRatings.settings,
+          allowSignUp: false,
+        },
+      });
+      notify.edgeBall(
+        `${tournament.settings.name || "Tournament"} is now live. Player TTRs have been captured and Match Centre is enabled.`
+      );
+    } catch (error) {
+      console.error(error);
+      notify.fault("Unable to capture player TTRs and start the event.");
+    } finally {
+      setStartingTournament(false);
+    }
   }
 
   function openAdditionalMatch(type: "singles" | "doubles") {
@@ -489,39 +658,6 @@ export default function TournamentLive() {
     setConfirmedGames(emptyConfirmedGames);
   }
 
-  function restoreEntry(match: {
-    games: string[];
-    playerOne: { id: string } | null;
-    playerTwo: { id: string } | null;
-  }) {
-    const savedGames = match.games.slice(0, 5);
-    const nextGames = [
-      ...savedGames,
-      ...Array(Math.max(0, 5 - savedGames.length)).fill(""),
-    ];
-    const nextConfirmed = nextGames.map(
-      (game, index) => index < savedGames.length && game.trim() !== ""
-    );
-
-    let playerOneSets = 0;
-    let playerTwoSets = 0;
-    savedGames.forEach(game => {
-      const [one, two] = game.split("-").map(Number);
-      if (one > two) playerOneSets += 1;
-      if (two > one) playerTwoSets += 1;
-    });
-
-    setGames(nextGames);
-    setConfirmedGames(nextConfirmed);
-    setWinnerId(
-      playerOneSets >= 3
-        ? match.playerOne?.id ?? ""
-        : playerTwoSets >= 3
-          ? match.playerTwo?.id ?? ""
-          : ""
-    );
-  }
-
   function focusPool(poolId: string) {
     setFocusedPoolId(poolId);
     if (poolId) {
@@ -593,6 +729,7 @@ export default function TournamentLive() {
 
     setMatches(updatedMatches);
     ensureKnockoutFromPools(updatedMatches);
+    removeEntryDraft(selectedPoolMatch.id);
     setSelectedPoolMatch(
       getNextRotatingPoolMatch(updatedMatches) ?? null
     );
@@ -675,6 +812,7 @@ export default function TournamentLive() {
           );
 
     setKnockout(updatedKnockout);
+    removeEntryDraft(selectedKnockoutMatch.id);
 
     const nextMatch = updatedKnockout.find(
       match =>
@@ -711,7 +849,7 @@ export default function TournamentLive() {
       await finishTournamentAndRecordRatings(
         tournament.id
       );
-      await loadTournament(tournament.id);
+      await loadTournament(tournament.id, true);
       notify.ratingsUpdated();
     } catch (error) {
       console.error(error);
@@ -871,10 +1009,11 @@ export default function TournamentLive() {
         {tournament.status === "draft" && (
           <button
             type="button"
-            onClick={markLive}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+            onClick={() => void markLive()}
+            disabled={startingTournament}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-emerald-600 disabled:cursor-wait disabled:opacity-70"
           >
-            Go Live
+            {startingTournament ? "Capturing TTRs..." : "Go Live"}
             <ArrowRight className="h-4 w-4" />
           </button>
         )}
@@ -986,20 +1125,20 @@ export default function TournamentLive() {
         {(tournament.settings.format === "pools" || isPoolOnlyRatings) && (
           <TabButton
             active={activeTab === "pools"}
-            onClick={() => setActiveTab("pools")}
+            onClick={() => changeEntryTab("pools")}
           >
             Pools
           </TabButton>
         )}
         {!isPoolOnlyRatings && <TabButton
           active={activeTab === "knockout"}
-          onClick={() => setActiveTab("knockout")}
+          onClick={() => changeEntryTab("knockout")}
         >
           Knockout
         </TabButton>}
         <TabButton
           active={activeTab === "results"}
-          onClick={() => setActiveTab("results")}
+          onClick={() => changeEntryTab("results")}
         >
           Results
         </TabButton>
@@ -1034,10 +1173,7 @@ export default function TournamentLive() {
                       <button
                         type="button"
                         disabled={match.completed}
-                        onClick={() => {
-                          setSelectedPoolMatch(match);
-                          restoreEntry(match);
-                        }}
+                        onClick={() => selectPoolEntry(match)}
                         className="grid min-w-0 gap-2 text-left sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center disabled:cursor-default"
                       >
                         <span className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ${match.matchType === "doubles" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
@@ -1180,8 +1316,8 @@ export default function TournamentLive() {
                             key={match.id}
                             type="button"
                             onClick={() => {
-                              setSelectedPoolMatch(match);
-                              if (canInputMatches) restoreEntry(match);
+                              if (canInputMatches) selectPoolEntry(match);
+                              else setSelectedPoolMatch(match);
                             }}
                             className={`grid w-full grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] items-center gap-3 border-t px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 ${
                               selectedPoolMatch?.id === match.id ? "bg-blue-50" : "bg-white"
@@ -1243,8 +1379,8 @@ export default function TournamentLive() {
                       type="button"
                       onClick={() => {
                         if (match.playerOne && match.playerTwo && !match.completed) {
-                          setSelectedKnockoutMatchId(match.id);
-                          if (canInputMatches) restoreEntry(match);
+                          if (canInputMatches) selectKnockoutEntry(match);
+                          else setSelectedKnockoutMatchId(match.id);
                         }
                       }}
                       className="mt-3 w-full text-left"
@@ -1332,9 +1468,18 @@ export default function TournamentLive() {
               winnerId={winnerId}
               games={games}
               confirmedGames={confirmedGames}
-              onWinnerChange={setWinnerId}
-              onGamesChange={setGames}
-              onConfirmedGamesChange={setConfirmedGames}
+              onWinnerChange={(nextWinnerId) => {
+                setWinnerId(nextWinnerId);
+                updateEntryDraft({ winnerId: nextWinnerId });
+              }}
+              onGamesChange={(nextGames) => {
+                setGames(nextGames);
+                updateEntryDraft({ games: nextGames });
+              }}
+              onConfirmedGamesChange={(nextConfirmedGames) => {
+                setConfirmedGames(nextConfirmedGames);
+                updateEntryDraft({ confirmedGames: nextConfirmedGames });
+              }}
               onSetsChange={savePoolSets}
               onSave={savePoolResult}
               onDownload={() => downloadTournamentMatchCard(
@@ -1356,9 +1501,18 @@ export default function TournamentLive() {
               winnerId={winnerId}
               games={games}
               confirmedGames={confirmedGames}
-              onWinnerChange={setWinnerId}
-              onGamesChange={setGames}
-              onConfirmedGamesChange={setConfirmedGames}
+              onWinnerChange={(nextWinnerId) => {
+                setWinnerId(nextWinnerId);
+                updateEntryDraft({ winnerId: nextWinnerId });
+              }}
+              onGamesChange={(nextGames) => {
+                setGames(nextGames);
+                updateEntryDraft({ games: nextGames });
+              }}
+              onConfirmedGamesChange={(nextConfirmedGames) => {
+                setConfirmedGames(nextConfirmedGames);
+                updateEntryDraft({ confirmedGames: nextConfirmedGames });
+              }}
               onSetsChange={saveKnockoutSets}
               onSave={saveKnockoutResult}
               onDownload={() => downloadTournamentMatchCard(

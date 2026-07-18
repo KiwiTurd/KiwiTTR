@@ -844,6 +844,8 @@ return (
         <RatingGraph
           playerId={player.id}
           currentRating={player.rating}
+          initialRating={player.initialRating ?? player.rating}
+          initialRatingAt={player.createdAt}
         />
 
       </div>

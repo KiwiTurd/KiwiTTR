@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import aboutNzHero from "../assets/about-nz-hero.jpg";
 
 const features = [
   {
@@ -27,24 +28,42 @@ const features = [
 
 export default function About() {
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <section className="overflow-hidden rounded-3xl bg-slate-900 px-6 py-12 text-white shadow-sm md:px-12 md:py-16">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-slate-100">
-            <MapPin className="h-4 w-4" />
-            Made for table tennis in Aotearoa
+    <div className="-mx-4 -mt-4 space-y-8 pb-8 md:-mx-8 md:-mt-8">
+      <section className="relative min-h-[560px] overflow-hidden bg-slate-900 text-white md:min-h-[640px]">
+        <img
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          src={aboutNzHero}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/15" />
+
+        <div className="relative mx-auto flex min-h-[560px] w-full max-w-7xl items-center px-4 py-20 md:min-h-[640px] md:px-8">
+          <div className="about-page-header-copy max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-slate-100 backdrop-blur-sm">
+              <MapPin className="h-4 w-4" />
+              Independent and player-built in Aotearoa
+            </div>
+            <h1 className="mt-5 text-5xl font-normal leading-tight tracking-tight text-white md:text-7xl">
+              New Zealand table tennis, made clear.
+            </h1>
+            <div className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 md:text-xl">
+              <p>
+                KiwiTTR is an independent project created by a local table
+                tennis player with an interest in improving rating and
+                competition management systems in New Zealand.
+              </p>
+            </div>
+            <Link
+              className="mt-9 inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur-sm transition hover:border-white/50 hover:bg-white/15"
+              to="/how-we-calculate"
+            >
+              How we calculate ratings
+            </Link>
           </div>
-          <h1 className="mt-5 text-4xl font-normal tracking-tight md:text-6xl">
-            A clearer picture of table tennis performance in New Zealand.
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            KiwiTTR is an independent table tennis rating system that turns
-            match results into useful, easy-to-follow NZ rankings for players,
-            clubs and local competition.
-          </p>
         </div>
       </section>
 
+      <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-8">
       <section className="grid gap-6 md:grid-cols-3">
         {features.map(({ icon: Icon, title, copy }) => (
           <article
@@ -97,6 +116,7 @@ export default function About() {
           View NZ rankings <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
+      </div>
     </div>
   );
 }

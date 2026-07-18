@@ -9,6 +9,9 @@ export default function DesktopFooter() {
       </p>
 
       <nav aria-label="Information" className="flex items-center gap-5">
+        <span className="text-slate-400">
+          v{__APP_VERSION__}
+        </span>
         <Link
           className="transition-colors hover:text-white"
           to="/about"

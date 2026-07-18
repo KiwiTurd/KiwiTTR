@@ -10,6 +10,7 @@ import {
   Building2,
   CalendarDays,
   Pencil,
+  Trophy,
 } from "lucide-react";
 
 import type { Club } from "../types/club";
@@ -394,77 +395,94 @@ export default function ClubProfile() {
 
       </Card>
 
-      <Card className="p-8">
+      <Card className="overflow-hidden p-0">
 
-        <h2 className="text-2xl font-bold mb-6">
-          Club Rankings
-        </h2>
+        <div className="flex items-center border-b border-slate-300 px-5 py-4 sm:px-6">
+
+          <div className="flex items-center gap-3">
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <Trophy className="h-5 w-5" />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold text-slate-950">
+                Club Rankings
+              </h2>
+              <p className="text-sm text-slate-500">
+                Active players ranked by TTR
+              </p>
+            </div>
+
+          </div>
+
+        </div>
 
         {rankings.length === 0 ? (
 
-          <p className="text-slate-500">
+          <p className="px-6 py-8 text-sm text-slate-500">
             No players yet.
           </p>
 
         ) : (
 
-          <table className="w-full">
+          <div>
 
-            <thead>
+            <div className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] items-center gap-3 border-b border-slate-300 bg-slate-50 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] sm:gap-4 sm:px-6">
+              <span className="text-center">Rank</span>
+              <span>Player</span>
+              <span>Club</span>
+              <span className="text-right">TTR</span>
+            </div>
 
-              <tr className="border-b">
-
-                <th className="text-left pb-4">
-                  Rank
-                </th>
-
-                <th className="text-left pb-4">
-                  Player
-                </th>
-
-                <th className="text-center pb-4">
-                  Rating
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
+            <div className="divide-y divide-slate-300">
 
               {rankings.map((player, index) => (
 
-                <tr
+                <Link
                   key={player.id}
-                  className="border-b hover:bg-slate-50"
+                  to={`/players/${player.id}`}
+                  className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] items-center gap-3 px-5 py-3.5 transition hover:bg-slate-50 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] sm:gap-4 sm:px-6"
                 >
 
-                  <td className="py-3">
+                  <span
+                    className={`flex h-8 w-8 justify-self-center items-center justify-center rounded-full text-sm font-bold ${
+                      index === 0
+                        ? "bg-amber-100 text-amber-700"
+                        : index === 1
+                          ? "bg-slate-200 text-slate-700"
+                          : index === 2
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-slate-100 text-slate-500"
+                    }`}
+                    aria-label={`Rank ${index + 1}`}
+                  >
                     {index + 1}
-                  </td>
+                  </span>
 
-                  <td>
-
-                    <Link
-                      to={`/players/${player.id}`}
-                      className="text-blue-700 hover:underline"
-                    >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-900">
                       {player.firstName} {player.lastName}
-                    </Link>
+                    </p>
+                  </div>
 
-                  </td>
+                  <p className="truncate text-sm text-slate-600">
+                    {club.name}
+                  </p>
 
-                  <td className="text-center font-semibold">
-                    {player.rating}
-                  </td>
+                  <div className="text-right">
+                    <p className="text-lg font-black tabular-nums text-slate-950">
+                      {player.rating}
+                    </p>
+                  </div>
 
-                </tr>
+                </Link>
 
               ))}
 
-            </tbody>
+            </div>
 
-          </table>
+          </div>
 
         )}
 

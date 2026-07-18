@@ -15,10 +15,13 @@ import type { RatingHistory } from "../../types/ratingHistory";
 import {
   getPlayerRatingHistory,
 } from "../../services/supabase/ratingHistoryService";
+import { getNewZealandDate } from "../../utils/newZealandDate";
 
 interface Props {
   playerId: string;
   currentRating: number;
+  initialRating: number;
+  initialRatingAt: string;
 }
 
 type Filter =
@@ -31,6 +34,8 @@ type Filter =
 export default function RatingGraph({
   playerId,
   currentRating,
+  initialRating,
+  initialRatingAt,
 }: Props) {
   const [history, setHistory] = useState<
     RatingHistory[]
@@ -43,10 +48,22 @@ export default function RatingGraph({
     useState<Filter>("all");
 
   const consistentHistory = useMemo(() => {
-    const valid = history.filter(
-      record =>
-        record.ratingAfter ===
-        record.ratingBefore + record.ratingChange
+    const uniqueByMatch = new Map<string, RatingHistory>();
+
+    history
+      .filter(
+        record =>
+          record.ratingAfter ===
+          record.ratingBefore + record.ratingChange
+      )
+      .forEach(record => {
+        uniqueByMatch.set(record.matchId, record);
+      });
+
+    const valid = [...uniqueByMatch.values()].sort(
+      (a, b) =>
+        new Date(a.recordedAt).getTime() -
+        new Date(b.recordedAt).getTime()
     );
 
     const currentRatingIndex = valid.findLastIndex(
@@ -62,200 +79,155 @@ export default function RatingGraph({
   }, [currentRating, history]);
 
   useEffect(() => {
-    void loadHistory();
-  }, [playerId]);
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        setLoading(true);
 
-  async function loadHistory() {
-    try {
-      setLoading(true);
-
-      const data =
-        await getPlayerRatingHistory(
-          playerId
+        const data = await getPlayerRatingHistory(playerId);
+        const sorted = [...data].sort(
+          (a, b) =>
+            new Date(a.recordedAt).getTime() -
+            new Date(b.recordedAt).getTime()
         );
 
-      const sorted = [...data].sort(
-        (a, b) =>
-          new Date(
-            a.recordedAt
-          ).getTime() -
-          new Date(
-            b.recordedAt
-          ).getTime()
-      );
+        if (!cancelled) {
+          setHistory(sorted);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }, 0);
 
-      setHistory(sorted);
-
-    } catch (error) {
-      console.error(error);
-
-    } finally {
-      setLoading(false);
-    }
-  }
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [playerId]);
 
   const chartData = useMemo(() => {
 
     const now = new Date();
 
-    const filtered = consistentHistory.filter(
-      (record) => {
+    const isIncludedByFilter = (date: Date) => {
+      if (filter === "all") {
+        return true;
+      }
 
-        if (filter === "all") {
-          return true;
+      switch (filter) {
+        case "year":
+          return date.getFullYear() === now.getFullYear();
+
+        case "12m": {
+          const cutoff = new Date();
+          cutoff.setMonth(cutoff.getMonth() - 12);
+          return date >= cutoff;
         }
 
-        const date = new Date(
-          record.recordedAt
+        case "6m": {
+          const cutoff = new Date();
+          cutoff.setMonth(cutoff.getMonth() - 6);
+          return date >= cutoff;
+        }
+
+        case "3m": {
+          const cutoff = new Date();
+          cutoff.setMonth(cutoff.getMonth() - 3);
+          return date >= cutoff;
+        }
+
+        default:
+          return true;
+      }
+    };
+
+    const filtered = consistentHistory.filter(
+      record => isIncludedByFilter(new Date(record.recordedAt))
+    );
+
+    const today = getNewZealandDate();
+    const grouped = new Map<string, RatingHistory[]>();
+
+    filtered.forEach(record => {
+      const day = getNewZealandDate(
+        new Date(record.recordedAt)
+      );
+      grouped.set(day, [
+        ...(grouped.get(day) ?? []),
+        record,
+      ]);
+    });
+
+    const collapsedRecords = [...grouped.entries()]
+      .sort(([dayA], [dayB]) => dayA.localeCompare(dayB))
+      .flatMap(([day, records]) => {
+        const ordered = [...records].sort(
+          (a, b) =>
+            new Date(a.recordedAt).getTime() -
+            new Date(b.recordedAt).getTime()
         );
 
-        switch (filter) {
-
-          case "year":
-
-            return (
-              date.getFullYear() ===
-              now.getFullYear()
-            );
-
-          case "12m": {
-
-            const cutoff =
-              new Date();
-
-            cutoff.setMonth(
-              cutoff.getMonth() - 12
-            );
-
-            return date >= cutoff;
-
-          }
-
-          case "6m": {
-
-            const cutoff =
-              new Date();
-
-            cutoff.setMonth(
-              cutoff.getMonth() - 6
-            );
-
-            return date >= cutoff;
-
-          }
-
-          case "3m": {
-
-            const cutoff =
-              new Date();
-
-            cutoff.setMonth(
-              cutoff.getMonth() - 3
-            );
-
-            return date >= cutoff;
-
-          }
-
-          default:
-            return true;
-
-        }
-
-      }
+        return day === today
+          ? ordered
+          : [ordered[ordered.length - 1]];
+      });
+    const displayedRecords = collapsedRecords.filter(
+      (record, index) =>
+        index === 0 ||
+        record.ratingAfter !== collapsedRecords[index - 1].ratingAfter
     );
 
-    // Keep the LAST rating recorded each day
+    const ratingPoints = displayedRecords.map((record, index) => {
+      const recordedAt = new Date(record.recordedAt);
+      const isToday = getNewZealandDate(recordedAt) === today;
 
-    // Keep every match played TODAY,
-// but only the final rating for previous days.
-
-const grouped = new Map<string, RatingHistory[]>();
-
-filtered.forEach((record) => {
-  const day = new Date(record.recordedAt)
-    .toISOString()
-    .split("T")[0];
-
-  if (!grouped.has(day)) {
-    grouped.set(day, []);
-  }
-
-  grouped.get(day)!.push(record);
-});
-
-// Find the latest day that has rating history
-const latestDay = [...grouped.keys()]
-  .sort()
-  .at(-1);
-
-const daily: RatingHistory[] = [];
-
-[...grouped.entries()]
-  .sort(([a], [b]) => a.localeCompare(b))
-  .forEach(([day, records]) => {
-
-    records.sort(
-      (a, b) =>
-        new Date(a.recordedAt).getTime() -
-        new Date(b.recordedAt).getTime()
-    );
-
-    if (day === latestDay) {
-
-      // Show every rating change on the most recent day
-      daily.push(...records);
-
-    } else {
-
-      // Older days collapse to the day's final rating
-      daily.push(records[records.length - 1]);
-
-    }
-
-  });
-
-    if (daily.length === 0) {
-      return [];
-    }
-
-    const points = [];
-
-for (let i = 0; i < daily.length; i++) {
-  const record = daily[i];
-
-  // First point = player's rating before their first recorded match
-  if (i === 0) {
-    points.push({
-      x: record.recordedAt,
-      label: new Date(record.recordedAt).toLocaleDateString(
-        "en-NZ",
-        {
+      return {
+        x: `${record.recordedAt}-${record.matchId}-${index}`,
+        label: recordedAt.toLocaleString("en-NZ", {
+          timeZone: "Pacific/Auckland",
           day: "numeric",
           month: "short",
-        }
-      ),
-      rating: record.ratingBefore,
+          ...(isToday
+            ? {
+                hour: "numeric",
+                minute: "2-digit",
+              }
+            : {}),
+        }),
+        rating: record.ratingAfter,
+      };
     });
-  }
 
-  // Every match contributes its ending rating
-  points.push({
-    x: `${record.recordedAt}-${i}`,
-    label: new Date(record.recordedAt).toLocaleDateString(
-      "en-NZ",
+    const storedInitialDate = new Date(initialRatingAt);
+    const firstRecordedDate = consistentHistory[0]
+      ? new Date(consistentHistory[0].recordedAt)
+      : null;
+    const initialDate = Number.isNaN(storedInitialDate.getTime())
+      ? firstRecordedDate
+      : storedInitialDate;
+
+    if (!initialDate || !isIncludedByFilter(initialDate)) {
+      return ratingPoints;
+    }
+
+    return [
       {
-        day: "numeric",
-        month: "short",
-      }
-    ),
-    rating: record.ratingAfter,
-  });
-}
+        x: `initial-${initialRatingAt}`,
+        label: initialDate.toLocaleString("en-NZ", {
+          timeZone: "Pacific/Auckland",
+          day: "numeric",
+          month: "short",
+        }),
+        rating: initialRating,
+      },
+      ...ratingPoints,
+    ];
 
-return points;
-
-  }, [consistentHistory, filter]);
+  }, [consistentHistory, filter, initialRating, initialRatingAt]);
 
   const yMin = useMemo(() => {
 

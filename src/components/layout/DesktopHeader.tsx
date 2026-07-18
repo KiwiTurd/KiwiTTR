@@ -40,6 +40,25 @@ type HeaderLink = {
   colour: string;
 };
 
+function TableTennisBatIcon({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
+      <path d="m13.4 13.4 6 6" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
+      <circle cx="19" cy="5" fill="currentColor" r="1.75" />
+    </svg>
+  );
+}
+
 export default function DesktopHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -135,13 +154,19 @@ export default function DesktopHeader() {
           <FullLogo className="h-9 w-auto" />
         </Link>
 
-        <Link className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/dashboard" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/dashboard">
-          <LayoutDashboard className="h-4 w-4" /> Dashboard
+        {!session && (
+          <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/about" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/about">
+            <TableTennisBatIcon className="h-4 w-4 shrink-0" /> About Us
+          </Link>
+        )}
+
+        <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/dashboard" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/dashboard">
+          <LayoutDashboard className="h-4 w-4 shrink-0" /> Dashboard
         </Link>
 
         {session && (
-          <Link className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/my-profile" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/my-profile">
-            <User className="h-4 w-4" /> My Profile
+          <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/my-profile" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/my-profile">
+            <User className="h-4 w-4 shrink-0" /> My Profile
           </Link>
         )}
 
@@ -154,7 +179,7 @@ export default function DesktopHeader() {
             return (
               <button
                 aria-expanded={isOpen}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${isOpen ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition [&>svg]:shrink-0 ${isOpen ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}
                 key={name}
                 onClick={() => {
                   if (!isOpen) setDisplayMenu(name);
@@ -170,7 +195,7 @@ export default function DesktopHeader() {
           })}
         </nav>
 
-        <div className="ml-auto hidden min-w-0 w-full max-w-56 lg:block xl:max-w-xs"><GlobalSearch /></div>
+        <div className="ml-auto hidden w-44 shrink-0 lg:block xl:w-52 2xl:w-56"><GlobalSearch /></div>
 
         <div className="relative shrink-0">
           {session ? (

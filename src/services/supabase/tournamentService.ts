@@ -6,14 +6,13 @@ import {
 } from "../teams/teamSubmission";
 import {
   getPlayer,
+  getPlayers,
   updatePlayer,
 } from "./playerService";
 import { deleteEvent } from "./eventService";
 import { addMatch } from "./matchService";
-import { addRatingHistory } from "./ratingHistoryService";
 import type { MatchSet } from "../../types/match";
 import type { Player } from "../../types/player";
-import type { RatingHistory } from "../../types/ratingHistory";
 import type {
   KnockoutMatch,
   Pool,
@@ -393,6 +392,42 @@ function collectPlayers(
   });
 
   return [...players.values()];
+}
+
+export async function snapshotTournamentPlayerRatings(
+  tournament: TournamentState
+): Promise<TournamentState> {
+  const currentPlayers = await getPlayers();
+  const currentRatingById = new Map(
+    currentPlayers.map((player) => [player.id, player.rating])
+  );
+  const snapshotPlayer = <T extends Player | null>(player: T): T => {
+    if (!player) return player;
+
+    const rating = currentRatingById.get(player.id);
+    return (rating === undefined
+      ? player
+      : { ...player, rating }) as T;
+  };
+
+  return {
+    ...tournament,
+    players: tournament.players.map(snapshotPlayer),
+    pools: tournament.pools.map((pool) => ({
+      ...pool,
+      players: pool.players.map(snapshotPlayer),
+    })),
+    matches: tournament.matches.map((match) => ({
+      ...match,
+      playerOne: snapshotPlayer(match.playerOne),
+      playerTwo: snapshotPlayer(match.playerTwo),
+    })),
+    knockout: tournament.knockout.map((match) => ({
+      ...match,
+      playerOne: snapshotPlayer(match.playerOne),
+      playerTwo: snapshotPlayer(match.playerTwo),
+    })),
+  };
 }
 
 function toTournamentPlayerInsert(
@@ -1333,33 +1368,6 @@ async function removeTournamentRecordedRatings(
   return recordedMatchIds.length;
 }
 
-async function addRatingHistoryRows(
-  result: ReturnType<typeof buildMatch>
-) {
-  const winnerHistory: RatingHistory = {
-    id: crypto.randomUUID(),
-    playerId: result.winner.id,
-    matchId: result.match.id,
-    ratingBefore: result.match.winnerRatingBefore,
-    ratingAfter: result.match.winnerRatingAfter,
-    ratingChange: result.match.winnerRatingChange,
-    recordedAt: result.match.playedAt,
-  };
-
-  const loserHistory: RatingHistory = {
-    id: crypto.randomUUID(),
-    playerId: result.loser.id,
-    matchId: result.match.id,
-    ratingBefore: result.match.loserRatingBefore,
-    ratingAfter: result.match.loserRatingAfter,
-    ratingChange: result.match.loserRatingChange,
-    recordedAt: result.match.playedAt,
-  };
-
-  await addRatingHistory(winnerHistory);
-  await addRatingHistory(loserHistory);
-}
-
 export async function finishTournamentAndRecordRatings(
   tournamentId: string
 ) {
@@ -1538,7 +1546,6 @@ export async function finishTournamentAndRecordRatings(
       result.match.id,
       sets
     );
-    await addRatingHistoryRows(result);
     recordedPlayedAt.push(result.match.playedAt);
 
     await throwIfError(

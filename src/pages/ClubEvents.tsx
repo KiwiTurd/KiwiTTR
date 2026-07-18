@@ -15,6 +15,7 @@ import { useTournament } from "../context/TournamentContext";
 import ExpandableDescription from "../components/shared/ExpandableDescription";
 import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
+import { getNewZealandDate } from "../utils/newZealandDate";
 import { formatStartTime } from "../utils/tournamentTime";
 import { UnlinkedClubMessage } from "./MyClub";
 
@@ -23,6 +24,7 @@ export default function ClubEvents() {
   const { savedTournaments, signUpForTournament } = useTournament();
   const [signingUp, setSigningUp] = useState<string | null>(null);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [eventFilter, setEventFilter] = useState<"current" | "past">("current");
   const canCreate = isAdmin || isClubLeader;
   const clubEvents = useMemo(() => savedTournaments
     .filter((event) =>
@@ -31,8 +33,18 @@ export default function ClubEvents() {
     )
     .sort((a, b) => a.settings.date.localeCompare(b.settings.date)),
   [clubId, isAdmin, savedTournaments]);
+  const today = getNewZealandDate();
+  const isPastEvent = (event: (typeof clubEvents)[number]) =>
+    event.status === "completed" ||
+    event.status === "cancelled" ||
+    (event.status !== "active" && event.settings.date < today);
+  const currentEvents = clubEvents.filter((event) => !isPastEvent(event));
+  const pastEvents = clubEvents
+    .filter(isPastEvent)
+    .sort((a, b) => b.settings.date.localeCompare(a.settings.date));
+  const visibleEvents = eventFilter === "past" ? pastEvents : currentEvents;
   const liveCount = clubEvents.filter((event) => event.status === "active").length;
-  const upcomingCount = clubEvents.filter((event) => event.status === "draft").length;
+  const upcomingCount = currentEvents.filter((event) => event.status === "draft").length;
 
   async function signUp(eventId: string) {
     if (!playerId) {
@@ -78,7 +90,40 @@ export default function ClubEvents() {
         )}
       </div>
 
-      <section className="space-y-8">
+      <section className="space-y-4">
+        <div className="flex flex-wrap gap-2" aria-label="Club event filters">
+          <button
+            type="button"
+            aria-pressed={eventFilter === "current"}
+            onClick={() => {
+              setEventFilter("current");
+              setExpandedEventId(null);
+            }}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              eventFilter === "current"
+                ? "bg-blue-900 text-white shadow-sm"
+                : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            Current Events ({currentEvents.length})
+          </button>
+          <button
+            type="button"
+            aria-pressed={eventFilter === "past"}
+            onClick={() => {
+              setEventFilter("past");
+              setExpandedEventId(null);
+            }}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              eventFilter === "past"
+                ? "bg-blue-900 text-white shadow-sm"
+                : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            Past Events ({pastEvents.length})
+          </button>
+        </div>
+
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="hidden grid-cols-[minmax(0,2fr)_minmax(8rem,1fr)_minmax(7rem,1fr)_minmax(7rem,1fr)] items-center gap-x-5 border-b bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:grid">
             <span>Club Event</span>
@@ -87,18 +132,28 @@ export default function ClubEvents() {
             <span className="text-center">Status</span>
           </div>
 
-          {clubEvents.length === 0 ? <div className="p-10 text-center">
+          {visibleEvents.length === 0 ? <div className="p-10 text-center">
             <CalendarDays className="mx-auto h-9 w-9 text-slate-300" />
             <h2 className="mt-3 text-lg font-semibold text-slate-800">
-              No club events yet
+              {eventFilter === "past" ? "No past club events" : "No current club events"}
             </h2>
             <p className="mx-auto mt-1 max-w-lg text-sm text-slate-500">
-              Create a round-robin event to start organising your club night.
+              {eventFilter === "past"
+                ? "Completed and previous club events will appear here."
+                : "Create a round-robin event to start organising your club night."}
             </p>
           </div> : <div className="divide-y">
-            {clubEvents.map((event) => {
+            {visibleEvents.map((event) => {
               const signedUp = Boolean(playerId && event.players.some((player) => player.id === playerId));
-              const status = event.status === "active" ? "Live" : event.status === "completed" ? "Completed" : "Upcoming";
+              const status = event.status === "active"
+                ? "Live"
+                : event.status === "completed"
+                  ? "Completed"
+                  : event.status === "cancelled"
+                    ? "Cancelled"
+                    : isPastEvent(event)
+                      ? "Past"
+                      : "Upcoming";
               const expanded = expandedEventId === event.id;
               const roundRobinTotal = event.pools.length || event.settings.roundRobinCount || 1;
               return <div key={event.id}>
@@ -125,7 +180,7 @@ export default function ClubEvents() {
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Round Robin</span>
                   </div>
                   <div className="col-span-2 mt-1 flex justify-start md:col-span-1 md:mt-0 md:justify-center">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${event.status === "active" ? "bg-green-100 text-green-700" : event.status === "completed" ? "bg-slate-100 text-slate-600" : "bg-indigo-100 text-indigo-700"}`}>{status}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${event.status === "active" ? "bg-green-100 text-green-700" : isPastEvent(event) ? "bg-slate-100 text-slate-600" : "bg-indigo-100 text-indigo-700"}`}>{status}</span>
                   </div>
                 </button>
 

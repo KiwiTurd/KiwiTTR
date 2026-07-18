@@ -198,14 +198,15 @@ export default function Home() {
         </div>
         <div className="space-y-4 text-lg leading-8 text-slate-600">
           <p>
-            KiwiTTR is an independent rating and competition platform built
-            around the people who play and organise table tennis across New
-            Zealand.
+            KiwiTTR is an independent project created by a local table tennis
+            player with an interest in improving rating and competition
+            management systems in New Zealand. It is not an official national
+            table tennis organisation or rating system.
           </p>
           <p>
             It turns recorded match results into responsive player ratings,
-            giving players a useful measure of progress and helping clubs create
-            fairer, more engaging competition.
+            giving players a useful way to follow their progress and offering
+            organisers practical tools for fairer, more engaging competition.
           </p>
           <Link className="inline-flex items-center gap-2 font-semibold text-blue-700 hover:text-blue-900" to="/about">
             More about KiwiTTR <ArrowRight className="h-4 w-4" />

@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
-  ChevronRight,
-  Medal,
   Trophy,
-  Award,
 } from "lucide-react";
 
 import type { Player } from "../types/player";
@@ -34,10 +31,6 @@ export default function Rankings() {
 
   const [clubFilter, setClubFilter] =
     useState("");
-
-  useEffect(() => {
-    void loadData();
-  }, []);
 
   async function loadData() {
 
@@ -71,6 +64,14 @@ export default function Rankings() {
     }
 
   }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const rankings = useMemo(() => {
 
@@ -127,48 +128,33 @@ export default function Rankings() {
 
   }
 
+  function getClubShortName(
+    clubId: string
+  ) {
+    const club = clubs.find(
+      (item) => item.id === clubId
+    );
+
+    return club?.shortName || club?.name || "-";
+  }
+
 function getRankBadge(rank: number) {
-
-  if (rank === 1) {
-
-    return (
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-400 text-white">
-        <Trophy className="h-4 w-4 fill-current" />
-      </div>
-    );
-
-  }
-
-  if (rank === 2) {
-
-    return (
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-400 text-white">
-        <Medal className="h-4 w-4" />
-      </div>
-    );
-
-  }
-
-  if (rank === 3) {
-
-    return (
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-700 text-white">
-        <Award className="h-4 w-4" />
-      </div>
-    );
-
-  }
-
   return (
-
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900">
-
+    <span
+      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+        rank === 1
+          ? "bg-amber-100 text-amber-700"
+          : rank === 2
+            ? "bg-slate-200 text-slate-700"
+            : rank === 3
+              ? "bg-orange-100 text-orange-700"
+              : "bg-slate-100 text-slate-500"
+      }`}
+      aria-label={`Rank ${rank}`}
+    >
       {rank}
-
-    </div>
-
+    </span>
   );
-
 }
   
 return (
@@ -285,7 +271,7 @@ return (
 
       {/* Rankings */}
 
-      <div className="space-y-3">
+      <div>
 
         {loading ? (
           <LoadingScreen label="Loading rankings..." />
@@ -300,119 +286,47 @@ return (
 
         ) : (
 
-          rankings.map((player, index) => {
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            return (
+            <div className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] items-center gap-3 border-b border-slate-300 bg-slate-50 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] sm:gap-4 sm:px-6">
+              <span className="text-center">Rank</span>
+              <span>Player</span>
+              <span>Club</span>
+              <span className="text-right">TTR</span>
+            </div>
 
-              <Link
-  key={player.id}
-  to={`/players/${player.id}`}
-  className="
-    group
-    block
+            <div className="divide-y divide-slate-300">
+              {rankings.map((player, index) => (
+                <Link
+                  key={player.id}
+                  to={`/players/${player.id}`}
+                  className="grid grid-cols-[4rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] items-center gap-3 px-5 py-3.5 transition hover:bg-slate-50 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(0,0.8fr)_4.5rem] sm:gap-4 sm:px-6"
+                >
+                  <span className="justify-self-center">
+                    {getRankBadge(index + 1)}
+                  </span>
 
-    rounded-2xl
-    border
-    border-slate-200
+                  <p className="truncate font-semibold text-slate-900">
+                    {player.firstName} {player.lastName}
+                  </p>
 
-    bg-white
+                  <p className="min-w-0 truncate text-sm text-slate-600">
+                    <span className="sm:hidden">
+                      {getClubShortName(player.clubId)}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {getClubName(player.clubId)}
+                    </span>
+                  </p>
 
-    px-6
-    py-2.5
+                  <p className="text-right text-lg font-black tabular-nums text-slate-950">
+                    {player.rating}
+                  </p>
+                </Link>
+              ))}
+            </div>
 
-    shadow-sm
-
-    transition-all
-    duration-200
-
-    hover:-translate-y-0.5
-    hover:border-blue-200
-    hover:shadow-md
-  "
->
-
-  <div className="flex items-center">
-
-    {/* Rank */}
-
-    <div className="shrink-0">
-
-      {getRankBadge(index + 1)}
-
-    </div>
-
-    {/* Space between rank and player */}
-
-    <div className="w-8" />
-
-    {/* Player */}
-
-    <div className="min-w-0 flex-1">
-
-      <h2 className="truncate text-lg font-semibold tracking-tight text-slate-900">
-
-        {player.firstName} {player.lastName}
-
-      </h2>
-
-      <p className="mt-0.5 truncate text-sm text-slate-500">
-
-        {getClubName(player.clubId)}
-
-      </p>
-
-    </div>
-
-    {/* Rating */}
-
-    <div className="mr-5 hidden md:block">
-
-      <div
-        className="
-          rounded-full
-
-          bg-blue-100
-
-          px-3
-          py-1
-
-          text-base
-          font-semibold
-
-          text-blue-900
-        "
-      >
-
-        {player.rating} TTR
-
-      </div>
-
-    </div>
-
-    {/* Arrow */}
-
-    <ChevronRight
-      className="
-        h-5
-        w-5
-
-        shrink-0
-
-        text-slate-400
-
-        transition-transform
-
-        group-hover:translate-x-1
-      "
-    />
-
-  </div>
-
-</Link>
-
-            );
-
-          })
+          </div>
 
         )}
 

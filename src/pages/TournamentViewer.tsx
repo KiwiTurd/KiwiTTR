@@ -724,7 +724,7 @@ function PoolViewer({
                           {playerName(standing.player)}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {standing.gamesWon}-{standing.gamesLost} games
+                          {standing.player.rating} TTR · {standing.gamesWon}-{standing.gamesLost} games
                         </div>
                       </div>
                     </div>
@@ -783,9 +783,23 @@ function PoolMatchRow({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <div className="min-w-[240px] flex-1">
           <div className="grid grid-cols-[minmax(0,1fr)_24px_minmax(0,1fr)] items-center text-sm font-semibold">
-            <span>{playerName(match.playerOne)}</span>
+            <span>
+              <span className="block">{playerName(match.playerOne)}</span>
+              {match.playerOne.rating > 0 && (
+                <span className="block text-[10px] font-medium text-slate-500">
+                  {match.playerOne.rating} TTR
+                </span>
+              )}
+            </span>
             <span className="text-center text-xs text-slate-400">vs</span>
-            <span className="text-right">{playerName(match.playerTwo)}</span>
+            <span className="text-right">
+              <span className="block">{playerName(match.playerTwo)}</span>
+              {match.playerTwo.rating > 0 && (
+                <span className="block text-[10px] font-medium text-slate-500">
+                  {match.playerTwo.rating} TTR
+                </span>
+              )}
+            </span>
           </div>
         </div>
 
