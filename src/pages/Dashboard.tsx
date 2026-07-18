@@ -509,7 +509,7 @@ export default function Dashboard() {
       <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:pb-0 md:grid-cols-2 xl:grid-cols-4">
 
         <StatCard
-          icon={<User className="h-8 w-8 text-blue-700" />}
+          icon={<User className="h-10 w-10 text-blue-700 sm:h-8 sm:w-8" />}
           label="Rating"
           value={
             player
@@ -520,7 +520,7 @@ export default function Dashboard() {
         />
 
         <StatCard
-          icon={<Medal className="h-8 w-8 text-amber-500" />}
+          icon={<Medal className="h-10 w-10 text-amber-500 sm:h-8 sm:w-8" />}
           label="Club Rank"
           value={
             clubRank
@@ -535,7 +535,7 @@ export default function Dashboard() {
         />
 
         <StatCard
-          icon={<Trophy className="h-8 w-8 text-green-600" />}
+          icon={<Trophy className="h-10 w-10 text-green-600 sm:h-8 sm:w-8" />}
           label="Record"
           value={
             player
@@ -550,7 +550,7 @@ export default function Dashboard() {
         />
 
         <StatCard
-          icon={<Users className="h-8 w-8 text-indigo-600" />}
+          icon={<Users className="h-10 w-10 text-indigo-600 sm:h-8 sm:w-8" />}
           label="Club Players"
           value={clubPlayers.length}
           caption="Active club roster"
@@ -719,17 +719,17 @@ function StatCard({
   caption: string;
 }) {
   return (
-    <div className="flex min-h-40 w-32 shrink-0 snap-start flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:block sm:min-h-0 sm:w-auto sm:p-6 sm:text-left">
-      <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:gap-0">
+    <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:block sm:aspect-auto sm:w-auto sm:p-6 sm:text-left">
+      <div className="contents sm:flex sm:items-center sm:justify-between">
         {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">
+        <span className="order-3 mt-1 text-sm font-semibold text-slate-500 sm:order-none sm:mt-0 sm:text-xs sm:uppercase sm:tracking-wide sm:text-slate-400">
           {label}
         </span>
       </div>
-      <h2 className="mt-4 text-2xl font-black sm:mt-6 sm:text-4xl">
+      <h2 className="order-2 mt-3 text-3xl font-black sm:mt-6 sm:text-4xl">
         {value}
       </h2>
-      <p className="mt-1 text-xs leading-tight text-slate-500 sm:mt-2 sm:text-base sm:leading-normal">
+      <p className="hidden sm:mt-2 sm:block sm:text-base sm:leading-normal sm:text-slate-500">
         {caption}
       </p>
     </div>
@@ -769,32 +769,32 @@ function QuickActions({
       ? [
           {
             to: "/players",
-            icon: <Users className="h-5 w-5 text-blue-700" />,
+            icon: <Users className="h-10 w-10 text-blue-700 sm:h-5 sm:w-5" />,
             title: "Manage Players",
           },
           {
             to: "/clubs",
-            icon: <Building2 className="h-5 w-5 text-indigo-600" />,
+            icon: <Building2 className="h-10 w-10 text-indigo-600 sm:h-5 sm:w-5" />,
             title: "Manage Clubs",
           },
           {
             to: "/events",
-            icon: <CalendarDays className="h-5 w-5 text-emerald-600" />,
+            icon: <CalendarDays className="h-10 w-10 text-emerald-600 sm:h-5 sm:w-5" />,
             title: "Events",
           },
           {
             to: "/tournaments",
-            icon: <Trophy className="h-5 w-5 text-amber-500" />,
+            icon: <Trophy className="h-10 w-10 text-amber-500 sm:h-5 sm:w-5" />,
             title: "Tournaments",
           },
           {
             to: "/settings/users",
-            icon: <ShieldCheck className="h-5 w-5 text-green-600" />,
+            icon: <ShieldCheck className="h-10 w-10 text-green-600 sm:h-5 sm:w-5" />,
             title: "User Access",
           },
           {
             to: "/matches",
-            icon: <ClipboardPen className="h-5 w-5 text-blue-700" />,
+            icon: <ClipboardPen className="h-10 w-10 text-blue-700 sm:h-5 sm:w-5" />,
             title: "Match Input",
           },
         ]
@@ -803,27 +803,27 @@ function QuickActions({
       ? [
           {
             to: "/tournaments/new",
-            icon: <Trophy className="h-5 w-5 text-amber-500" />,
+            icon: <Trophy className="h-10 w-10 text-amber-500 sm:h-5 sm:w-5" />,
             title: "New Tournament",
           },
           {
             to: "/tournaments",
-            icon: <Trophy className="h-5 w-5 text-blue-700" />,
+            icon: <Trophy className="h-10 w-10 text-blue-700 sm:h-5 sm:w-5" />,
             title: "Tournaments",
           },
           {
             to: "/events",
-            icon: <CalendarDays className="h-5 w-5 text-emerald-600" />,
+            icon: <CalendarDays className="h-10 w-10 text-emerald-600 sm:h-5 sm:w-5" />,
             title: "Events",
           },
           {
             to: "/players",
-            icon: <Users className="h-5 w-5 text-blue-700" />,
+            icon: <Users className="h-10 w-10 text-blue-700 sm:h-5 sm:w-5" />,
             title: "Club Players",
           },
           {
             to: "/settings/club",
-            icon: <Settings className="h-5 w-5 text-slate-600" />,
+            icon: <Settings className="h-10 w-10 text-slate-600 sm:h-5 sm:w-5" />,
             title: "Club Settings",
           },
         ]
@@ -832,19 +832,19 @@ function QuickActions({
       ? [
           {
             to: "/events",
-            icon: <CalendarDays className="h-5 w-5 text-emerald-600" />,
+            icon: <CalendarDays className="h-10 w-10 text-emerald-600 sm:h-5 sm:w-5" />,
             title: "Events",
           },
           {
             to: "/my-profile",
-            icon: <User className="h-5 w-5 text-blue-700" />,
+            icon: <User className="h-10 w-10 text-blue-700 sm:h-5 sm:w-5" />,
             title: "My Profile",
           },
         ]
       : []),
     {
       to: "/rankings",
-      icon: <Medal className="h-5 w-5 text-amber-500" />,
+      icon: <Medal className="h-10 w-10 text-amber-500 sm:h-5 sm:w-5" />,
       title: "Rankings",
     },
   ];
@@ -855,16 +855,16 @@ function QuickActions({
         Quick Actions
       </h2>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
         {actions.map((action) => (
           <Link
             key={action.to}
             to={action.to}
-            className="group flex aspect-square min-w-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2.5 text-center transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:flex-row sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3 sm:text-left"
+            className="group flex aspect-square w-36 min-w-0 shrink-0 snap-start flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 text-center transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:w-auto sm:flex-row sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3 sm:text-left"
           >
             <div className="flex min-w-0 max-w-full flex-col items-center gap-2 sm:flex-row sm:gap-3">
               {action.icon}
-              <span className="max-w-full break-words text-[10px] font-semibold leading-tight sm:truncate sm:text-base sm:leading-normal">
+              <span className="max-w-full break-words text-sm font-bold leading-tight sm:truncate sm:text-base sm:leading-normal">
                 {action.title}
               </span>
             </div>
