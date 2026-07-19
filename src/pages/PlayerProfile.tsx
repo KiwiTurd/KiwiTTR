@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -52,6 +53,81 @@ import { useTournament } from "../context/TournamentContext";
 import { getTeamGames } from "../services/teams/teamGameService";
 import PlayerAvatar from "../components/shared/PlayerAvatar";
 import PlayerAvatarUploader from "../components/player/PlayerAvatarUploader";
+
+function ProfileStatRow({
+  children,
+  itemCount,
+}: {
+  children: React.ReactNode;
+  itemCount: number;
+}) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [indicator, setIndicator] = useState({
+    left: 0,
+    width: 100,
+    visible: false,
+  });
+
+  const updateIndicator = useCallback(() => {
+    const row = rowRef.current;
+
+    if (!row) {
+      return;
+    }
+
+    const maxScroll = row.scrollWidth - row.clientWidth;
+    const width = Math.min(
+      100,
+      Math.max(20, (row.clientWidth / row.scrollWidth) * 100)
+    );
+    const left = maxScroll > 0
+      ? (row.scrollLeft / maxScroll) * (100 - width)
+      : 0;
+
+    setIndicator({
+      left,
+      width,
+      visible: maxScroll > 1,
+    });
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(updateIndicator);
+    window.addEventListener("resize", updateIndicator);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateIndicator);
+    };
+  }, [itemCount, updateIndicator]);
+
+  return (
+    <div>
+      <div
+        ref={rowRef}
+        onScroll={updateIndicator}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] sm:overflow-visible sm:pb-0"
+      >
+        {children}
+      </div>
+
+      <div
+        aria-hidden="true"
+        className={`relative mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 transition-opacity sm:hidden ${
+          indicator.visible ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <div
+          className="absolute inset-y-0 rounded-full bg-blue-800 transition-[left] duration-100"
+          style={{
+            left: `${indicator.left}%`,
+            width: `${indicator.width}%`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function PlayerProfile() {
 
@@ -718,11 +794,13 @@ return (
 
     {/* Stat Cards */}
 
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+    <ProfileStatRow
+      itemCount={3 + (showHeadToHead && headToHead && linkedPlayer ? 1 : 0)}
+    >
 
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
+      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
 
-        <TrendingUp className="h-5 w-5 shrink-0 text-blue-700" />
+        <TrendingUp className="h-9 w-9 shrink-0 text-blue-700 sm:h-5 sm:w-5" />
 
         <div className="min-w-0">
 
@@ -742,9 +820,9 @@ return (
 
       </div>
 
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
+      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
 
-        <Trophy className="h-5 w-5 shrink-0 text-amber-500" />
+        <Trophy className="h-9 w-9 shrink-0 text-amber-500 sm:h-5 sm:w-5" />
 
         <div className="min-w-0">
 
@@ -764,9 +842,9 @@ return (
 
       </div>
 
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
+      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
 
-        <Users className="h-5 w-5 shrink-0 text-indigo-600" />
+        <Users className="h-9 w-9 shrink-0 text-indigo-600 sm:h-5 sm:w-5" />
 
         <div className="min-w-0">
 
@@ -788,9 +866,9 @@ return (
 
       {showHeadToHead && headToHead && linkedPlayer && (
 
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm sm:flex-row sm:items-center sm:px-4 sm:py-3">
+      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
 
-        <Users className="h-5 w-5 shrink-0 text-blue-700" />
+        <Users className="h-9 w-9 shrink-0 text-blue-700 sm:h-5 sm:w-5" />
 
         <div className="min-w-0">
 
@@ -817,7 +895,7 @@ return (
 
       )}
 
-    </div>
+    </ProfileStatRow>
 
     {/* Rating Graph */}
 

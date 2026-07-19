@@ -59,10 +59,25 @@ function autoAdvanceByes(
 
     for (const match of bracket) {
 
+      const feederMatchesResolved =
+        match.round === 1 ||
+        [
+          (match.position - 1) * 2 + 1,
+          (match.position - 1) * 2 + 2,
+        ].every((position) =>
+          bracket.some(
+            feeder =>
+              feeder.round === match.round - 1 &&
+              feeder.position === position &&
+              feeder.completed
+          )
+        );
+
       if (
         match.completed ||
         (!match.playerOne && !match.playerTwo) ||
-        (match.playerOne && match.playerTwo)
+        (match.playerOne && match.playerTwo) ||
+        !feederMatchesResolved
       ) {
         continue;
       }
@@ -120,12 +135,34 @@ export function generateKnockout(
   const bracket: KnockoutMatch[] = [];
 
   const firstRoundMatches = size / 2;
+  const byeCount = size - players.length;
+  const byePositions = new Set(
+    Array.from({ length: byeCount }, (_, index) =>
+      Math.floor(
+        ((index + 0.5) * firstRoundMatches) /
+          byeCount
+      )
+    )
+  );
+  const byePlayers = players.slice(0, byeCount);
+  const matchedPlayers = players.slice(byeCount);
+  let byePlayerIndex = 0;
+  let firstMatchedPlayerIndex = 0;
+  let lastMatchedPlayerIndex = matchedPlayers.length - 1;
 
   for (
     let i = 0;
     i < firstRoundMatches;
     i++
   ) {
+
+    const hasBye = byePositions.has(i);
+    const playerOne = hasBye
+      ? byePlayers[byePlayerIndex++] ?? null
+      : matchedPlayers[firstMatchedPlayerIndex++] ?? null;
+    const playerTwo = hasBye
+      ? null
+      : matchedPlayers[lastMatchedPlayerIndex--] ?? null;
 
     bracket.push({
 
@@ -135,13 +172,9 @@ export function generateKnockout(
 
       position: i + 1,
 
-      playerOne:
-        players[i] ?? null,
+      playerOne,
 
-      playerTwo:
-        players[
-          size - 1 - i
-        ] ?? null,
+      playerTwo,
 
       winnerId: null,
 

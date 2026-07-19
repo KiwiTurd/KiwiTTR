@@ -63,7 +63,13 @@ function roundTitle(
 function getWinnerName(
   match: KnockoutMatch | undefined
 ) {
-  if (!match?.winnerId) {
+  if (
+    !match?.completed ||
+    !match.winnerId ||
+    !match.playerOne ||
+    !match.playerTwo ||
+    !match.games.some((game) => game.trim() !== "" && game !== "Bye")
+  ) {
     return null;
   }
 

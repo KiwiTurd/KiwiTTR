@@ -327,14 +327,10 @@ function toTournamentRow(tournament: TournamentState) {
     ttr_limit: tournament.settings.ttrLimitEnabled
       ? tournament.settings.ttrLimit
       : null,
-    status:
-      tournament.status === "completed" ||
-      tournament.status === "cancelled" ||
-      tournament.status === "active"
-        ? tournament.status
-        : tournament.knockout.some(match => match.winnerId)
-          ? "active"
-          : "draft",
+    // A generated draw can contain winner IDs for automatic byes. Those are
+    // draw structure, not proof that the tournament has gone live. Activation
+    // must only happen through the explicit Go Live action.
+    status: tournament.status ?? "draft",
   };
 }
 

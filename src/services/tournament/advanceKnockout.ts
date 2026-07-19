@@ -105,6 +105,10 @@ export function advanceWinner(
 
         playerOne: winner,
 
+        ...(match.completed && match.games.includes("Bye")
+          ? { winnerId: null, completed: false, games: [] }
+          : {}),
+
       };
 
     }
@@ -114,6 +118,10 @@ export function advanceWinner(
       ...match,
 
       playerTwo: winner,
+
+      ...(match.completed && match.games.includes("Bye")
+        ? { winnerId: null, completed: false, games: [] }
+        : {}),
 
     };
 

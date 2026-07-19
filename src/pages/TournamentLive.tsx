@@ -20,6 +20,7 @@ import {
   Pencil,
   Plus,
   Printer,
+  RotateCcw,
   Save,
   Trash2,
   X,
@@ -455,9 +456,18 @@ export default function TournamentLive() {
         )
     );
 
+  const finalWasPlayed = Boolean(
+    championMatch?.completed &&
+    championMatch.playerOne &&
+    championMatch.playerTwo &&
+    championMatch.games.some(
+      (game) => game.trim() !== "" && game !== "Bye"
+    )
+  );
+
   const champion = tournament.settings.format === "double-knockout"
     ? getDoubleKnockoutChampion(tournament.players, tournament.knockout)
-    : championMatch?.winnerId
+    : finalWasPlayed && championMatch?.winnerId
       ? championMatch.playerOne?.id === championMatch.winnerId
         ? championMatch.playerOne
         : championMatch.playerTwo
@@ -472,6 +482,16 @@ export default function TournamentLive() {
     tournament.status === "completed" ||
     tournament.status === "cancelled";
   const canInputMatches = tournament.status === "active";
+  const hasSavedSets = [
+    ...tournament.matches,
+    ...tournament.knockout,
+  ].some((match) =>
+    match.games.some((game) => {
+      const savedGame = game.trim().toLowerCase();
+      return savedGame !== "" && savedGame !== "bye";
+    })
+  );
+  const canUndoLive = canInputMatches && !hasSavedSets;
   const assignedPoolPlayerIds = new Set(
     tournament.pools.flatMap((pool) =>
       pool.players.map((player) => player.id)
@@ -519,6 +539,20 @@ export default function TournamentLive() {
     } finally {
       setStartingTournament(false);
     }
+  }
+
+  function undoLive() {
+    if (!canUndoLive) {
+      return;
+    }
+
+    setTournamentState({
+      ...tournament,
+      status: "draft",
+    });
+    notify.edgeBall(
+      `${tournament.settings.name || "Tournament"} has returned to draft.`
+    );
   }
 
   function openAdditionalMatch(type: "singles" | "doubles") {
@@ -1015,6 +1049,16 @@ export default function TournamentLive() {
           >
             {startingTournament ? "Capturing TTRs..." : "Go Live"}
             <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
+        {canUndoLive && (
+          <button
+            type="button"
+            onClick={undoLive}
+            className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-3 font-semibold text-amber-800 shadow-sm transition hover:bg-amber-50"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Undo Go Live
           </button>
         )}
         <Link

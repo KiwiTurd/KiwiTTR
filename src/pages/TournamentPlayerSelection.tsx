@@ -617,12 +617,14 @@ function getClubName(
 
     <button
       key={player.id}
-      onClick={() => addPlayer(player)}
+      onClick={() =>
+        selectedPlayers.some((selected) => selected.id === player.id)
+          ? removePlayer(player.id)
+          : addPlayer(player)
+      }
       disabled={
-        playerLimitReached ||
-        selectedPlayers.some(
-          (p) => p.id === player.id
-        )
+        playerLimitReached &&
+        !selectedPlayers.some((selected) => selected.id === player.id)
       }
       className={`
         flex
@@ -639,7 +641,7 @@ function getClubName(
           selectedPlayers.some(
             (p) => p.id === player.id
           )
-            ? "border-green-300 bg-green-50"
+            ? "border-green-300 bg-green-50 hover:border-red-300 hover:bg-red-50"
             : playerLimitReached
               ? "cursor-not-allowed bg-slate-50 opacity-50"
             : "bg-white hover:border-blue-300 hover:bg-blue-50"
@@ -709,7 +711,7 @@ function getClubName(
 
         <div>
 
-          <div className="sticky top-24 rounded-3xl border bg-white p-6 shadow-sm">
+          <div className="sticky top-24 rounded-3xl border bg-white p-5 shadow-sm lg:flex lg:max-h-[calc(100dvh-7rem)] lg:flex-col lg:overflow-hidden">
 
             <h2 className="text-xl font-bold">
 
@@ -755,7 +757,7 @@ function getClubName(
 
 </div>
 
-            <div className="mt-6 space-y-2">
+            <div className="mt-4 space-y-1.5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
 
               {isDoubles ? (
 
@@ -782,22 +784,14 @@ function getClubName(
                       event.preventDefault();
                       moveDoublesPlayerToOpenPair(index);
                     }}
-                    className={`rounded-xl border px-4 py-3 transition ${
+                    className={`rounded-xl border px-3 py-2 transition ${
                       doublesDropTarget === `pair-${index}`
                         ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
                         : "border-slate-200"
                     }`}
                   >
-                    <div className="mb-3 flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
-                        {index + 1}
-                      </div>
-                      <div className="font-medium">
-                        Pair {index + 1}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
+                    <div className="flex items-stretch gap-2">
+                      <div className="min-w-0 flex-1 space-y-0.5">
                       {pair.map((player, playerIndex) => (
                         <div
                           key={player.id}
@@ -825,7 +819,7 @@ function getClubName(
                             event.stopPropagation();
                             swapDoublesPlayers(index, playerIndex);
                           }}
-                          className={`flex cursor-grab items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition active:cursor-grabbing ${
+                          className={`flex cursor-grab items-center justify-between gap-2 rounded-lg px-1.5 py-1 text-sm transition active:cursor-grabbing ${
                             doublesDropTarget ===
                             `player-${index}-${playerIndex}`
                               ? "bg-blue-100 ring-2 ring-blue-300"
@@ -837,7 +831,7 @@ function getClubName(
                           title="Drag onto a player in another pair to swap them"
                         >
                           <span className="flex min-w-0 items-center gap-2">
-                            <GripVertical className="h-4 w-4 shrink-0 text-slate-400" />
+                            <GripVertical className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                             <span className="truncate">
                               {player.firstName} {player.lastName}
                             </span>
@@ -854,10 +848,11 @@ function getClubName(
                         </div>
                       ))}
                       {pair.length === 1 && (
-                        <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                        <div className="rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-800">
                           Choose one more player for this pair.
                         </div>
                       )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -870,7 +865,7 @@ function getClubName(
                   className="flex items-center rounded-xl border px-4 py-3"
                 >
 
-                  <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-blue-900 text-sm font-bold text-white">
+                  <div className="mr-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
 
                     {index+1}
 
@@ -914,7 +909,7 @@ function getClubName(
 
             </div>
 
-            <div className="mt-8 flex gap-3">
+            <div className="mt-5 flex shrink-0 gap-3">
 
               <Link
                 to="/tournaments/new"
