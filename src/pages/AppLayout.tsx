@@ -1,4 +1,10 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import MobileBottomNav from "../components/layout/MobileBottomNav";
@@ -25,10 +31,96 @@ export default function AppLayout() {
 
   const { collapsed, navigationLayout } = useSidebar();
   const { pathname } = useLocation();
+  const showMobilePageSubheadings =
+    pathname === "/" ||
+    pathname === "/about" ||
+    pathname === "/how-we-calculate";
+  const mainRef = useRef<HTMLElement>(null);
   const [noticeDraft, setNoticeDraft] = useState({
     title: "",
     message: "",
   });
+
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main || showMobilePageSubheadings) return;
+    const mainElement = main;
+
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const selector = "h1 + p, h1 + div";
+
+    function updateSubheadings() {
+      mainElement.querySelectorAll<HTMLElement>(selector).forEach((subheading) => {
+        if (mobileQuery.matches) {
+          subheading.dataset.mobilePageSubheading = "true";
+          subheading.setAttribute("role", "button");
+          subheading.setAttribute("tabindex", "0");
+          subheading.setAttribute("aria-label", "Show page description");
+          subheading.setAttribute(
+            "aria-expanded",
+            subheading.dataset.mobileSubheadingOpen === "true" ? "true" : "false"
+          );
+        } else {
+          delete subheading.dataset.mobilePageSubheading;
+          delete subheading.dataset.mobileSubheadingOpen;
+          subheading.removeAttribute("role");
+          subheading.removeAttribute("tabindex");
+          subheading.removeAttribute("aria-label");
+          subheading.removeAttribute("aria-expanded");
+        }
+      });
+    }
+
+    updateSubheadings();
+
+    const observer = new MutationObserver(updateSubheadings);
+    observer.observe(mainElement, { childList: true, subtree: true });
+    mobileQuery.addEventListener("change", updateSubheadings);
+
+    return () => {
+      observer.disconnect();
+      mobileQuery.removeEventListener("change", updateSubheadings);
+    };
+  }, [pathname, showMobilePageSubheadings]);
+
+  function toggleMobileSubheading(subheading: HTMLElement) {
+    const isOpen = subheading.dataset.mobileSubheadingOpen === "true";
+
+    mainRef.current
+      ?.querySelectorAll<HTMLElement>("[data-mobile-subheading-open='true']")
+      .forEach((element) => {
+        delete element.dataset.mobileSubheadingOpen;
+        element.setAttribute("aria-expanded", "false");
+      });
+
+    if (!isOpen) {
+      subheading.dataset.mobileSubheadingOpen = "true";
+      subheading.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  function handleMainClick(event: ReactMouseEvent<HTMLElement>) {
+    const target = event.target as Element;
+    const subheading = target.closest<HTMLElement>(
+      "[data-mobile-page-subheading='true']"
+    );
+
+    if (subheading) toggleMobileSubheading(subheading);
+  }
+
+  function handleMainKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    const target = event.target as HTMLElement;
+
+    if (target.dataset.mobilePageSubheading !== "true") return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleMobileSubheading(target);
+    } else if (event.key === "Escape") {
+      delete target.dataset.mobileSubheadingOpen;
+      target.setAttribute("aria-expanded", "false");
+    }
+  }
 
   return (
 
@@ -48,7 +140,14 @@ export default function AppLayout() {
         }`}
       >
 
-        <main className="flex-1 p-4 pb-28 md:p-8">
+        <main
+          ref={mainRef}
+          onClick={handleMainClick}
+          onKeyDown={handleMainKeyDown}
+          className={`flex-1 p-4 pb-28 md:p-8 ${
+            showMobilePageSubheadings ? "" : "mobile-hide-page-subheadings"
+          }`}
+        >
 
           <Outlet context={{ noticeDraft, setNoticeDraft }} />
 

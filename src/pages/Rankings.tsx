@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import {
-  Trophy,
-} from "lucide-react";
-
 import type { Player } from "../types/player";
 import type { Club } from "../types/club";
 
@@ -165,17 +161,9 @@ return (
 
       <div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+        <h1 className="text-5xl font-normal tracking-tight text-slate-900">
 
-          <Trophy className="h-4 w-4" />
-
-          National Rankings
-
-        </div>
-
-        <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
-
-          Rankings
+          New Zealand Rankings
 
         </h1>
 
