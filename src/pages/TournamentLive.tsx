@@ -632,13 +632,22 @@ export default function TournamentLive() {
   }
 
   function downloadTournamentMatchCard(
-    match: TournamentMatch | { playerOne: Player | null; playerTwo: Player | null },
+    match: {
+      id: string;
+      playerOne: Player | null;
+      playerTwo: Player | null;
+      table?: number;
+    },
     matchName: string
   ) {
+    const savedMatch =
+      tournament.matches.find((candidate) => candidate.id === match.id) ??
+      tournament.knockout.find((candidate) => candidate.id === match.id);
 
     downloadPlayCard({
       eventName: tournament.settings.name || "Match",
       matchName,
+      table: savedMatch ? savedMatch.table : match.table,
       sideOne: tournamentCardPlayers(match.playerOne),
       sideTwo: tournamentCardPlayers(match.playerTwo),
     });

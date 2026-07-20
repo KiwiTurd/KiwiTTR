@@ -7,6 +7,7 @@ export type PlayCardPlayer = {
 type PlayCardOptions = {
   eventName: string;
   matchName: string;
+  table?: number | string;
   sideOne: PlayCardPlayer[];
   sideTwo: PlayCardPlayer[];
 };
@@ -91,6 +92,7 @@ function downloadHtml(html: string, name: string) {
 export function downloadPlayCard({
   eventName,
   matchName,
+  table,
   sideOne,
   sideTwo,
 }: PlayCardOptions) {
@@ -101,25 +103,36 @@ export function downloadPlayCard({
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(eventName)} - ${escapeHtml(matchName)}</title>
   <style>
-    @page { size: A4 portrait; margin: 14mm; }
+    @page { size: A4 portrait; margin: 8mm; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; color: #0f172a; }
-    .card { border: 2px solid #0f172a; border-radius: 14px; padding: 22px; }
-    .eyebrow { color: #475569; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    h1 { margin: 5px 0 0; font-size: 24px; }
-    h2 { margin: 5px 0 20px; color: #475569; font-size: 16px; }
-    .sides { display: grid; grid-template-columns: 1fr 38px 1fr; gap: 12px; align-items: center; }
-    .versus { text-align: center; color: #64748b; font-weight: 700; }
-    .side { border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
-    .side-title { padding: 8px 10px; background: #f1f5f9; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .player { display: grid; gap: 3px; padding: 10px; border-top: 1px solid #e2e8f0; }
-    .player span { color: #475569; font-size: 12px; }
-    table { width: 100%; margin-top: 22px; border-collapse: collapse; }
-    th, td { height: 42px; border: 1px solid #94a3b8; text-align: center; }
-    th { height: 32px; background: #f1f5f9; font-size: 11px; text-transform: uppercase; }
-    .footer { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px; }
-    .line { padding-top: 24px; border-bottom: 1px solid #0f172a; font-size: 11px; color: #475569; }
-    .hint { margin-top: 14px; color: #64748b; font-size: 10px; text-align: center; }
+    .card {
+      display: flex;
+      width: 97mm;
+      height: 140.5mm;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1.5px solid #0f172a;
+      border-radius: 8px;
+      padding: 10px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .eyebrow { color: #475569; font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    h1 { max-height: 2.4em; margin: 3px 0 0; overflow: hidden; font-size: 16px; line-height: 1.2; }
+    h2 { margin: 2px 0 8px; overflow: hidden; color: #475569; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .sides { display: grid; grid-template-columns: minmax(0,1fr) 22px minmax(0,1fr); gap: 5px; align-items: center; }
+    .versus { text-align: center; color: #64748b; font-size: 9px; font-weight: 700; }
+    .side { min-width: 0; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
+    .side-title { padding: 4px 6px; background: #f1f5f9; font-size: 7px; font-weight: 700; text-transform: uppercase; }
+    .player { display: grid; min-width: 0; gap: 1px; padding: 5px 6px; border-top: 1px solid #e2e8f0; }
+    .player strong { overflow-wrap: anywhere; font-size: 9px; line-height: 1.15; }
+    .player span { overflow: hidden; color: #475569; font-size: 7px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+    table { width: 100%; margin-top: 9px; border-collapse: collapse; table-layout: fixed; }
+    th, td { height: 27px; border: 1px solid #94a3b8; text-align: center; font-size: 9px; }
+    th { height: 20px; background: #f1f5f9; font-size: 7px; text-transform: uppercase; }
+    .footer { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .line { padding-top: 12px; border-bottom: 1px solid #0f172a; color: #475569; font-size: 7px; }
   </style>
 </head>
 <body>
@@ -128,16 +141,15 @@ export function downloadPlayCard({
     <h1>${escapeHtml(eventName)}</h1>
     <h2>${escapeHtml(matchName)}</h2>
     <div class="sides">
-      <section class="side"><div class="side-title">Side 1</div>${playerRows(sideOne)}</section>
+      <section class="side"><div class="side-title">Player 1</div>${playerRows(sideOne)}</section>
       <div class="versus">VS</div>
-      <section class="side"><div class="side-title">Side 2</div>${playerRows(sideTwo)}</section>
+      <section class="side"><div class="side-title">Player 2</div>${playerRows(sideTwo)}</section>
     </div>
     <table>
-      <thead><tr><th>Set</th><th>Side 1</th><th>Side 2</th></tr></thead>
+      <thead><tr><th>Set</th><th>Player 1</th><th>Player 2</th></tr></thead>
       <tbody>${Array.from({ length: 5 }, (_, index) => `<tr><td>${index + 1}</td><td></td><td></td></tr>`).join("")}</tbody>
     </table>
-    <div class="footer"><div class="line">Winner</div><div class="line">Table</div></div>
-    <div class="hint">Open this file in a browser and select Print.</div>
+    <div class="footer"><div class="line">Winner</div><div class="line">Table${table !== undefined && table !== "" ? `: <strong>${escapeHtml(table)}</strong>` : ""}</div></div>
   </main>
 </body>
 </html>`;
@@ -377,7 +389,7 @@ export function downloadTeamGameSheet({
       <div class="summary-box"><span>Total matches won · ${escapeHtml(away.club)}</span><strong>${completedScoringMatches.length ? awayWins : "____"}</strong></div>
       <div class="summary-box winner"><span>Overall winner</span><strong>${escapeHtml(winner || "\u00a0")}</strong></div>
     </section>
-    <div class="footer">Open this file in a browser and select Print. Scores already entered in KiwiTTR are included; blank cells can be completed by hand.</div>
+    <div class="footer">Scores already entered in KiwiTTR are included; blank cells can be completed by hand.</div>
   </main>
 </body>
 </html>`;

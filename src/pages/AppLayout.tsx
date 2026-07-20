@@ -7,6 +7,7 @@ import SeoMetadataManager from "../components/layout/SeoMetadataManager";
 import DashboardNotice from "../components/dashboard/DashboardNotice";
 import DesktopHeader from "../components/layout/DesktopHeader";
 import Sidebar from "../components/layout/Sidebar";
+import FirstLoginWelcome from "../components/onboarding/FirstLoginWelcome";
 import { useSidebar } from "../context/SidebarContext";
 
 export type AppLayoutOutletContext = {
@@ -58,6 +59,8 @@ export default function AppLayout() {
       </div>
 
       <MobileBottomNav />
+
+      <FirstLoginWelcome />
 
       {pathname === "/dashboard" && <DashboardNotice />}
 

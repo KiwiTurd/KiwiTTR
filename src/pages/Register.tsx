@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
 import SeoMetadataManager from "../components/layout/SeoMetadataManager";
 import useFormDraftState from "../hooks/useFormDraftState";
+import { WELCOME_NOTICE_PENDING_KEY } from "../constants/welcomeNotice";
 
 export default function Register() {
 
@@ -71,6 +72,8 @@ export default function Register() {
             first_name: firstName.trim(),
 
             last_name: lastName.trim(),
+
+            [WELCOME_NOTICE_PENDING_KEY]: true,
 
           },
 
