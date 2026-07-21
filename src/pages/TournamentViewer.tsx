@@ -30,6 +30,7 @@ import type {
   TournamentMatch,
 } from "../types/tournament";
 import { getDoubleKnockoutChampion } from "../services/tournament/doubleKnockout";
+import { isDoubleKnockoutTournamentFormat } from "../types/tournament";
 import { calculatePoolStandings } from "../services/tournament/standings";
 import { arePoolsComplete } from "../services/tournament/matchProgression";
 
@@ -43,8 +44,16 @@ function playerName(
 
 function roundTitle(
   round: number,
-  maxRound: number
+  maxRound: number,
+  isDoubleKnockout: boolean,
+  matches: KnockoutMatch[]
 ) {
+  if (isDoubleKnockout) {
+    return matches.every((match) => match.bracket === "grand-final")
+      ? "Grand Final"
+      : `Round ${round}`;
+  }
+
   if (round === maxRound) {
     return "Final";
   }
@@ -219,16 +228,21 @@ export default function TournamentViewer() {
     match => match.round === maxRound
   );
 
+  const isDoubleKnockout =
+    isDoubleKnockoutTournamentFormat(tournament.settings.format);
+
   const doubleKnockoutChampion =
-    tournament.settings.format === "double-knockout"
+    isDoubleKnockout
       ? getDoubleKnockoutChampion(
           tournament.players,
           tournament.knockout
         )
       : null;
 
-  const championName = doubleKnockoutChampion
-    ? playerName(doubleKnockoutChampion)
+  const championName = isDoubleKnockout
+    ? doubleKnockoutChampion
+      ? playerName(doubleKnockoutChampion)
+      : null
     : getWinnerName(finalMatch);
 
   useEffect(() => {
@@ -238,9 +252,16 @@ export default function TournamentViewer() {
     if (window.sessionStorage.getItem(celebrationKey)) return;
 
     window.sessionStorage.setItem(celebrationKey, "true");
-    setShowConfetti(true);
-    const timer = window.setTimeout(() => setShowConfetti(false), 6000);
-    return () => window.clearTimeout(timer);
+    let hideTimer: number | undefined;
+    const showTimer = window.setTimeout(() => {
+      setShowConfetti(true);
+      hideTimer = window.setTimeout(() => setShowConfetti(false), 6000);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(showTimer);
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+    };
   }, [championName, tournament.id]);
 
   const eliminatedPlayerIds = useMemo(() => {
@@ -249,7 +270,7 @@ export default function TournamentViewer() {
     tournament.knockout.forEach(match => {
       if (!match.completed || !match.winnerId) return;
       if (
-        tournament.settings.format === "double-knockout" &&
+        isDoubleKnockoutTournamentFormat(tournament.settings.format) &&
         match.bracket === "winners"
       ) return;
 
@@ -271,7 +292,7 @@ export default function TournamentViewer() {
   );
 
   const scale =
-    1 - scrollProgress * 0.24;
+    0.76 + scrollProgress * 0.24;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -516,7 +537,6 @@ export default function TournamentViewer() {
             style={{
               transform: `scale(${scale})`,
               transformOrigin: "left center",
-              width: `${100 / scale}%`,
             }}
           >
             {rounds.map(([round, matches]) => (
@@ -529,7 +549,7 @@ export default function TournamentViewer() {
                     {matches.length} match{matches.length === 1 ? "" : "es"}
                   </div>
                   <h3 className="text-xl font-black">
-                    {roundTitle(round, maxRound)}
+                    {roundTitle(round, maxRound, isDoubleKnockout, matches)}
                   </h3>
                 </div>
 

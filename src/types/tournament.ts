@@ -1,5 +1,25 @@
 import type { Player } from "./player";
 
+export type TournamentFormat =
+  | "knockout"
+  | "double-knockout"
+  | "pools"
+  | "pool-ratings"
+  | "doubles"
+  | "doubles-double-knockout";
+
+export function isDoublesTournamentFormat(
+  format: TournamentFormat
+) {
+  return format === "doubles" || format === "doubles-double-knockout";
+}
+
+export function isDoubleKnockoutTournamentFormat(
+  format: TournamentFormat
+) {
+  return format === "double-knockout" || format === "doubles-double-knockout";
+}
+
 export interface TournamentSettings {
   eventType?: "tournament" | "club-round-robin";
 
@@ -27,12 +47,7 @@ export interface TournamentSettings {
 
   playerLimitEnabled: boolean;
 
-  format:
-    | "knockout"
-    | "double-knockout"
-    | "pools"
-    | "pool-ratings"
-    | "doubles";
+  format: TournamentFormat;
 
   poolSize: number;
 

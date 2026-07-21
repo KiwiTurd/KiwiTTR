@@ -51,7 +51,10 @@ export default function AppLayout() {
 
     function updateSubheadings() {
       mainElement.querySelectorAll<HTMLElement>(selector).forEach((subheading) => {
-        if (mobileQuery.matches) {
+        const alwaysVisible =
+          subheading.dataset.mobileSubheadingAlwaysVisible === "true";
+
+        if (mobileQuery.matches && !alwaysVisible) {
           subheading.dataset.mobilePageSubheading = "true";
           subheading.setAttribute("role", "button");
           subheading.setAttribute("tabindex", "0");

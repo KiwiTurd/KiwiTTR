@@ -841,7 +841,7 @@ function QuickActions({
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section>
       <h2 className="mb-4 text-base font-bold sm:mb-5 sm:text-xl">
         Quick Actions
       </h2>
@@ -854,18 +854,18 @@ function QuickActions({
           <Link
             key={action.to}
             to={action.to}
-            className="group flex aspect-square w-36 min-w-0 shrink-0 snap-start flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 text-center transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:w-auto sm:flex-row sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3 sm:text-left"
+            className="group flex aspect-square w-[calc((100%_-_1.5rem)/3)] min-w-0 shrink-0 snap-start flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 text-center shadow-sm transition hover:border-blue-300 hover:bg-blue-50 sm:aspect-auto sm:w-auto sm:flex-row sm:gap-4 sm:overflow-visible sm:px-4 sm:py-3 sm:text-left"
           >
-            <div className="flex min-w-0 max-w-full flex-col items-center gap-2 sm:flex-row sm:gap-3">
+            <div className="flex min-w-0 max-w-full flex-col items-center gap-1.5 [&>svg]:h-6 [&>svg]:w-6 sm:flex-row sm:gap-3 sm:[&>svg]:h-5 sm:[&>svg]:w-5">
               {action.icon}
-              <span className="max-w-full break-words text-sm font-bold leading-tight sm:truncate sm:text-base sm:leading-normal">
+              <span className="max-w-full break-words text-xs font-bold leading-tight sm:truncate sm:text-base sm:leading-normal">
                 {action.title}
               </span>
             </div>
           </Link>
         ))}
       </ScrollableCardRow>
-    </div>
+    </section>
   );
 }
 

@@ -18,6 +18,10 @@ import useRole from "../hooks/useRole";
 import useFormDraftState, { clearFormDraft } from "../hooks/useFormDraftState";
 
 import type { Club } from "../types/club";
+import {
+  isDoublesTournamentFormat,
+  type TournamentFormat,
+} from "../types/tournament";
 
 import { getClubs } from "../services/supabase/clubService";
 import { notify } from "../services/notificationService";
@@ -88,7 +92,7 @@ const [playerCount, setPlayerCount] =
   useFormDraftState("tournament.new.playerCount", "32");
 
 const [format, setFormat] =
-  useFormDraftState<"knockout" | "double-knockout" | "pools" | "pool-ratings" | "doubles">("tournament.new.format",
+  useFormDraftState<TournamentFormat>("tournament.new.format",
     "pools"
   );
 
@@ -190,7 +194,7 @@ useEffect(() => {
 
     }
 
-    if (format === "doubles") {
+    if (isDoublesTournamentFormat(format)) {
 
       return playerLimitEnabled
         ? Math.ceil(Number(playerCount) / 2)
@@ -282,7 +286,7 @@ useEffect(() => {
 
     if (
       playerLimitEnabled &&
-      format === "doubles" &&
+      isDoublesTournamentFormat(format) &&
       parsedPlayerCount % 2 !== 0
     ) {
       notify.timeout(
@@ -378,12 +382,12 @@ useEffect(() => {
 
       seedByTTR:
         (socialPlay && format !== "pool-ratings") ||
-        format === "doubles"
+        isDoublesTournamentFormat(format)
           ? false
           : seedByTTR,
 
       socialPlay:
-        format === "doubles"
+        isDoublesTournamentFormat(format)
           ? true
           : format === "pool-ratings"
             ? false
@@ -833,6 +837,19 @@ useEffect(() => {
               </label>
 
               <label className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  checked={format === "doubles-double-knockout"}
+                  onChange={() => {
+                    setFormat("doubles-double-knockout");
+                    setSeedByTTR(false);
+                    setSocialPlay(true);
+                  }}
+                />
+                Doubles Double Knockout
+              </label>
+
+              <label className="flex items-center gap-3">
 
                 <input
                   type="radio"
@@ -986,7 +1003,7 @@ useEffect(() => {
                     : socialPlay
                 }
                 disabled={
-                  format === "doubles" ||
+                  isDoublesTournamentFormat(format) ||
                   format === "pool-ratings"
                 }
                 onChange={() =>
@@ -1006,12 +1023,12 @@ useEffect(() => {
                 type="checkbox"
                 checked={
                   (format === "pool-ratings" || !socialPlay) &&
-                  format !== "doubles" &&
+                  !isDoublesTournamentFormat(format) &&
                   seedByTTR
                 }
                 disabled={
                   (socialPlay && format !== "pool-ratings") ||
-                  format === "doubles"
+                  isDoublesTournamentFormat(format)
                 }
                 onChange={() =>
                   setSeedByTTR(
@@ -1071,8 +1088,8 @@ useEffect(() => {
               {ttrLimitEnabled
                 ? "Only players at or below the TTR limit can enter this tournament."
                 : socialPlay
-                ? format === "doubles"
-                  ? "Doubles is a knockout-only format and is never TTR dependent."
+                ? isDoublesTournamentFormat(format)
+                  ? "Doubles knockout formats are never TTR dependent."
                   : "Social play keeps the draw casual and random."
                 : "KiwiTTR events can seed pools and knockouts by rating."}
 
@@ -1313,6 +1330,8 @@ useEffect(() => {
                       ? "Pool Only Ratings"
                     : format === "doubles"
                       ? "Doubles Knockout"
+                      : format === "doubles-double-knockout"
+                        ? "Doubles Double Knockout"
                       : format === "double-knockout"
                         ? "Double Knockout"
                       : "Straight Knockout"}
@@ -1397,7 +1416,7 @@ useEffect(() => {
 
               )}
 
-              {format === "doubles" && (
+              {isDoublesTournamentFormat(format) && (
 
                 <div className="flex items-center justify-between">
 
@@ -1478,19 +1497,19 @@ function SettingSectionHeading({
   information: string;
 }) {
   return (
-    <div className="mb-6 flex items-center gap-2">
-      <h2 className="text-xl font-bold">
+    <div className="relative mb-6 flex min-w-0 items-center gap-2">
+      <h2 className="min-w-0 text-xl font-bold">
         {title}
       </h2>
       <span
-        className="group relative inline-flex"
+        className="group static inline-flex shrink-0 sm:relative"
         tabIndex={0}
         aria-label={`${title}: ${information}`}
       >
         <Info className="h-5 w-5 cursor-help text-blue-700" />
         <span
           role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-72 -translate-x-1/2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-normal leading-relaxed text-white opacity-0 shadow-xl transition group-hover:opacity-100 group-focus:opacity-100"
+          className="pointer-events-none absolute left-0 top-full z-20 mt-2 w-full max-w-72 rounded-xl bg-slate-900 px-3 py-2 text-sm font-normal leading-relaxed text-white opacity-0 shadow-xl transition group-hover:opacity-100 group-focus:opacity-100 sm:left-1/2 sm:w-72 sm:max-w-none sm:-translate-x-1/2"
         >
           {information}
         </span>

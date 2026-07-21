@@ -26,6 +26,10 @@ import { getClubs } from "../services/supabase/clubService";
 import { useTournament } from "../context/TournamentContext";
 
 import type { Player } from "../types/player";
+import {
+  isDoubleKnockoutTournamentFormat,
+  isDoublesTournamentFormat,
+} from "../types/tournament";
 
 import { getPlayers } from "../services/supabase/playerService";
 
@@ -34,6 +38,10 @@ import { generateKnockout } from "../services/tournament/knockoutGenerator";
 import { generateDoubleKnockout } from "../services/tournament/doubleKnockout";
 import PlayerSelector from "../components/shared/PlayerSelector";
 import { notify } from "../services/notificationService";
+import useFormDraftState, {
+  clearFormDraft,
+  hasFormDraft,
+} from "../hooks/useFormDraftState";
 
 function shufflePlayers(
   players: Player[]
@@ -169,9 +177,17 @@ const [players, setPlayers] =
 const [clubs, setClubs] =
   useState<Club[]>([]);
 
+const playerSelectionDraftPrefix =
+  `tournament.player-selection.${tournament.id || "new"}`;
+const selectedPlayersDraftKey =
+  `${playerSelectionDraftPrefix}.selected-players`;
+const doublesPairsDraftKey =
+  `${playerSelectionDraftPrefix}.doubles-pairs`;
+
 const [selectedPlayers, setSelectedPlayers] =
-  useState<Player[]>(
-    tournament.settings.format === "doubles" &&
+  useFormDraftState<Player[]>(
+    selectedPlayersDraftKey,
+    isDoublesTournamentFormat(tournament.settings.format) &&
     tournament.players.some((player) =>
       Boolean(parseDoublesPairId(player.id))
     )
@@ -180,9 +196,9 @@ const [selectedPlayers, setSelectedPlayers] =
   );
 
 const [doublesPairs, setDoublesPairs] =
-  useState<Player[][]>(() => {
+  useFormDraftState<Player[][]>(doublesPairsDraftKey, () => {
     if (
-      tournament.settings.format !== "doubles"
+      !isDoublesTournamentFormat(tournament.settings.format)
     ) {
       return [];
     }
@@ -220,7 +236,7 @@ const [doublesDropTarget, setDoublesDropTarget] =
   useState<string | null>(null);
 
 const isDoubles =
-  tournament.settings.format === "doubles";
+  isDoublesTournamentFormat(tournament.settings.format);
 
 const hasPlayerLimit =
   tournament.settings.playerLimitEnabled;
@@ -258,7 +274,7 @@ const hasValidPlayerTotal =
 
     if (
       tournament.settings.socialPlay ||
-      tournament.settings.format === "doubles"
+      isDoublesTournamentFormat(tournament.settings.format)
     ) {
 
       return `${a.firstName} ${a.lastName}`
@@ -277,7 +293,8 @@ const hasValidPlayerTotal =
   setClubs(clubData);
 
   if (
-    tournament.settings.format === "doubles" &&
+    isDoublesTournamentFormat(tournament.settings.format) &&
+    !hasFormDraft(doublesPairsDraftKey) &&
     tournament.players.some((player) =>
       Boolean(parseDoublesPairId(player.id))
     )
@@ -295,6 +312,9 @@ const hasValidPlayerTotal =
   tournament.settings.format,
   tournament.settings.socialPlay,
   tournament.players,
+  doublesPairsDraftKey,
+  setDoublesPairs,
+  setSelectedPlayers,
 ]);
 
   useEffect(() => {
@@ -951,11 +971,9 @@ function getClubName(
 
     const knockout =
       tournament.settings.format === "doubles"
-        ? generateKnockout(
-            shufflePlayers(
-              pairPlayers
-            )
-          )
+        ? generateKnockout(shufflePlayers(pairPlayers))
+        : tournament.settings.format === "doubles-double-knockout"
+        ? generateDoubleKnockout(shufflePlayers(pairPlayers))
         : tournament.settings.format === "knockout"
         ? generateKnockout(
             orderPlayersForKnockout(
@@ -963,7 +981,7 @@ function getClubName(
               tournament.settings.seedByTTR
             )
           )
-        : tournament.settings.format === "double-knockout"
+        : isDoubleKnockoutTournamentFormat(tournament.settings.format)
         ? generateDoubleKnockout(
             orderPlayersForKnockout(
               selectedPlayers,
@@ -984,6 +1002,8 @@ const savedTournament =
     matches: draw.matches,
     knockout,
   });
+
+clearFormDraft(playerSelectionDraftPrefix);
 
 navigate(
   `/tournaments/${savedTournament.id}/live`

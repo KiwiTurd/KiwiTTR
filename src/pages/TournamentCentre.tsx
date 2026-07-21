@@ -265,6 +265,8 @@ export default function TournamentCentre() {
             ? "pool only ratings round robin"
           : tournament.settings.format === "doubles"
             ? "doubles knockout"
+            : tournament.settings.format === "doubles-double-knockout"
+              ? "doubles double knockout double elimination pairs"
             : tournament.settings.format === "double-knockout"
               ? "double knockout double elimination"
             : "straight knockout";
@@ -537,6 +539,8 @@ export default function TournamentCentre() {
         ? "Pool Only Ratings"
       : tournament.settings.format === "doubles"
         ? "Doubles Knockout"
+        : tournament.settings.format === "doubles-double-knockout"
+          ? "Doubles Double Knockout"
         : tournament.settings.format === "double-knockout"
           ? "Double Knockout"
         : "Straight Knockout";
@@ -1374,6 +1378,9 @@ export default function TournamentCentre() {
               </option>
               <option value="doubles">
                 Doubles Knockout
+              </option>
+              <option value="doubles-double-knockout">
+                Doubles Double Knockout
               </option>
               <option value="pools">
                 Pools to Knockout

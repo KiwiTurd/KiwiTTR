@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronDown,
+  ChevronRight,
   Download,
   Eye,
   Crown,
@@ -42,7 +43,16 @@ import {
   getDoubleKnockoutChampion,
 } from "../services/tournament/doubleKnockout";
 import { calculatePoolStandings } from "../services/tournament/standings";
-import type { Pool, TournamentMatch } from "../types/tournament";
+import type {
+  KnockoutMatch,
+  Pool,
+  TournamentFormat,
+  TournamentMatch,
+} from "../types/tournament";
+import {
+  isDoubleKnockoutTournamentFormat,
+  isDoublesTournamentFormat,
+} from "../types/tournament";
 import type { Player } from "../types/player";
 import {
   finishTournamentAndRecordRatings,
@@ -98,9 +108,10 @@ function playerName(
 }
 
 function tournamentFormatLabel(
-  format: "knockout" | "double-knockout" | "pools" | "pool-ratings" | "doubles"
+  format: TournamentFormat
 ) {
   if (format === "double-knockout") return "Double Knockout";
+  if (format === "doubles-double-knockout") return "Doubles Double Knockout";
   if (format === "pool-ratings") return "Pool Only Ratings";
   if (format === "pools") return "Pools";
   if (format === "doubles") return "Doubles";
@@ -140,7 +151,8 @@ export default function TournamentLive() {
 
   const initialTab =
     tournament.settings.format === "knockout" ||
-    tournament.settings.format === "double-knockout"
+    isDoubleKnockoutTournamentFormat(tournament.settings.format) ||
+    tournament.settings.format === "doubles"
       ? "knockout"
       : "pools";
   const isPoolOnlyRatings =
@@ -235,6 +247,13 @@ export default function TournamentLive() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [additionalMatchType, setAdditionalMatchType] = useState<"singles" | "doubles" | null>(null);
   const [additionalPlayers, setAdditionalPlayers] = useState<Array<Player | null>>([]);
+  const [knockoutRoundSelection, setKnockoutRoundSelection] = useState<{
+    tournamentId: string;
+    currentRound: number;
+    round: number;
+  } | null>(null);
+  const [expandedCompletedKnockoutMatches, setExpandedCompletedKnockoutMatches] =
+    useState<Set<string>>(() => new Set());
 
   const standings = useMemo(
     () =>
@@ -250,6 +269,41 @@ export default function TournamentLive() {
 
   const poolMatchesComplete =
     tournament.matches.filter(match => match.completed).length;
+
+  const knockoutRounds = useMemo(() => {
+    const grouped = new Map<number, KnockoutMatch[]>();
+
+    tournament.knockout.forEach((match) => {
+      grouped.set(match.round, [
+        ...(grouped.get(match.round) ?? []),
+        match,
+      ].sort((a, b) => a.position - b.position));
+    });
+
+    return [...grouped.entries()].sort(
+      ([roundA], [roundB]) => roundA - roundB
+    );
+  }, [tournament.knockout]);
+  const latestKnockoutRound = knockoutRounds.at(-1)?.[0] ?? 0;
+  const currentKnockoutRound =
+    knockoutRounds.find(([, matches]) =>
+      matches.some((match) => !match.completed)
+    )?.[0] ?? latestKnockoutRound;
+  const availableKnockoutRounds = knockoutRounds.filter(
+    ([round]) => round <= currentKnockoutRound
+  );
+  const visibleKnockoutRound =
+    knockoutRoundSelection?.tournamentId === tournament.id &&
+    knockoutRoundSelection.currentRound === currentKnockoutRound &&
+    availableKnockoutRounds.some(
+      ([round]) => round === knockoutRoundSelection.round
+    )
+      ? knockoutRoundSelection.round
+      : currentKnockoutRound;
+  const visibleKnockoutMatches =
+    availableKnockoutRounds.find(
+      ([round]) => round === visibleKnockoutRound
+    )?.[1] ?? [];
 
   const selectedPoolMatch =
     selectedPoolMatchState ??
@@ -465,7 +519,7 @@ export default function TournamentLive() {
     )
   );
 
-  const champion = tournament.settings.format === "double-knockout"
+  const champion = isDoubleKnockoutTournamentFormat(tournament.settings.format)
     ? getDoubleKnockoutChampion(tournament.players, tournament.knockout)
     : finalWasPlayed && championMatch?.winnerId
       ? championMatch.playerOne?.id === championMatch.winnerId
@@ -835,7 +889,7 @@ export default function TournamentLive() {
     }
 
     const updatedKnockout =
-      tournament.settings.format === "double-knockout"
+      isDoubleKnockoutTournamentFormat(tournament.settings.format)
         ? advanceDoubleKnockout(
             tournament.knockout,
             tournament.players,
@@ -981,7 +1035,7 @@ export default function TournamentLive() {
               {new Date(`${tournament.settings.date}T00:00:00`).toLocaleDateString()}
               {tournament.settings.startTime &&
                 ` at ${formatStartTime(tournament.settings.startTime)}`}
-              {" · "}{tournament.players.length} players
+              {" · "}{tournament.players.length} {isDoublesTournamentFormat(tournament.settings.format) ? "pairs" : "players"}
               {" · "}{tournament.settings.socialPlay ? "Social play" : "KiwiTTR event"}
               {" · "}{tournament.settings.seedByTTR ? "Seeded by rating" : "Random draw"}
             </p>
@@ -1006,7 +1060,7 @@ export default function TournamentLive() {
                 {finishing
                   ? "Finishing..."
                   : tournament.settings.socialPlay ||
-                    tournament.settings.format === "doubles"
+                    isDoublesTournamentFormat(tournament.settings.format)
                     ? "Finish Tournament"
                     : "Finish & Update Ratings"}
               </button>
@@ -1392,70 +1446,169 @@ export default function TournamentLive() {
           )}
 
           {activeTab === "knockout" && (
-            <div className="grid gap-5 lg:grid-cols-2">
+            <div className="space-y-4">
               {tournament.knockout.length === 0 ? (
                 <EmptyPanel text="Complete the pool stage to create the knockout draw." />
               ) : (
-                tournament.knockout.map(match => (
-                  <div
-                    key={match.id}
-                    className={`rounded-2xl border bg-white p-4 text-left shadow-sm transition ${
-                      selectedKnockoutMatch?.id === match.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "hover:border-blue-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-sm font-semibold text-slate-500">
-                        {match.bracket === "winners"
+                <>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {availableKnockoutRounds.map(([round, matches]) => {
+                      const complete = matches.every((match) => match.completed);
+                      const label = matches.every(
+                        (match) => match.bracket === "grand-final"
+                      )
+                        ? "Grand Final"
+                        : `Round ${round}`;
+
+                      return (
+                        <button
+                          key={round}
+                          type="button"
+                          onClick={() => setKnockoutRoundSelection({
+                            tournamentId: tournament.id,
+                            currentRound: currentKnockoutRound,
+                            round,
+                          })}
+                          className={`shrink-0 rounded-xl px-4 py-2.5 text-left transition ${
+                            visibleKnockoutRound === round
+                              ? "bg-blue-900 text-white shadow-sm"
+                              : "border bg-white text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="block text-sm font-bold">{label}</span>
+                          <span className={`block text-[11px] font-semibold ${
+                            visibleKnockoutRound === round
+                              ? "text-blue-200"
+                              : "text-slate-500"
+                          }`}>
+                            {complete
+                              ? "Complete"
+                              : `${matches.filter((match) => match.completed).length}/${matches.length} complete`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {visibleKnockoutMatches.map((match) => {
+                      const expanded =
+                        expandedCompletedKnockoutMatches.has(match.id);
+                      const matchLabel = `${
+                        match.bracket === "winners"
                           ? "Winners Bracket"
                           : match.bracket === "losers"
                             ? "Elimination Bracket"
                             : match.bracket === "grand-final"
                               ? "Grand Final"
-                              : `Round ${match.round}`} - Match {match.position}
-                      </div>
-                      <div className="flex items-center gap-2">
-                      <TableAssignment
-                        value={match.table}
-                        disabled={!canInputMatches || match.completed}
-                        onSave={(table) => saveKnockoutTable(match.id, table)}
-                      />
-                      {match.completed && (
-                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                          Complete
-                        </span>
-                      )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (match.playerOne && match.playerTwo && !match.completed) {
-                          if (canInputMatches) selectKnockoutEntry(match);
-                          else setSelectedKnockoutMatchId(match.id);
-                        }
-                      }}
-                      className="mt-3 w-full text-left"
-                    >
-                    <KnockoutPlayer
-                      name={playerName(match.playerOne)}
-                      winner={
-                        match.winnerId === match.playerOne?.id
+                              : `Round ${match.round}`
+                      } - Match ${match.position}`;
+                      const winningPlayer =
+                        match.playerOne?.id === match.winnerId
+                          ? match.playerOne
+                          : match.playerTwo?.id === match.winnerId
+                            ? match.playerTwo
+                            : null;
+
+                      if (match.completed && !expanded) {
+                        return (
+                          <button
+                            key={match.id}
+                            type="button"
+                            aria-expanded="false"
+                            onClick={() => setExpandedCompletedKnockoutMatches(
+                              (current) => new Set(current).add(match.id)
+                            )}
+                            className="flex items-center gap-3 rounded-2xl border bg-slate-50 px-4 py-3 text-left shadow-sm transition hover:border-blue-300 hover:bg-white"
+                          >
+                            <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="truncate text-xs font-semibold text-slate-500">
+                                  {matchLabel}
+                                </span>
+                                <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700">
+                                  Complete
+                                </span>
+                              </div>
+                              <div className="mt-1 truncate font-semibold text-slate-800">
+                                {winningPlayer
+                                  ? `${playerName(winningPlayer)} won`
+                                  : "Result complete"}
+                              </div>
+                              {match.games.length > 0 && (
+                                <div className="mt-0.5 truncate text-xs text-slate-500">
+                                  {match.games.join(" · ")}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
                       }
-                    />
-                    <div className="text-center text-sm text-slate-400">
-                      vs
-                    </div>
-                    <KnockoutPlayer
-                      name={playerName(match.playerTwo)}
-                      winner={
-                        match.winnerId === match.playerTwo?.id
-                      }
-                    />
-                    </button>
+
+                      return (
+                        <div
+                          key={match.id}
+                          className={`rounded-2xl border bg-white p-4 text-left shadow-sm transition ${
+                            selectedKnockoutMatch?.id === match.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-sm font-semibold text-slate-500">
+                              {matchLabel}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <TableAssignment
+                                value={match.table}
+                                disabled={!canInputMatches || match.completed}
+                                onSave={(table) => saveKnockoutTable(match.id, table)}
+                              />
+                              {match.completed && (
+                                <button
+                                  type="button"
+                                  aria-expanded="true"
+                                  onClick={() => setExpandedCompletedKnockoutMatches(
+                                    (current) => {
+                                      const next = new Set(current);
+                                      next.delete(match.id);
+                                      return next;
+                                    }
+                                  )}
+                                  className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"
+                                >
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                  Collapse
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (match.playerOne && match.playerTwo && !match.completed) {
+                                if (canInputMatches) selectKnockoutEntry(match);
+                                else setSelectedKnockoutMatchId(match.id);
+                              }
+                            }}
+                            className="mt-3 w-full text-left"
+                          >
+                            <KnockoutPlayer
+                              name={playerName(match.playerOne)}
+                              winner={match.winnerId === match.playerOne?.id}
+                            />
+                            <div className="text-center text-sm text-slate-400">vs</div>
+                            <KnockoutPlayer
+                              name={playerName(match.playerTwo)}
+                              winner={match.winnerId === match.playerTwo?.id}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))
+                </>
               )}
             </div>
           )}

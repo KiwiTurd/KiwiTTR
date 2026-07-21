@@ -637,6 +637,8 @@ export default function Events() {
         ? "Pool Only Ratings"
         : tournament.settings.format === "doubles"
           ? "Doubles Knockout"
+          : tournament.settings.format === "doubles-double-knockout"
+            ? "Doubles Double Knockout"
           : tournament.settings.format === "double-knockout"
             ? "Double Knockout"
             : "Straight Knockout";

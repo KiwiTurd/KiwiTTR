@@ -25,6 +25,8 @@ function formatLabel(tournament: SavedTournament) {
       return "Doubles Knockout";
     case "double-knockout":
       return "Double Knockout";
+    case "doubles-double-knockout":
+      return "Doubles Double Knockout";
     default:
       return "Straight Knockout";
   }

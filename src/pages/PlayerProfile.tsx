@@ -650,7 +650,10 @@ return (
 
               </h1>
 
-              <div className="mt-2 flex items-center gap-2 text-slate-500">
+              <div
+                data-mobile-subheading-always-visible="true"
+                className="mt-2 flex items-center gap-2 text-slate-500"
+              >
 
                 <Building2 className="hidden h-4 w-4 sm:block" />
 

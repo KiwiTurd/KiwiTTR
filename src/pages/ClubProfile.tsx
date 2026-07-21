@@ -246,7 +246,10 @@ export default function ClubProfile() {
               {club.name}
             </h1>
 
-            <p className="mt-3 max-w-2xl text-lg text-white/80">
+            <p
+              data-mobile-subheading-always-visible="true"
+              className="mt-3 max-w-2xl text-lg text-white/80"
+            >
               {club.address || "Club profile"}
             </p>
           </div>

@@ -20,8 +20,13 @@ import type {
   TournamentMatch,
   TournamentState,
 } from "../../types/tournament";
+import {
+  isDoubleKnockoutTournamentFormat,
+  isDoublesTournamentFormat,
+} from "../../types/tournament";
 import { getNewZealandDate } from "../../utils/newZealandDate";
 import { generatePoolMatches } from "../tournament/matchGenerator";
+import { normalizeDoubleKnockout } from "../tournament/doubleKnockout";
 
 type TournamentRow = {
   id: string;
@@ -288,8 +293,8 @@ function fromTournamentRow(
       ? details.players.filter((player) => isUuid(player.id))
       : details.players,
     knockout:
-      row.format === "double-knockout"
-        ? details.knockout
+      isDoubleKnockoutTournamentFormat(row.format)
+        ? normalizeDoubleKnockout(details.knockout)
         : ensureCompleteKnockoutBracket(
             details.knockout,
             row.id
@@ -1388,7 +1393,7 @@ export async function finishTournamentAndRecordRatings(
     return;
   }
 
-  if (tournament.social_play || tournament.format === "doubles") {
+  if (tournament.social_play || isDoublesTournamentFormat(tournament.format)) {
     await throwIfError(
       await supabase
         .from("tournaments")

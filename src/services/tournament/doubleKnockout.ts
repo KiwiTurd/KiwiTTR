@@ -39,6 +39,23 @@ export function generateDoubleKnockout(players: Player[]): KnockoutMatch[] {
   return createRound(players, 1, "winners");
 }
 
+export function normalizeDoubleKnockout(
+  matches: KnockoutMatch[]
+): KnockoutMatch[] {
+  const decisiveFinal = matches
+    .filter(
+      (match) =>
+        match.bracket === "grand-final" &&
+        match.completed &&
+        Boolean(match.winnerId)
+    )
+    .sort((a, b) => a.round - b.round)[0];
+
+  return decisiveFinal
+    ? matches.filter((match) => match.round <= decisiveFinal.round)
+    : matches;
+}
+
 export function advanceDoubleKnockout(
   bracket: KnockoutMatch[],
   tournamentPlayers: Player[],
@@ -51,6 +68,14 @@ export function advanceDoubleKnockout(
       ? { ...match, winnerId, completed: true, games }
       : match
   );
+
+  const normalized = normalizeDoubleKnockout(completed);
+  if (normalized.length !== completed.length) return normalized;
+
+  const completedMatch = completed.find(
+    (match) => match.id === completedMatchId
+  );
+  if (completedMatch?.bracket === "grand-final") return completed;
 
   if (completed.some((match) => !match.completed)) return completed;
 
@@ -90,8 +115,24 @@ export function getDoubleKnockoutChampion(
   players: Player[],
   matches: KnockoutMatch[]
 ) {
-  if (matches.some((match) => !match.completed)) return null;
-  const losses = doubleKnockoutLosses(matches);
+  const normalized = normalizeDoubleKnockout(matches);
+  const decisiveFinal = normalized
+    .filter(
+      (match) =>
+        match.bracket === "grand-final" &&
+        match.completed &&
+        Boolean(match.winnerId)
+    )
+    .sort((a, b) => b.round - a.round)[0];
+
+  if (decisiveFinal?.winnerId) {
+    return decisiveFinal.playerOne?.id === decisiveFinal.winnerId
+      ? decisiveFinal.playerOne
+      : decisiveFinal.playerTwo;
+  }
+
+  if (normalized.some((match) => !match.completed)) return null;
+  const losses = doubleKnockoutLosses(normalized);
   const active = players.filter((player) => (losses.get(player.id) ?? 0) < 2);
-  return active.length === 1 && matches.length > 0 ? active[0] : null;
+  return active.length === 1 && normalized.length > 0 ? active[0] : null;
 }
