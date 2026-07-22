@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 
 import { useTournament } from "../context/TournamentContext";
 import ExpandableDescription from "../components/shared/ExpandableDescription";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
 import { getNewZealandDate } from "../utils/newZealandDate";
@@ -69,26 +70,20 @@ export default function ClubEvents() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
-        <div className="club-events-page-header-copy">
-          <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-            Club Events
-          </h1>
-          <p className="mt-3 text-lg text-slate-500">
-            View club nights, round robins and upcoming events for your club.
-          </p>
-        </div>
-
-        {canCreate && (
+      <SlateImagePageHeader
+        pageKey="club-events"
+        title="Club Events"
+        subtitle="View club nights, round robins and upcoming events for your club."
+        actions={canCreate ? (
           <Link
             to="/club-events/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
+            className="inline-flex items-center gap-2 self-start rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 shadow-sm transition hover:bg-blue-50 md:self-auto"
           >
             <Plus className="h-5 w-5" />
             Create Event
           </Link>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       <section className="space-y-4">
         <div className="flex flex-wrap gap-2" aria-label="Club event filters">

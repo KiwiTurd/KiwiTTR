@@ -10,7 +10,9 @@ import {
   Building2,
   CalendarDays,
   Pencil,
+  TrendingUp,
   Trophy,
+  Users,
 } from "lucide-react";
 
 import type { Club } from "../types/club";
@@ -217,7 +219,7 @@ export default function ClubProfile() {
     <div className="-mx-4 -mt-4 space-y-8 md:-mx-8 md:-mt-8">
 
       <div
-        className="relative flex min-h-80 overflow-hidden border-b border-slate-200 bg-slate-900 text-white shadow-sm"
+        className="relative flex min-h-64 overflow-hidden border-b border-slate-200 bg-slate-900 text-white shadow-sm md:min-h-80"
         style={{
           backgroundImage:
             club.headerImageUrl
@@ -235,14 +237,14 @@ export default function ClubProfile() {
             ← Back to Clubs
           </Link>
 
-        <div className="mt-auto flex w-full flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mt-auto flex w-full flex-col gap-4 md:gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="club-profile-header">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold backdrop-blur">
               <Building2 className="h-4 w-4" />
               {club.shortName || "Club"}
             </div>
 
-            <h1 className="mt-4 max-w-4xl text-5xl font-normal tracking-tight text-white">
+            <h1 className="mt-3 max-w-4xl text-4xl font-normal tracking-tight text-white md:mt-4 md:text-5xl">
               {club.name}
             </h1>
 
@@ -270,83 +272,71 @@ export default function ClubProfile() {
 
       <div className="mx-auto max-w-7xl space-y-8 px-4 md:px-8">
 
-      {club.notice && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-800">
-            Club Notice
+      <section className="grid gap-6 md:grid-cols-3">
+
+        <div>
+
+          <p className="text-sm text-slate-500">
+            Phone
           </p>
-          <p className="mt-2 whitespace-pre-line text-slate-700">
-            {club.notice}
+
+          <p className="font-semibold">
+            {club.phone || "-"}
           </p>
-        </div>
-      )}
-
-      <Card className="p-8">
-
-        <div className="grid md:grid-cols-3 gap-6">
-
-          <div>
-
-            <p className="text-sm text-slate-500">
-              Phone
-            </p>
-
-            <p className="font-semibold">
-              {club.phone || "-"}
-            </p>
-
-          </div>
-
-          <div>
-
-            <p className="text-sm text-slate-500">
-              Email
-            </p>
-
-            <p className="font-semibold">
-              {club.email || "-"}
-            </p>
-
-          </div>
-
-          <div>
-
-            <p className="text-sm text-slate-500">
-              Website
-            </p>
-
-            {club.website ? (
-              <a
-                href={externalUrl(club.website)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-700 hover:underline"
-              >
-                {club.website}
-              </a>
-            ) : (
-              "-"
-            )}
-
-          </div>
 
         </div>
 
-      </Card>
+        <div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+          <p className="text-sm text-slate-500">
+            Email
+          </p>
+
+          <p className="font-semibold">
+            {club.email || "-"}
+          </p>
+
+        </div>
+
+        <div>
+
+          <p className="text-sm text-slate-500">
+            Website
+          </p>
+
+          {club.website ? (
+            <a
+              href={externalUrl(club.website)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-700 hover:underline"
+            >
+              {club.website}
+            </a>
+          ) : (
+            "-"
+          )}
+
+        </div>
+
+      </section>
+
+      <div className="grid gap-3 md:grid-cols-3 md:gap-0 md:border-y md:border-slate-200 md:py-10 md:[&>*]:border-r md:[&>*]:border-slate-200 md:[&>*:last-child]:border-r-0">
 
         <ClubStatCard
+          icon={<Users className="h-9 w-9 text-blue-700" />}
           label="Players"
           value={rankings.length}
         />
 
         <ClubStatCard
+          icon={<TrendingUp className="h-9 w-9 text-amber-500" />}
           label="Average Rating"
           value={averageRating}
         />
 
         <ClubStatCard
+          icon={<Trophy className="h-9 w-9 text-indigo-600" />}
           label="Top Player"
           value={
             topPlayer
@@ -357,7 +347,22 @@ export default function ClubProfile() {
 
       </div>
 
-      <Card className="p-0 overflow-hidden">
+      <div className="grid gap-6 lg:grid-cols-3">
+
+      {club.notice && (
+        <aside className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm lg:col-span-1">
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-800">
+            Club Notice
+          </p>
+          <p className="mt-2 whitespace-pre-line text-slate-700">
+            {club.notice}
+          </p>
+        </aside>
+      )}
+
+      <Card className={`overflow-hidden p-0 ${
+        club.notice ? "lg:col-span-2" : "lg:col-span-3"
+      }`}>
 
         <div className="flex items-center justify-between border-b px-5 py-4">
 
@@ -397,6 +402,8 @@ export default function ClubProfile() {
         )}
 
       </Card>
+
+      </div>
 
       <Card className="overflow-hidden p-0">
 
@@ -509,20 +516,25 @@ export default function ClubProfile() {
 }
 
 function ClubStatCard({
+  icon,
   label,
   value,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
-      <p className="text-xs font-semibold uppercase text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 truncate text-lg font-bold text-slate-950">
-        {value}
-      </p>
+    <div className="flex items-center gap-4 rounded-xl border bg-white px-4 py-3 shadow-sm md:justify-center md:rounded-none md:border-0 md:bg-transparent md:px-6 md:py-0 md:shadow-none">
+      {icon}
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {label}
+        </p>
+        <p className="mt-1 truncate text-2xl font-bold text-slate-950">
+          {value}
+        </p>
+      </div>
     </div>
   );
 }

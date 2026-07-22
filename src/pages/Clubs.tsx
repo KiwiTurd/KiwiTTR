@@ -30,6 +30,7 @@ import { getPlayers } from "../services/supabase/playerService";
 import useRole from "../hooks/useRole";
 import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 function externalUrl(url: string) {
   return /^https?:\/\//i.test(url)
@@ -169,34 +170,23 @@ export default function Clubs() {
   }, [clubCards, search]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-10 overflow-x-hidden">
+    <div className="mx-auto w-full max-w-7xl space-y-10">
 
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
-
-        <div className="clubs-page-header-copy">
-
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Clubs
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-          Browse clubs, contacts and active player communities.
-        </p>
-
-        </div>
-
-        {isAdmin && (
+      <SlateImagePageHeader
+        pageKey="clubs"
+        title="Clubs"
+        subtitle="Browse clubs, contacts and active player communities."
+        actions={isAdmin ? (
           <button
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100"
             onClick={() => setCreateOpen((current) => !current)}
             type="button"
           >
             <Plus className={`h-5 w-5 transition-transform duration-300 ${createOpen ? "rotate-45" : ""}`} />
             {createOpen ? "Close" : "Create Club"}
           </button>
-        )}
-
-      </div>
+        ) : undefined}
+      />
 
       {isAdmin && (
 

@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
 import {
-  Calculator,
   Trophy,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
 
 import PlayerSelector from "../components/shared/PlayerSelector";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 import {
   calculateMatch,
@@ -63,32 +63,7 @@ export default function Simulator() {
 
     <div className="max-w-5xl mx-auto space-y-8">
 
-      {/* Header */}
-
-      <div>
-
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-
-          <Calculator className="h-4 w-4" />
-
-          Tools
-
-        </div>
-
-        <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
-
-          TTR Calculator
-
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500 max-w-2xl">
-
-          Predict rating changes before recording a match. Simply select the
-          winner and loser to see the expected TTR movement.
-
-        </p>
-
-      </div>
+      <SlateImagePageHeader pageKey="simulator" title="TTR Calculator" subtitle="Predict rating changes before recording a match. Select the winner and loser to see the expected TTR movement." />
 
       {/* Player Selection */}
 

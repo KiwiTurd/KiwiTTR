@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import PlayerSelector from "../components/shared/PlayerSelector";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import { useTournament } from "../context/TournamentContext";
 import useFormDraftState, { clearFormDraft } from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
@@ -170,13 +171,12 @@ export default function ClubRoundRobinPlayers() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Link to="/club-events/round-robin/new" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700"><ArrowLeft className="h-4 w-4" />Round Robin Builder</Link>
-          <h1 className="mt-5 text-5xl font-normal tracking-tight text-slate-900">Set Up Round Robins</h1>
-          <p className="mt-3 text-lg text-slate-500">Add players to each group, then drag players between groups to rebalance them.</p>
-        </div>
-      </div>
+      <SlateImagePageHeader
+        pageKey="club-round-robin-players"
+        title="Set Up Round Robins"
+        subtitle="Add players to each group, then drag players between groups to rebalance them."
+        actions={<Link to="/club-events/round-robin/new" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950"><ArrowLeft className="h-4 w-4" />Round Robin Builder</Link>}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
         {groups.map((group, groupIndex) => (

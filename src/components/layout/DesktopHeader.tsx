@@ -59,6 +59,67 @@ function TableTennisBatIcon({
   );
 }
 
+function colourLuminance(value: string) {
+  const perceptualColour = value.match(
+    /okl(?:ch|ab)\(\s*([\d.]+)(%?)(?:[^/]*)(?:\/\s*([\d.]+)(%?))?\s*\)/i
+  );
+
+  if (perceptualColour) {
+    const lightness = Number(perceptualColour[1]) /
+      (perceptualColour[2] === "%" ? 100 : 1);
+    const alpha = perceptualColour[3]
+      ? Number(perceptualColour[3]) /
+        (perceptualColour[4] === "%" ? 100 : 1)
+      : 1;
+
+    return alpha < 0.15 ? null : lightness;
+  }
+
+  const rgbColour = value.match(/rgba?\(([^)]+)\)/i);
+
+  if (!rgbColour) return null;
+
+  const channels = rgbColour[1].match(/[\d.]+/g)?.map(Number);
+
+  if (!channels || channels.length < 3) return null;
+
+  const [red, green, blue, alpha = 1] = channels;
+
+  if (alpha < 0.15) return null;
+
+  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+}
+
+function elementIsDark(element: HTMLElement, minimumSurfaceWidth: number) {
+  let current: HTMLElement | null = element;
+
+  while (current) {
+    const style = window.getComputedStyle(current);
+    const rect = current.getBoundingClientRect();
+    const isLargeSurface =
+      rect.width >= minimumSurfaceWidth && rect.height >= 72;
+    const imageColours = style.backgroundImage.match(/rgba?\([^)]+\)/g) ?? [];
+    const imageLuminances = imageColours
+      .map(colourLuminance)
+      .filter((value): value is number => value !== null);
+
+    if (imageLuminances.length > 0 && isLargeSurface) {
+      return imageLuminances.reduce((total, value) => total + value, 0) /
+        imageLuminances.length < 0.48;
+    }
+
+    const backgroundLuminance = colourLuminance(style.backgroundColor);
+
+    if (backgroundLuminance !== null && isLargeSurface) {
+      return backgroundLuminance < 0.48;
+    }
+
+    current = current.parentElement;
+  }
+
+  return false;
+}
+
 export default function DesktopHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -68,6 +129,7 @@ export default function DesktopHeader() {
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const [displayMenu, setDisplayMenu] = useState<MenuName>("competition");
   const [accountOpen, setAccountOpen] = useState(false);
+  const [overDarkContent, setOverDarkContent] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -100,6 +162,48 @@ export default function DesktopHeader() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    const scrollContainer = header?.parentElement;
+
+    if (!header || !scrollContainer) return;
+
+    let frame = 0;
+
+    const updateContrast = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const rect = header.getBoundingClientRect();
+        const sampleY = rect.top + Math.min(36, rect.height / 2);
+        const samplePoints = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+        const minimumSurfaceWidth = rect.width * 0.55;
+        const darkSamples = samplePoints.filter((position) => {
+          const sampleX = rect.left + rect.width * position;
+          const element = document
+            .elementsFromPoint(sampleX, sampleY)
+            .find((candidate) =>
+              candidate instanceof HTMLElement && !header.contains(candidate)
+            );
+
+          return element instanceof HTMLElement &&
+            elementIsDark(element, minimumSurfaceWidth);
+        }).length;
+
+        setOverDarkContent(darkSamples >= 6);
+      });
+    };
+
+    updateContrast();
+    scrollContainer.addEventListener("scroll", updateContrast, { passive: true });
+    window.addEventListener("resize", updateContrast);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      scrollContainer.removeEventListener("scroll", updateContrast);
+      window.removeEventListener("resize", updateContrast);
+    };
+  }, [pathname]);
 
   const competitionLinks: HeaderLink[] = [
     { to: "/rankings", label: "Rankings", description: "National player standings", icon: <Podium className="h-5 w-5" />, colour: "bg-amber-100 text-amber-700" },
@@ -147,25 +251,36 @@ export default function DesktopHeader() {
     navigate("/login");
   }
 
+  const inactiveNavigationClass = overDarkContent
+    ? "text-white hover:bg-white/15 hover:text-white"
+    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950";
+
   return (
-    <header ref={headerRef} className="relative z-50 hidden shrink-0 border-b border-slate-200 bg-white shadow-sm md:block">
-      <div className="mx-auto flex h-18 max-w-[1800px] items-center gap-5 px-6 lg:px-8">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-50 hidden shrink-0 border-b border-white/65 bg-white/20 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl backdrop-saturate-150 md:block"
+    >
+      <div className={`mx-auto flex h-18 max-w-[1800px] items-center gap-5 px-6 transition-colors duration-200 lg:px-8 ${
+        overDarkContent ? "desktop-header-over-dark" : ""
+      }`}>
         <Link aria-label="KiwiTTR home" className="shrink-0 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-100" to="/">
-          <FullLogo className="h-9 w-auto" />
+          <FullLogo className={`h-9 w-auto transition-colors duration-200 ${
+            overDarkContent ? "[&_path]:fill-white" : "[&_path]:fill-black"
+          }`} />
         </Link>
 
         {!session && (
-          <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/about" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/about">
+          <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/about" ? "bg-blue-900 text-white" : inactiveNavigationClass}`} to="/about">
             <TableTennisBatIcon className="h-4 w-4 shrink-0" /> About Us
           </Link>
         )}
 
-        <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/dashboard" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/dashboard">
+        <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/dashboard" ? "bg-blue-900 text-white" : inactiveNavigationClass}`} to="/dashboard">
           <LayoutDashboard className="h-4 w-4 shrink-0" /> Dashboard
         </Link>
 
         {session && (
-          <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/my-profile" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`} to="/my-profile">
+          <Link className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === "/my-profile" ? "bg-blue-900 text-white" : inactiveNavigationClass}`} to="/my-profile">
             <User className="h-4 w-4 shrink-0" /> My Profile
           </Link>
         )}
@@ -179,7 +294,7 @@ export default function DesktopHeader() {
             return (
               <button
                 aria-expanded={isOpen}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition [&>svg]:shrink-0 ${isOpen ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition [&>svg]:shrink-0 ${isOpen ? "bg-slate-900 text-white" : inactiveNavigationClass}`}
                 key={name}
                 onClick={() => {
                   if (!isOpen) setDisplayMenu(name);
@@ -208,7 +323,7 @@ export default function DesktopHeader() {
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <Link className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" to="/login"><LogIn className="h-4 w-4" /> Sign in</Link>
+              <Link className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ${inactiveNavigationClass}`} to="/login"><LogIn className="h-4 w-4" /> Sign in</Link>
               <Link className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800" to="/register"><UserPlus className="h-4 w-4" /> Register</Link>
             </div>
           )}
@@ -230,7 +345,7 @@ export default function DesktopHeader() {
 
       <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${openMenu ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"}`}>
         <div className="overflow-hidden">
-          <div className="flex h-56 items-center border-t border-slate-100 bg-slate-50/95 px-8 lg:h-36 xl:h-24">
+          <div className="flex h-56 items-center border-t border-white/35 bg-white/20 px-8 shadow-[inset_0_12px_18px_-16px_rgba(15,23,42,0.28),0_18px_36px_rgba(15,23,42,0.08)] backdrop-blur-lg backdrop-saturate-125 lg:h-36 xl:h-24">
             <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-5">
                 {menus[displayMenu].links.map((item) => (
                   <Link

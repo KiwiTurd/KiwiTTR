@@ -34,6 +34,7 @@ export const HowWeCalculate = lazy(() => import("./pages/HowWeCalculate"));
 export const SeoMetadataSettings = lazy(() => import("./pages/SeoMetadataSettings"));
 export const NoticeSettings = lazy(() => import("./pages/NoticeSettings"));
 export const HomepageSettingsPage = lazy(() => import("./pages/HomepageSettings"));
+export const PageHeaderSettingsPage = lazy(() => import("./pages/PageHeaderSettings"));
 export const Settings = lazy(() => import("./pages/Settings"));
 export const UserManagement = lazy(() => import("./pages/UserManagement"));
 export const ClubSettings = lazy(() => import("./pages/ClubSettings"));

@@ -10,6 +10,7 @@ import { getClubs } from "../services/supabase/clubService";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import PlayerSelector from "../components/shared/PlayerSelector";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 export default function Rankings() {
 
@@ -157,23 +158,7 @@ return (
 
     <div className="max-w-7xl mx-auto space-y-8">
 
-      {/* Header */}
-
-      <div>
-
-        <h1 className="text-5xl font-normal tracking-tight text-slate-900">
-
-          New Zealand Rankings
-
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-
-          Live KiwiTTR rankings across New Zealand.
-
-        </p>
-
-      </div>
+      <SlateImagePageHeader pageKey="rankings" title="New Zealand Rankings" subtitle="Live KiwiTTR rankings across New Zealand." />
 
       {/* Filters */}
 

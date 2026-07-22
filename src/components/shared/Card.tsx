@@ -11,7 +11,7 @@ export default function Card({
 }: Props) {
   return (
     <div
-      className={`bg-white rounded-xl shadow ${className}`}
+      className={`kiwittr-solid-card bg-white rounded-xl shadow ${className}`}
     >
       {children}
     </div>

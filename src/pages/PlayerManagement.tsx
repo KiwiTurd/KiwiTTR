@@ -31,6 +31,7 @@ import useFormDraftState from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import PlayerSelector from "../components/shared/PlayerSelector";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 type InitialRatingMode =
   | "1200"
@@ -442,32 +443,21 @@ export default function PlayerManagement() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
 
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
-
-        <div className="players-page-header-copy">
-
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Players
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-          Manage player details and open player profiles.
-        </p>
-
-        </div>
-
-        {canCreatePlayer && (
+      <SlateImagePageHeader
+        pageKey="players"
+        title="Players"
+        subtitle="Manage player details and open player profiles."
+        actions={canCreatePlayer ? (
           <button
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100"
             onClick={() => setCreatorOpen((current) => !current)}
             type="button"
           >
             <Plus className={`h-5 w-5 transition-transform duration-300 ${creatorOpen ? "rotate-45" : ""}`} />
             {creatorOpen ? "Close" : "Add Player"}
           </button>
-        )}
-
-      </div>
+        ) : undefined}
+      />
 
       {canCreatePlayer && (
 

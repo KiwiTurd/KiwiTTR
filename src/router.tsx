@@ -21,6 +21,7 @@ import {
   FlappyBat,
   Home,
   HomepageSettingsPage,
+  PageHeaderSettingsPage,
   HowWeCalculate,
   Login,
   Matches,
@@ -390,6 +391,15 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <HomepageSettingsPage />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "settings/pages",
+        element: (
+          <AdminRoute>
+            <PageHeaderSettingsPage />
           </AdminRoute>
         ),
       },

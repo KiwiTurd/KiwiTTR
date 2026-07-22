@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import MatchForm from "../components/matches/MatchForm";
 import MatchHistory from "../components/matches/MatchHistory";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import { useTournament } from "../context/TournamentContext";
 import useRole from "../hooks/useRole";
 import { notify } from "../services/notificationService";
@@ -117,14 +118,7 @@ export default function Matches() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div>
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Match Input
-        </h1>
-        <p className="mt-3 text-lg text-slate-500">
-          Choose the type of match or event you want to manage.
-        </p>
-      </div>
+      <SlateImagePageHeader pageKey="matches" title="Match Input" subtitle="Choose the type of match or event you want to manage." />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {INPUT_OPTIONS.map(({ id, label, icon: Icon }) => {

@@ -27,6 +27,7 @@ import useRole from "../hooks/useRole";
 import TopRatedPlayersCard from "../components/dashboard/TopRatedPlayersCard";
 import FullLogo from "../assets/KIWITTR - Logo Full.svg?react";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import UpcomingTournamentAccordion from "../components/tournaments/UpcomingTournamentAccordion";
 
 import type { Club } from "../types/club";
@@ -236,25 +237,16 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-7xl space-y-10">
 
-        <div>
-
-          <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-
-            Dashboard
-
-          </h1>
-
-          <p className="mt-3 text-lg text-slate-500">
-
-            Welcome back. Here's what's happening today.
-
-          </p>
-
-        </div>
+        <SlateImagePageHeader
+          pageKey="dashboard"
+          title="Dashboard"
+          subtitle="Welcome back. Here's what's happening today."
+        />
 
         <ScrollableCardRow
           itemCount={4}
-          desktopGridClassName="sm:grid-cols-2 sm:gap-4 xl:grid-cols-4"
+          desktopGridClassName="sm:grid-cols-2 xl:grid-cols-4"
+          desktopStatStyle
         >
           <StatCard
             icon={<Users className="h-10 w-10 text-blue-700 sm:h-8 sm:w-8" />}
@@ -395,21 +387,11 @@ export default function Dashboard() {
 
     <div className="mx-auto max-w-7xl space-y-10">
 
-      <div>
-
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-
-          Dashboard
-
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-
-          Your player snapshot and club activity.
-
-        </p>
-
-      </div>
+      <SlateImagePageHeader
+        pageKey="dashboard"
+        title="Dashboard"
+        subtitle="Your player snapshot and club activity."
+      />
 
       {!player && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
@@ -419,12 +401,13 @@ export default function Dashboard() {
 
       <ScrollableCardRow
         itemCount={4}
-        desktopGridClassName="sm:grid-cols-2 sm:gap-6 xl:grid-cols-4"
+        desktopGridClassName="sm:grid-cols-2 xl:grid-cols-4"
+        desktopStatStyle
       >
 
         <StatCard
           icon={<User className="h-10 w-10 text-blue-700 sm:h-8 sm:w-8" />}
-          label="Rating"
+          label="Current Rating"
           value={
             player
               ? player.rating
@@ -625,10 +608,12 @@ function ScrollableCardRow({
   children,
   itemCount,
   desktopGridClassName,
+  desktopStatStyle = false,
 }: {
   children: React.ReactNode;
   itemCount: number;
   desktopGridClassName: string;
+  desktopStatStyle?: boolean;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const [indicator, setIndicator] = useState({
@@ -675,7 +660,11 @@ function ScrollableCardRow({
       <div
         ref={rowRef}
         onScroll={updateIndicator}
-        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:overflow-visible sm:pb-0 ${desktopGridClassName}`}
+        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:overflow-visible ${
+          desktopStatStyle
+            ? "sm:gap-0 sm:border-y sm:border-slate-200 sm:py-10 sm:[&>*]:border-r sm:[&>*]:border-slate-200 sm:[&>*:nth-child(2n)]:border-r-0 xl:[&>*:nth-child(2n)]:border-r xl:[&>*:last-child]:border-r-0"
+            : "sm:pb-0"
+        } ${desktopGridClassName}`}
       >
         {children}
       </div>
@@ -702,7 +691,6 @@ function StatCard({
   icon,
   label,
   value,
-  caption,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -710,19 +698,16 @@ function StatCard({
   caption: string;
 }) {
   return (
-    <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:block sm:aspect-auto sm:w-auto sm:p-6 sm:text-left">
-      <div className="contents sm:flex sm:items-center sm:justify-between">
-        {icon}
-        <span className="order-3 mt-1 text-sm font-semibold text-slate-500 sm:order-none sm:mt-0 sm:text-xs sm:uppercase sm:tracking-wide sm:text-slate-400">
+    <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:gap-4 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-6 sm:py-0 sm:text-left sm:shadow-none sm:[&>svg]:h-9 sm:[&>svg]:w-9">
+      {icon}
+      <div>
+        <span className="text-sm font-semibold text-slate-500 sm:text-xs sm:uppercase sm:tracking-wide">
           {label}
         </span>
+        <h2 className="mt-1 text-3xl font-bold">
+          {value}
+        </h2>
       </div>
-      <h2 className="order-2 mt-3 text-3xl font-black sm:mt-6 sm:text-4xl">
-        {value}
-      </h2>
-      <p className="hidden sm:mt-2 sm:block sm:text-base sm:leading-normal sm:text-slate-500">
-        {caption}
-      </p>
     </div>
   );
 }

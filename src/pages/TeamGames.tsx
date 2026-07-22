@@ -27,6 +27,7 @@ import {
 } from "../services/teams/teamEngine";
 import type { TeamGameFormat } from "../services/teams/teamEngine";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import { formatStartTime } from "../utils/tournamentTime";
 import { getNewZealandDate } from "../utils/newZealandDate";
 
@@ -219,25 +220,16 @@ export default function TeamGames() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
 
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
-        <div className="team-games-page-header-copy">
-          <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-            Team Games
-          </h1>
-
-          <p className="mt-3 text-lg text-slate-500">
-            View team game formats, live team fixtures and upcoming team events.
-          </p>
-        </div>
-
-        <Link
-          to="/team-games/new"
-          className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
-        >
-          <Plus className="h-5 w-5" />
-          Create Event
-        </Link>
-      </div>
+      <SlateImagePageHeader
+        pageKey="team-games"
+        title="Team Games"
+        subtitle="View team game formats, live team fixtures and upcoming team events."
+        actions={(
+          <Link to="/team-games/new" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">
+            <Plus className="h-5 w-5" /> Create Event
+          </Link>
+        )}
+      />
 
       <section className="space-y-8">
         <div

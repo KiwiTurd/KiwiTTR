@@ -112,6 +112,29 @@
   animation: kiwittr-loading-shadow 2.8s ease-in-out infinite;
 }
 
+.kiwittr-standard-page .font-black {
+  font-weight: 700;
+}
+
+.kiwittr-standard-page-header > :first-child > :first-child:has(> h1) {
+  border-bottom: 1px solid var(--color-slate-200);
+  padding-bottom: 1.5rem;
+}
+
+.desktop-header-over-dark input {
+  border-color: rgb(255 255 255 / 0.45);
+  background: rgb(255 255 255 / 0.12);
+  color: white;
+}
+
+.desktop-header-over-dark input::placeholder {
+  color: rgb(255 255 255 / 0.75);
+}
+
+.kiwittr-solid-card {
+  background-color: #fff !important;
+}
+
 .tournament-confetti {
   animation-name: tournament-confetti-fall;
   animation-timing-function: cubic-bezier(0.2, 0.7, 0.35, 1);
@@ -165,6 +188,15 @@
     font-size: 0.875rem;
     font-weight: 700;
     line-height: 1;
+  }
+
+  .mobile-hide-page-subheadings .slate-image-page-header-copy > div:has(> h1 + [data-mobile-page-subheading="true"]) {
+    position: static;
+  }
+
+  .mobile-hide-page-subheadings .slate-image-page-header-copy [data-mobile-page-subheading="true"] {
+    top: 1rem;
+    right: 1rem;
   }
 
   .mobile-hide-page-subheadings [data-mobile-page-subheading="true"]:focus-visible {
@@ -313,6 +345,10 @@
   }
 
   main .club-events-page-header-copy:has(> h1) {
+    @apply border-b-0 pb-0;
+  }
+
+  main .slate-image-page-header-copy > div:has(> h1) {
     @apply border-b-0 pb-0;
   }
 }

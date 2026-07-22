@@ -45,6 +45,7 @@ export default function Home() {
   const { session, loading: authLoading } = useAuth();
   const [hero, setHero] = useState<HomepageSettings | null>(null);
   const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const [focusedBenefit, setFocusedBenefit] = useState<number | null>(null);
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
   useEffect(() => {
@@ -250,16 +251,41 @@ export default function Home() {
           <p className="text-sm font-semibold uppercase tracking-widest text-blue-700">Built for the whole community</p>
           <h2 className="mt-3 text-4xl font-normal tracking-tight text-slate-900">Useful for players. Practical for clubs.</h2>
         </div>
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {benefits.map(({ icon: Icon, title, description }) => (
-            <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" key={title}>
+        <div
+          className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4"
+          onMouseLeave={() => setFocusedBenefit(null)}
+        >
+          {benefits.map(({ icon: Icon, title, description }, index) => {
+            const focused = focusedBenefit === index;
+            const softened = focusedBenefit !== null && !focused;
+
+            return (
+            <article
+              className={`flex flex-col rounded-2xl border bg-white p-6 outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out ${
+                focused
+                  ? "relative z-10 scale-[1.025] border-blue-500 shadow-xl ring-1 ring-blue-200"
+                  : softened
+                    ? "scale-[0.985] border-slate-200 opacity-40 blur-[1.5px] grayscale-[0.15]"
+                    : "border-slate-200 shadow-sm hover:border-blue-300"
+              }`}
+              key={title}
+              tabIndex={0}
+              onMouseEnter={() => setFocusedBenefit(index)}
+              onFocus={() => setFocusedBenefit(index)}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                  setFocusedBenefit(null);
+                }
+              }}
+            >
               <div className="flex h-8 items-start">
                 <Icon className="h-6 w-6 text-blue-700" />
               </div>
               <h3 className="mt-3 min-h-14 text-lg font-bold text-slate-900">{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
             </article>
-          ))}
+            );
+          })}
         </div>
       </section>
 

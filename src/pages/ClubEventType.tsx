@@ -10,6 +10,7 @@ import { useTournament } from "../context/TournamentContext";
 import { clearFormDraft } from "../hooks/useFormDraftState";
 import useRole from "../hooks/useRole";
 import { UnlinkedClubMessage } from "./MyClub";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 const builders = [
   {
@@ -41,21 +42,12 @@ export default function ClubEventType() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div>
-        <Link to="/club-events" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
-          <ArrowLeft className="h-4 w-4" />
-          Club Events
-        </Link>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-emerald-700">
-          Create Club Event
-        </p>
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Club Event Type
-        </h1>
-        <p className="mt-3 text-lg text-slate-500">
-          Choose how you want to organise the club event.
-        </p>
-      </div>
+      <SlateImagePageHeader
+        pageKey="club-event-type"
+        title="Club Event Type"
+        subtitle="Choose how you want to organise the club event."
+        actions={<Link to="/club-events" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950"><ArrowLeft className="h-4 w-4" />Club Events</Link>}
+      />
 
       <section className="grid gap-4 lg:grid-cols-2">
         {builders.map(({ name, description, icon: Icon, href }) => {

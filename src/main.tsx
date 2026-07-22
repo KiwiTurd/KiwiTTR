@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { TournamentProvider } from "./context/TournamentContext";
+import { PageHeaderSettingsProvider } from "./context/PageHeaderSettingsContext";
 import LoadingScreen from "./components/shared/LoadingScreen";
 
 createRoot(document.getElementById("root")!).render(
@@ -25,6 +26,8 @@ createRoot(document.getElementById("root")!).render(
 
           <SidebarProvider>
 
+            <PageHeaderSettingsProvider>
+
             <Suspense fallback={<LoadingScreen label="Loading page..." />}>
               <RouterProvider router={router} />
             </Suspense>
@@ -36,6 +39,8 @@ createRoot(document.getElementById("root")!).render(
               expand
               duration={4000}
             />
+
+            </PageHeaderSettingsProvider>
 
           </SidebarProvider>
 

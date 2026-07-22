@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Bell, Megaphone, Plus, Trash2 } from "lucide-react";
+import { Bell, Plus, Trash2 } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 
 import { createNotice, deleteNotice, getNotices, setNoticeActive } from "../services/supabase/noticeService";
@@ -7,6 +7,7 @@ import { notify } from "../services/notificationService";
 import type { Notice } from "../types/notice";
 import type { AppLayoutOutletContext } from "./AppLayout";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 export default function NoticeSettings() {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -87,13 +88,7 @@ export default function NoticeSettings() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <header>
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-          <Megaphone className="h-4 w-4" /> Communications
-        </div>
-        <h1 className="mt-4 text-4xl font-normal tracking-tight text-slate-900 md:text-5xl">Notices and News</h1>
-        <p className="mt-3 text-lg text-slate-500">Publish a compact announcement to everyone visiting the KiwiTTR dashboard.</p>
-      </header>
+      <SlateImagePageHeader pageKey="notice-settings" title="Notices and News" subtitle="Publish a compact announcement to everyone visiting the KiwiTTR dashboard." />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-bold">New notice</h2>

@@ -26,6 +26,7 @@ import useRole from "../hooks/useRole";
 import useFormDraftState, { hasFormDraft } from "../hooks/useFormDraftState";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 function readImageFile(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -216,17 +217,13 @@ export default function ClubSettings() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
 
-      <div>
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Club Settings
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-          {editorOpen
-            ? "Update club information, notices and the public header image."
-            : "Select a club to open its settings and public information."}
-        </p>
-      </div>
+      <SlateImagePageHeader
+        pageKey="club-settings"
+        title="Club Settings"
+        subtitle={editorOpen
+          ? "Update club information, notices and the public header image."
+          : "Select a club to open its settings and public information."}
+      />
 
       {!editorOpen ? (
         clubs.length === 0 ? (

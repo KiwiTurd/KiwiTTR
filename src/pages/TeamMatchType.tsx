@@ -9,6 +9,7 @@ import {
 import {
   Link,
 } from "react-router-dom";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 const matchTypes = [
   {
@@ -48,24 +49,12 @@ const matchTypes = [
 export default function TeamMatchType() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div>
-        <Link
-          to="/team-games"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Team Games
-        </Link>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-emerald-700">
-          Create Team Event
-        </p>
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Team Match Type
-        </h1>
-        <p className="mt-3 text-lg text-slate-500">
-          Choose the structure for the team game before entering clubs, players and play order.
-        </p>
-      </div>
+      <SlateImagePageHeader
+        pageKey="team-game-type"
+        title="Team Match Type"
+        subtitle="Choose the structure for the team game before entering clubs, players and play order."
+        actions={<Link to="/team-games" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950"><ArrowLeft className="h-4 w-4" />Team Games</Link>}
+      />
 
       <section className="grid gap-4 lg:grid-cols-2">
         {matchTypes.map((type) => {

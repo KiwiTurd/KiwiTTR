@@ -9,6 +9,7 @@ import { notify } from "../services/notificationService";
 import { getClubs } from "../services/supabase/clubService";
 import type { Club } from "../types/club";
 import { getNewZealandDate } from "../utils/newZealandDate";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 const INPUT_CLASS = "w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
 
@@ -77,12 +78,12 @@ export default function NewClubRoundRobin() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <Link to="/club-events/new" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700"><ArrowLeft className="h-4 w-4" />Club Event Types</Link>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-emerald-700">Club Event Builder</p>
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">Round Robin Builder</h1>
-        <p className="mt-3 text-lg text-slate-500">Set the event details and choose how many independent round-robin groups to run.</p>
-      </div>
+      <SlateImagePageHeader
+        pageKey="club-round-robin"
+        title="Round Robin Builder"
+        subtitle="Set the event details and choose how many independent round-robin groups to run."
+        actions={<Link to="/club-events/new" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950"><ArrowLeft className="h-4 w-4" />Club Event Types</Link>}
+      />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-5 md:grid-cols-2">

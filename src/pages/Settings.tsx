@@ -8,13 +8,14 @@ import {
   LayoutPanelTop,
   PanelLeft,
   Home,
-  Settings2,
+  Image as ImageIcon,
   Shield,
 } from "lucide-react";
 
 import useRole from "../hooks/useRole";
 import { useSidebar } from "../context/SidebarContext";
 import PlayerProfileSettings from "../components/settings/PlayerProfileSettings";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 export default function Settings() {
 
@@ -34,31 +35,7 @@ export default function Settings() {
 
     <div className="max-w-6xl mx-auto space-y-8">
 
-      {/* Header */}
-
-      <div>
-
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-
-          <Settings2 className="h-4 w-4" />
-
-          Preferences
-
-        </div>
-
-        <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
-
-          Settings
-
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-
-          Choose your navigation layout and access the settings available to your account.
-
-        </p>
-
-      </div>
+      <SlateImagePageHeader pageKey="settings" title="Settings" subtitle="Choose your navigation layout and access the settings available to your account." />
 
       {/* Cards */}
 
@@ -197,6 +174,26 @@ export default function Settings() {
 
             </div>
 
+          </Link>
+
+        )}
+
+        {isAdmin && (
+
+          <Link
+            to="/settings/pages"
+            className="group block rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                <ImageIcon className="h-6 w-6" />
+              </div>
+              <div className="ml-5 flex-1">
+                <h2 className="text-xl font-bold">Customise Pages</h2>
+                <p className="mt-1 text-sm text-slate-500">Change each page header image, fade colour and fade visibility.</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
+            </div>
           </Link>
 
         )}

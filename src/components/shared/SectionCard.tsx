@@ -18,6 +18,7 @@ export default function SectionCard({
   return (
     <section
       className={`
+        kiwittr-solid-card
         rounded-2xl
         border
         border-slate-200

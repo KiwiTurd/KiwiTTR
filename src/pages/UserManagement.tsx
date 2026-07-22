@@ -34,6 +34,7 @@ import {
 import EditUserModal from "../components/settings/EditUserModal";
 import { notify } from "../services/notificationService";
 import LoadingScreen from "../components/shared/LoadingScreen";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 export default function UserManagement() {
 
@@ -304,17 +305,7 @@ export default function UserManagement() {
 
     <div className="mx-auto max-w-7xl space-y-8">
 
-      <div>
-
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          User Management
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-          Manage account access, roles, clubs and linked player profiles.
-        </p>
-
-      </div>
+      <SlateImagePageHeader pageKey="user-management" title="User Management" subtitle="Manage account access, roles, clubs and linked player profiles." />
 
       <div className="grid gap-4 md:grid-cols-3">
 

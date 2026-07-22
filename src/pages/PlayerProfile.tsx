@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   ArrowLeft,
@@ -50,6 +50,7 @@ import LoadingScreen from "../components/shared/LoadingScreen";
 import { notify } from "../services/notificationService";
 import useRole from "../hooks/useRole";
 import { useTournament } from "../context/TournamentContext";
+import { useSidebar } from "../context/SidebarContext";
 import { getTeamGames } from "../services/teams/teamGameService";
 import PlayerAvatar from "../components/shared/PlayerAvatar";
 import PlayerAvatarUploader from "../components/player/PlayerAvatarUploader";
@@ -102,7 +103,7 @@ function ProfileStatRow({
   }, [itemCount, updateIndicator]);
 
   return (
-    <div>
+    <div className="border-b border-slate-200 pb-8">
       <div
         ref={rowRef}
         onScroll={updateIndicator}
@@ -132,6 +133,13 @@ function ProfileStatRow({
 export default function PlayerProfile() {
 
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { collapsed, navigationLayout } = useSidebar();
+  const profileHeaderWidthClassName = navigationLayout === "sidebar"
+    ? collapsed
+      ? "md:w-[calc(100dvw-5rem)]"
+      : "md:w-[calc(100dvw-18rem)]"
+    : "md:w-dvw";
   const { savedTournaments } =
     useTournament();
 
@@ -584,31 +592,23 @@ return (
 
   <div className="mx-auto max-w-7xl space-y-8">
 
+    <section className={`relative left-1/2 -mt-4 w-dvw -translate-x-1/2 bg-gradient-to-b from-slate-200 to-slate-100 py-5 md:-mt-8 md:py-10 ${profileHeaderWidthClassName}`}>
+
+    <div className="mx-auto w-full max-w-7xl px-4 md:px-8">
+
     <div className="flex items-center justify-between gap-4">
 
-      <Link
-        to="/rankings"
-        className="
-          inline-flex
-          items-center
-          gap-2
-
-          text-sm
-          font-medium
-
-          text-slate-500
-
-          hover:text-blue-700
-
-          transition
-        "
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-2 rounded-xl border border-white bg-white px-4 py-2.5 font-semibold text-slate-950 shadow-sm transition duration-200 hover:scale-105 hover:bg-slate-50 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 active:scale-95"
       >
 
         <ArrowLeft className="h-4 w-4" />
 
-        Back to Rankings
+        Back
 
-      </Link>
+      </button>
 
       {isOwnPlayer && (
         <button
@@ -625,15 +625,13 @@ return (
 
     {/* Hero */}
 
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="mt-5 md:mt-8">
 
-      <div className="h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-sky-500" />
+      <div>
 
-      <div className="p-6">
+        <div className="flex items-center justify-between gap-3 md:gap-5">
 
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-[30px]">
 
             <PlayerAvatar
               firstName={player.firstName}
@@ -642,9 +640,9 @@ return (
               size="profileResponsive"
             />
 
-            <div className="player-profile-header">
+            <div className="player-profile-header min-w-0">
 
-              <h1 className="text-3xl font-normal tracking-tight">
+              <h1 className="truncate text-2xl font-normal tracking-tight sm:text-4xl">
 
                 {player.firstName} {player.lastName}
 
@@ -652,7 +650,7 @@ return (
 
               <div
                 data-mobile-subheading-always-visible="true"
-                className="mt-2 flex items-center gap-2 text-slate-500"
+                className="mt-1 flex min-w-0 items-center gap-2 truncate text-sm text-slate-500 sm:mt-2 sm:text-base"
               >
 
                 <Building2 className="hidden h-4 w-4 sm:block" />
@@ -669,18 +667,13 @@ return (
                     items-center
                     gap-2
 
-                    rounded-full
-
-                    px-3
-                    py-1.5
-
                     text-sm
                     font-semibold
 
                     ${
                       player.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
+                        ? "text-green-700"
+                        : "text-red-700"
                     }
                   `}
                 >
@@ -699,17 +692,17 @@ return (
 
           </div>
 
-          <div className="grid w-full grid-cols-2 items-center rounded-xl bg-slate-50 px-5 py-4 text-right sm:flex sm:w-auto sm:justify-end xl:min-w-52">
+          <div className="grid shrink-0 grid-cols-1 items-center text-right sm:grid-cols-2 xl:min-w-52">
 
-            <div className="border-r border-slate-200 pr-5">
+            <div className="border-b border-slate-300 pb-1.5 sm:border-b-0 sm:border-r sm:border-slate-200 sm:pb-0 sm:pr-5">
 
-              <p className="text-sm text-slate-500">
+              <p className="text-[11px] leading-tight text-slate-500 sm:text-sm">
 
                 NZ Ranking
 
               </p>
 
-              <h2 className="text-4xl font-black tracking-tight">
+              <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-4xl">
 
                 {nationalRank}
 
@@ -717,15 +710,15 @@ return (
 
             </div>
 
-            <div className="translate-x-2 pl-5 sm:pl-0">
+            <div className="pt-1.5 sm:pl-5 sm:pt-0">
 
-            <p className="text-sm text-slate-500">
+            <p className="text-[11px] leading-tight text-slate-500 sm:text-sm">
 
               Current Rating
 
             </p>
 
-            <h2 className="text-4xl font-black tracking-tight">
+            <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-4xl">
 
               {player.rating}
 
@@ -741,13 +734,17 @@ return (
 
     </div>
 
+    </div>
+
+    </section>
+
     {/* Contact */}
 
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <section className="border-b border-slate-200 pb-5 md:pb-8">
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap">
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
 
           <Phone className="h-5 w-5 text-blue-700" />
 
@@ -759,12 +756,12 @@ return (
 
         {canViewMobile || canViewEmail ? (
 
-          <div className="flex flex-col gap-3 text-sm md:flex-row md:items-center md:gap-6">
+          <div className="ml-auto flex shrink-0 items-center gap-4 text-sm md:gap-6">
 
             {canViewMobile && <div className="flex items-center gap-2">
               <span className="flex items-center gap-2 text-slate-500">
                 <Phone className="h-4 w-4" />
-                Mobile
+                <span className="hidden sm:inline">Mobile</span>
               </span>
               <span className="font-semibold">
                 {player.mobile || "-"}
@@ -774,7 +771,7 @@ return (
             {canViewEmail && <div className="flex items-center gap-2">
               <span className="flex items-center gap-2 text-slate-500">
                 <Mail className="h-4 w-4" />
-                Email
+                <span className="hidden sm:inline">Email</span>
               </span>
               <span className="font-semibold">
                 {player.email || "-"}
@@ -793,7 +790,7 @@ return (
 
       </div>
 
-    </div>
+    </section>
 
     {/* Stat Cards */}
 
@@ -801,9 +798,9 @@ return (
       itemCount={3 + (showHeadToHead && headToHead && linkedPlayer ? 1 : 0)}
     >
 
-      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
+      <div className="flex w-36 shrink-0 snap-start items-center justify-center gap-3 border-r border-slate-200 px-4 py-1 text-left last:border-r-0 sm:w-auto">
 
-        <TrendingUp className="h-9 w-9 shrink-0 text-blue-700 sm:h-5 sm:w-5" />
+        <TrendingUp className="h-7 w-7 shrink-0 text-blue-700" />
 
         <div className="min-w-0">
 
@@ -813,7 +810,7 @@ return (
 
           </p>
 
-          <h3 className="text-xl font-black sm:text-2xl">
+          <h3 className="text-xl font-bold sm:text-2xl">
 
             {player.rating}
 
@@ -823,9 +820,9 @@ return (
 
       </div>
 
-      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
+      <div className="flex w-36 shrink-0 snap-start items-center justify-center gap-3 border-r border-slate-200 px-4 py-1 text-left last:border-r-0 sm:w-auto">
 
-        <Trophy className="h-9 w-9 shrink-0 text-amber-500 sm:h-5 sm:w-5" />
+        <Trophy className="h-7 w-7 shrink-0 text-amber-500" />
 
         <div className="min-w-0">
 
@@ -835,7 +832,7 @@ return (
 
           </p>
 
-          <h3 className="text-xl font-black sm:text-2xl">
+          <h3 className="text-xl font-bold sm:text-2xl">
 
             {player.highestRating}
 
@@ -845,9 +842,9 @@ return (
 
       </div>
 
-      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
+      <div className="flex w-36 shrink-0 snap-start items-center justify-center gap-3 border-r border-slate-200 px-4 py-1 text-left last:border-r-0 sm:w-auto">
 
-        <Users className="h-9 w-9 shrink-0 text-indigo-600 sm:h-5 sm:w-5" />
+        <Users className="h-7 w-7 shrink-0 text-indigo-600" />
 
         <div className="min-w-0">
 
@@ -857,7 +854,7 @@ return (
 
           </p>
 
-          <h3 className="text-xl font-black sm:text-2xl">
+          <h3 className="text-xl font-bold sm:text-2xl">
 
             {clubRank}
 
@@ -869,9 +866,9 @@ return (
 
       {showHeadToHead && headToHead && linkedPlayer && (
 
-      <div className="flex aspect-square w-36 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-center shadow-sm sm:aspect-auto sm:w-auto sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-left">
+      <div className="flex w-36 shrink-0 snap-start items-center justify-center gap-3 border-r border-slate-200 px-4 py-1 text-left last:border-r-0 sm:w-auto">
 
-        <Users className="h-9 w-9 shrink-0 text-blue-700 sm:h-5 sm:w-5" />
+        <Users className="h-7 w-7 shrink-0 text-blue-700" />
 
         <div className="min-w-0">
 
@@ -881,7 +878,7 @@ return (
 
           </p>
 
-          <h3 className="text-xl font-black sm:text-2xl">
+          <h3 className="text-xl font-bold sm:text-2xl">
 
             {headToHead.linkedWins}-{headToHead.viewedWins}
 
@@ -902,7 +899,7 @@ return (
 
     {/* Rating Graph */}
 
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="kiwittr-solid-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
       <div className="border-b px-8 py-5">
 
@@ -937,7 +934,7 @@ return (
 
     <div className="grid gap-6 xl:grid-cols-2">
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="kiwittr-solid-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
         <div className="border-b px-6 py-4">
 
@@ -1004,7 +1001,7 @@ return (
                   </div>
 
                   <div className="text-right">
-                    <p className="text-2xl font-black">
+                    <p className="text-2xl font-bold">
                       {clubPlayer.rating}
                     </p>
                     <p className="text-xs uppercase tracking-wide text-slate-400">
@@ -1024,7 +1021,7 @@ return (
 
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="kiwittr-solid-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
         <div className="border-b px-6 py-4">
 
@@ -1147,7 +1144,7 @@ return (
 
       {/* Career Statistics */}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="kiwittr-solid-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
         <div className="border-b px-8 py-5">
 

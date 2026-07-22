@@ -17,7 +17,6 @@ import {
   Lock,
   MapPin,
   SlidersHorizontal,
-  UsersRound,
 } from "lucide-react";
 
 import useRole from "../hooks/useRole";
@@ -46,6 +45,7 @@ import {
 import { removeTeamGameTtrMatches } from "../services/teams/teamSubmission";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import PlayerSelector from "../components/shared/PlayerSelector";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 type Side = "home" | "away";
 
@@ -981,20 +981,7 @@ export default function NewTeamGameEvent() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="border-b border-slate-300 pb-6">
-        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800">
-          <UsersRound className="h-4 w-4" />
-          {editId
-            ? `Edit ${formatLabel} Setup`
-            : `${formatLabel} Setup`}
-        </div>
-        <h1 className="mt-4 text-5xl font-normal">
-          {formatLabel}
-        </h1>
-        <p className="mt-3 text-lg text-slate-500">
-          Confirm and save setup before opening the match builder.
-        </p>
-      </div>
+      <SlateImagePageHeader pageKey="team-game-builder" title={formatLabel} subtitle="Confirm and save setup before opening the match builder." />
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8">

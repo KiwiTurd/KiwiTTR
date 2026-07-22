@@ -31,6 +31,14 @@ export default function AppLayout() {
 
   const { collapsed, navigationLayout } = useSidebar();
   const { pathname } = useLocation();
+  const isEditorialPage =
+    pathname === "/" ||
+    pathname === "/about" ||
+    pathname === "/how-we-calculate";
+  const preservesClubHeader =
+    pathname.startsWith("/clubs/") ||
+    pathname === "/my-club";
+  const usesStandardPageStyle = !isEditorialPage;
   const showMobilePageSubheadings =
     pathname === "/" ||
     pathname === "/about" ||
@@ -127,11 +135,15 @@ export default function AppLayout() {
 
   return (
 
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-100">
+    <div
+      className={`flex h-screen flex-col overflow-hidden ${
+        usesStandardPageStyle ? "bg-white" : "bg-slate-100"
+      }`}
+    >
 
       <SeoMetadataManager />
 
-      {navigationLayout === "header" ? <DesktopHeader /> : <Sidebar />}
+      {navigationLayout === "sidebar" && <Sidebar />}
 
       <div
         className={`flex min-h-0 flex-1 flex-col overflow-y-auto transition-[margin] duration-300 ${
@@ -143,12 +155,20 @@ export default function AppLayout() {
         }`}
       >
 
+        {navigationLayout === "header" && <DesktopHeader />}
+
         <main
           ref={mainRef}
           onClick={handleMainClick}
           onKeyDown={handleMainKeyDown}
           className={`flex-1 p-4 pb-28 md:p-8 ${
             showMobilePageSubheadings ? "" : "mobile-hide-page-subheadings"
+          } ${usesStandardPageStyle ? "kiwittr-standard-page" : ""} ${
+            usesStandardPageStyle &&
+            !preservesClubHeader &&
+            pathname !== "/dashboard"
+              ? "kiwittr-standard-page-header"
+              : ""
           }`}
         >
 

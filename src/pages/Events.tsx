@@ -31,6 +31,7 @@ import {
 import type { Event } from "../types/event";
 import type { Club } from "../types/club";
 import type { SavedTournament } from "../types/tournament";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 import {
   addEvent,
@@ -228,6 +229,27 @@ export default function Events() {
     standardEventOpen,
     setStandardEventOpen,
   ] = useState(false);
+
+  const [focusedCreateOption, setFocusedCreateOption] =
+    useState<number | null>(null);
+
+  function createOptionFocusClass(index: number) {
+    if (focusedCreateOption === index) {
+      const activeColour = [
+        "border-2 border-amber-400 shadow-amber-100/40",
+        "border-2 border-blue-400 shadow-blue-100/40",
+        "border-2 border-emerald-400 shadow-emerald-100/40",
+      ][index];
+
+      return `relative z-10 scale-[1.015] opacity-100 shadow-lg ${activeColour}`;
+    }
+
+    if (focusedCreateOption !== null) {
+      return "scale-[0.99] opacity-55 blur-[1px] grayscale-[0.1]";
+    }
+
+    return "";
+  }
 
   const canCreateStandardEvent =
     isAdmin ||
@@ -839,27 +861,23 @@ export default function Events() {
   return (
       <div className="mx-auto max-w-7xl space-y-8">
 
-      <div>
-
-        <h1 className="mt-2 text-5xl font-normal tracking-tight text-slate-900">
-          Events
-        </h1>
-
-        <p className="mt-3 text-lg text-slate-500">
-          Browse tournaments, club nights and match activity.
-        </p>
-
-      </div>
+      <SlateImagePageHeader pageKey="events" title="Events" subtitle="Browse tournaments, club nights and match activity." />
 
       {canCreateStandardEvent && (
 
         <div className="space-y-4">
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div
+            className="grid gap-3 md:grid-cols-3"
+            onMouseLeave={() => setFocusedCreateOption(null)}
+          >
 
             <Link
               to="/tournaments"
-              className="group flex min-h-32 flex-col justify-between rounded-xl border border-amber-200 bg-white p-5 shadow-sm transition hover:border-amber-400 hover:bg-amber-50/50"
+              onMouseEnter={() => setFocusedCreateOption(0)}
+              onFocus={() => setFocusedCreateOption(0)}
+              onBlur={() => setFocusedCreateOption(null)}
+              className={`group flex min-h-32 flex-col justify-between rounded-xl border border-amber-200 bg-white p-5 shadow-sm outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out hover:border-amber-400 hover:bg-amber-50/50 ${createOptionFocusClass(0)}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -884,11 +902,14 @@ export default function Events() {
               onClick={() =>
                 setStandardEventOpen((open) => !open)
               }
-              className={`group flex min-h-32 flex-col justify-between rounded-xl border bg-white p-5 text-left shadow-sm transition ${
+              onMouseEnter={() => setFocusedCreateOption(1)}
+              onFocus={() => setFocusedCreateOption(1)}
+              onBlur={() => setFocusedCreateOption(null)}
+              className={`group flex min-h-32 flex-col justify-between rounded-xl border bg-white p-5 text-left shadow-sm outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out ${
                 standardEventOpen
                   ? "border-blue-400 bg-blue-50/60"
                   : "border-blue-200 hover:border-blue-400 hover:bg-blue-50/50"
-              }`}
+              } ${createOptionFocusClass(1)}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -916,7 +937,10 @@ export default function Events() {
 
             <Link
               to="/team-games"
-              className="group flex min-h-32 flex-col justify-between rounded-xl border border-emerald-200 bg-white p-5 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/50"
+              onMouseEnter={() => setFocusedCreateOption(2)}
+              onFocus={() => setFocusedCreateOption(2)}
+              onBlur={() => setFocusedCreateOption(null)}
+              className={`group flex min-h-32 flex-col justify-between rounded-xl border border-emerald-200 bg-white p-5 shadow-sm outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out hover:border-emerald-400 hover:bg-emerald-50/50 ${createOptionFocusClass(2)}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

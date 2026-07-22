@@ -32,6 +32,7 @@ import {
 import useRole from "../hooks/useRole";
 import { useTournament } from "../context/TournamentContext";
 import ExpandableDescription from "../components/shared/ExpandableDescription";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import type { Club } from "../types/club";
 import type { SavedTournament } from "../types/tournament";
 import { getClubs } from "../services/supabase/clubService";
@@ -131,6 +132,27 @@ export default function TournamentCentre() {
 
   const [statusFilter, setStatusFilter] =
     useState<TournamentFilter>("upcoming");
+
+  const [focusedSummary, setFocusedSummary] =
+    useState<number | null>(null);
+
+  function summaryFocusClass(index: number) {
+    if (focusedSummary === index) {
+      const activeColour = [
+        "border-2 border-blue-400 shadow-blue-100/40",
+        "border-2 border-green-400 shadow-green-100/40",
+        "border-2 border-amber-400 shadow-amber-100/40",
+      ][index];
+
+      return `relative z-10 scale-[1.015] opacity-100 shadow-lg ${activeColour}`;
+    }
+
+    if (focusedSummary !== null) {
+      return "scale-[0.99] opacity-55 blur-[1px] grayscale-[0.1]";
+    }
+
+    return "";
+  }
 
   const [formatFilter, setFormatFilter] =
     useState<TournamentFormatFilter>("all");
@@ -1176,45 +1198,37 @@ export default function TournamentCentre() {
 
     <div className="max-w-7xl mx-auto space-y-8">
 
-      {/* Header */}
-
-      <div className="tournament-page-header flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-6 md:items-end">
-        <div className="tournament-page-header-copy">
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-            <Trophy className="h-4 w-4" />
-            Tournament Centre
-          </div>
-
-          <h1 className="mt-4 text-5xl font-normal tracking-tight text-slate-900">
-            Tournaments
-          </h1>
-
-          <p className="mt-3 text-lg text-slate-500">
-            Create, manage and run KiwiTTR tournaments.
-          </p>
-        </div>
-
-        {canCreateTournament && (
+      <SlateImagePageHeader
+        pageKey="tournaments"
+        title="Tournaments"
+        subtitle="Create, manage and run KiwiTTR tournaments."
+        actions={canCreateTournament ? (
           <Link
             to="/tournaments/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-slate-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100"
           >
             <Plus className="h-5 w-5" />
             Create Tournament
           </Link>
-        )}
-      </div>
+        ) : undefined}
+      />
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div
+        className="grid gap-3 md:grid-cols-3"
+        onMouseLeave={() => setFocusedSummary(null)}
+      >
         <button
           type="button"
           aria-pressed={statusFilter === "all"}
           onClick={() => changeStatusFilter("all")}
-          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-400 hover:bg-slate-50 ${
+          onMouseEnter={() => setFocusedSummary(0)}
+          onFocus={() => setFocusedSummary(0)}
+          onBlur={() => setFocusedSummary(null)}
+          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out hover:border-blue-400 hover:bg-blue-50/50 ${
             statusFilter === "all"
-              ? "border-slate-500 ring-2 ring-slate-200"
+              ? "border-2 border-blue-400 bg-blue-50/40"
               : "border-slate-200"
-          }`}
+          } ${summaryFocusClass(0)}`}
         >
           <Trophy className="h-5 w-5 text-blue-700" />
           <div>
@@ -1231,11 +1245,14 @@ export default function TournamentCentre() {
           type="button"
           aria-pressed={statusFilter === "live"}
           onClick={() => changeStatusFilter("live")}
-          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-green-400 hover:bg-green-50 ${
+          onMouseEnter={() => setFocusedSummary(1)}
+          onFocus={() => setFocusedSummary(1)}
+          onBlur={() => setFocusedSummary(null)}
+          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out hover:border-green-400 hover:bg-green-50 ${
             statusFilter === "live"
-              ? "border-green-500 ring-2 ring-green-100"
+              ? "border-2 border-green-400 bg-green-50/40"
               : "border-slate-200"
-          }`}
+          } ${summaryFocusClass(1)}`}
         >
           <Eye className="h-5 w-5 text-green-600" />
           <div>
@@ -1252,11 +1269,14 @@ export default function TournamentCentre() {
           type="button"
           aria-pressed={statusFilter === "upcoming"}
           onClick={() => changeStatusFilter("upcoming")}
-          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition hover:border-amber-400 hover:bg-amber-50 ${
+          onMouseEnter={() => setFocusedSummary(2)}
+          onFocus={() => setFocusedSummary(2)}
+          onBlur={() => setFocusedSummary(null)}
+          className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-3 text-left shadow-sm outline-none transition-[transform,opacity,filter,border-color,box-shadow] duration-300 ease-out hover:border-amber-400 hover:bg-amber-50 ${
             statusFilter === "upcoming"
-              ? "border-amber-500 ring-2 ring-amber-100"
+              ? "border-2 border-amber-400 bg-amber-50/40"
               : "border-slate-200"
-          }`}
+          } ${summaryFocusClass(2)}`}
         >
           <CalendarDays className="h-5 w-5 text-amber-600" />
           <div>

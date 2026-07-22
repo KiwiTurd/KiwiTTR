@@ -8,7 +8,6 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
-  Home,
   Plus,
   RotateCcw,
   Save,
@@ -33,6 +32,7 @@ import useFormDraftState, {
 } from "../hooks/useFormDraftState";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import KiwiTtrIcon from "../assets/KIWITTR - Logo.svg?react";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 function resizeHeroImage(
   file: File,
@@ -256,26 +256,10 @@ export default function HomepageSettingsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <header>
-        <Link
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900"
-          to="/settings"
-        >
-          <ArrowLeft className="h-4 w-4" /> Settings
-        </Link>
-        <div className="mt-5 flex items-center gap-3 text-blue-700">
-          <Home className="h-6 w-6" />
-          <span className="text-sm font-semibold uppercase tracking-widest">
-            Public website
-          </span>
-        </div>
-        <h1 className="mt-3 text-5xl font-normal tracking-tight text-slate-900">
-          Page Headers
-        </h1>
-        <p className="mt-3 text-lg text-slate-500">
-          Add, order and preview the rotating homepage headers.
-        </p>
-      </header>
+      <SlateImagePageHeader pageKey="homepage-settings" title="Homepage Settings" subtitle="Add, order and preview the rotating homepage headers." />
+      <Link className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900" to="/settings">
+        <ArrowLeft className="h-4 w-4" /> Settings
+      </Link>
 
       <div className="space-y-8">
         {settings.heroSlides.map((slide, index) => (

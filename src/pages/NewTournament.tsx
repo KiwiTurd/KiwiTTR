@@ -11,7 +11,6 @@ import {
   ArrowRight,
   Info,
   Lock,
-  Trophy,
 } from "lucide-react";
 
 import useRole from "../hooks/useRole";
@@ -28,6 +27,7 @@ import { notify } from "../services/notificationService";
 import { formatStartTime } from "../utils/tournamentTime";
 
 import { useTournament } from "../context/TournamentContext";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 
 export default function NewTournament() {
 const tournamentDetailsRef = useRef<HTMLDivElement | null>(null);
@@ -453,16 +453,7 @@ useEffect(() => {
 
     <div className="mx-auto max-w-7xl space-y-8">
 
-      <div className="border-b border-slate-300 pb-6">
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-          <Trophy className="h-4 w-4" />
-          Tournament Wizard
-        </div>
-        <h1 className="mt-4 text-5xl font-normal">New Tournament</h1>
-        <p className="mt-3 text-lg text-slate-500">
-          Configure your tournament before selecting players.
-        </p>
-      </div>
+      <SlateImagePageHeader pageKey="new-tournament" title="New Tournament" subtitle="Configure your tournament before selecting players." />
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
 

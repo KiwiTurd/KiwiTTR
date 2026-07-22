@@ -1,18 +1,10 @@
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
+
 export default function Admin() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
 
-      <div>
-
-        <h1 className="text-4xl font-normal">
-          Admin Console
-        </h1>
-
-        <p className="text-slate-500 mt-2">
-          Manage KiwiTTR
-        </p>
-
-      </div>
+      <SlateImagePageHeader pageKey="admin" title="Admin Console" subtitle="Manage KiwiTTR." />
 
       <div className="grid md:grid-cols-4 gap-6">
 

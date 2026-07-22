@@ -12,7 +12,6 @@ import {
   Check,
   ChevronDown,
   GripVertical,
-  Trophy,
 } from "lucide-react";
 import {
   Link,
@@ -37,6 +36,7 @@ import { generateTournamentDraw } from "../services/tournament/drawGenerator";
 import { generateKnockout } from "../services/tournament/knockoutGenerator";
 import { generateDoubleKnockout } from "../services/tournament/doubleKnockout";
 import PlayerSelector from "../components/shared/PlayerSelector";
+import SlateImagePageHeader from "../components/shared/SlateImagePageHeader";
 import { notify } from "../services/notificationService";
 import useFormDraftState, {
   clearFormDraft,
@@ -563,21 +563,7 @@ function getClubName(
     <div className="max-w-7xl mx-auto">
 
       <div className="mb-8">
-
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-
-          <Trophy className="h-4 w-4" />
-
-          Tournament Wizard
-
-        </div>
-
-        <h1 className="mt-4 text-5xl font-normal">
-
-          Select Players
-
-        </h1>
-
+        <SlateImagePageHeader pageKey="tournament-players" title="Select Players" subtitle="Choose the players taking part in this tournament." />
       </div>
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-8">
