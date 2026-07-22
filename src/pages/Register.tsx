@@ -58,7 +58,7 @@ export default function Register() {
 
     setLoading(true);
 
-    const { error } =
+    const { data, error } =
       await supabase.auth.signUp({
 
         email: email.trim(),
@@ -66,6 +66,8 @@ export default function Register() {
         password,
 
         options: {
+
+          emailRedirectTo: `${window.location.origin}/login`,
 
           data: {
 
@@ -91,8 +93,30 @@ export default function Register() {
 
     }
 
+    if (data.user?.identities?.length === 0) {
+
+      alert(
+        "An account may already exist for this email. Try signing in or resetting your password."
+      );
+
+      navigate("/login");
+
+      return;
+
+    }
+
+    if (data.session) {
+
+      alert("Your account has been created and you are now signed in.");
+
+      navigate("/dashboard");
+
+      return;
+
+    }
+
     alert(
-      "Your account has been created.\n\nPlease verify your email before signing in."
+      "Your account has been created.\n\nA confirmation email has been sent. Please verify your email before signing in."
     );
 
     navigate("/login");

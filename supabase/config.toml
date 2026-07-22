@@ -1,4 +1,9 @@
 
+[auth.email]
+# Keep local/self-hosted Auth behaviour aligned with production. Hosted
+# projects must also have Confirm Email enabled under Authentication > Providers.
+enable_confirmations = true
+
 [functions.delete-user]
 enabled = true
 verify_jwt = false
