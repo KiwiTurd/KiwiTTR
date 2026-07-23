@@ -23,7 +23,7 @@ export function calculateMatch(
   const expectedWinner =
     1 / (1 + Math.pow(10, ratingDifference / 400));
 
-  const kFactor = 32;
+  const kFactor = 16;
 
   const winnerMultiplier =
     getProvisionalMultiplier(winner);

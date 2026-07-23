@@ -31,7 +31,7 @@ export default function HowWeCalculate() {
         <h2 className="mt-3 text-3xl font-bold text-slate-900">Expectation meets outcome</h2>
         <div className="mt-6 rounded-2xl bg-slate-900 p-5 font-mono text-sm text-slate-100 md:text-base">
           <p>Expected score = 1 / (1 + 10<sup>((opponent rating − player rating) / 400)</sup>)</p>
-          <p className="mt-3">Rating change = 32 × (actual result − expected score) × provisional multiplier</p>
+          <p className="mt-3">Rating change = 16 × (actual result − expected score) × provisional multiplier</p>
         </div>
         <div className="mt-7 grid gap-6 md:grid-cols-3">
           <div>
