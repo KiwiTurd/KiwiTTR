@@ -743,10 +743,15 @@ export async function getTournament(
 }
 
 export async function saveTournamentRecord(
-  tournament: TournamentState
+  tournament: TournamentState,
+  options: {
+    persistStatus?: boolean;
+  } = {}
 ): Promise<SavedTournament> {
   const baseRow = toTournamentRow(tournament);
   const existingTournamentId = tournament.id;
+  let persistStatus =
+    options.persistStatus ?? false;
 
   if (existingTournamentId) {
     const removedRatings =
@@ -759,12 +764,23 @@ export async function saveTournamentRecord(
       baseRow.status === "completed"
     ) {
       baseRow.status = "active";
+      persistStatus = true;
     }
   }
 
+  const rowToSave = persistStatus
+    ? baseRow
+    : Object.fromEntries(
+        Object.entries(baseRow).filter(
+          ([column]) => column !== "status"
+        )
+      );
+
   const { data, error } = await supabase
     .from("tournaments")
-    .upsert(baseRow)
+    .upsert(rowToSave, {
+      defaultToNull: false,
+    })
     .select("*")
     .single();
 

@@ -108,6 +108,52 @@ const TournamentContext =
 tournamentContextStore.__kiwiTtrTournamentContext =
   TournamentContext;
 
+function stabilizeLiveRefresh(
+  current: TournamentState,
+  incoming: SavedTournament
+): SavedTournament {
+  if (
+    !current.id ||
+    current.id !== incoming.id ||
+    (
+      current.status !== "active" &&
+      current.status !== "completed"
+    )
+  ) {
+    return incoming;
+  }
+
+  const incomingHasCoverage =
+    incoming.status === "active" ||
+    incoming.status === "completed";
+  const currentHasDraw =
+    current.pools.length > 0 ||
+    current.knockout.length > 0;
+  const incomingHasDraw =
+    incoming.pools.length > 0 ||
+    incoming.knockout.length > 0;
+
+  if (currentHasDraw && !incomingHasDraw) {
+    return {
+      ...incoming,
+      players: current.players,
+      pools: current.pools,
+      matches: current.matches,
+      knockout: current.knockout,
+      status: current.status,
+    };
+  }
+
+  if (!incomingHasCoverage) {
+    return {
+      ...incoming,
+      status: current.status,
+    };
+  }
+
+  return incoming;
+}
+
 export function TournamentProvider({
   children,
 }: {
@@ -185,7 +231,12 @@ export function TournamentProvider({
   }, []);
 
   const persistCurrentIfSaved = useCallback(
-    (nextTournament: TournamentState) => {
+    (
+      nextTournament: TournamentState,
+      options: {
+        persistStatus?: boolean;
+      } = {}
+    ) => {
       if (!nextTournament.id) {
         return;
       }
@@ -194,7 +245,8 @@ export function TournamentProvider({
         .catch(() => undefined)
         .then(async () => {
           const saved = await saveTournamentRecord(
-            nextTournament
+            nextTournament,
+            options
           );
           commitSavedTournament(saved);
         })
@@ -303,7 +355,10 @@ export function TournamentProvider({
   ): Promise<SavedTournament> {
     const saved =
       await saveTournamentRecord(
-        tournamentToSave
+        tournamentToSave,
+        {
+          persistStatus: true,
+        }
       );
 
     setTournament(saved);
@@ -330,8 +385,24 @@ export function TournamentProvider({
       return null;
     }
 
-    setTournament(saved);
-    commitSavedTournament(saved);
+    setTournament(current =>
+      stabilizeLiveRefresh(current, saved)
+    );
+    setSavedTournaments(current => {
+      const previous = current.find(
+        item => item.id === saved.id
+      );
+      const stabilized = previous
+        ? stabilizeLiveRefresh(previous, saved)
+        : saved;
+
+      return [
+        stabilized,
+        ...current.filter(
+          item => item.id !== saved.id
+        ),
+      ];
+    });
 
     return saved;
   }
@@ -425,7 +496,9 @@ export function TournamentProvider({
         )
       );
     }
-    persistCurrentIfSaved(nextTournament);
+    persistCurrentIfSaved(nextTournament, {
+      persistStatus: true,
+    });
   }
 
   function resetTournament() {
